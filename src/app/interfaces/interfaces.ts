@@ -28,3 +28,10 @@ export interface LoginResult {
   name: string;
   token: string;
 }
+
+export interface RegisterData {
+  email: string;
+  name: string;
+  pass: string;
+  conf: string;
+}

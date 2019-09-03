@@ -3,9 +3,11 @@ import { Injectable }              from '@angular/core';
 import { Observable }              from 'rxjs';
 import { environment }             from '../../environments/environment';
 
-/*import {
-  StatusResult
-} from '../interfaces/interfaces';*/
+import {
+  LoginData,
+  LoginResult,
+  RegisterData
+} from '../interfaces/interfaces';
 
 @Injectable({
   providedIn: 'root'
@@ -15,7 +17,11 @@ export class ApiService {
 
   constructor(private http : HttpClient){}
 
-  /*checkStart(date: string): Observable<StartDataResult> {
-    return this.http.post<StartDataResult>(this.apiUrl + 'checkStart', {date});
-  }*/
+  login(data: LoginData): Observable<LoginResult> {
+    return this.http.post<LoginResult>(this.apiUrl + 'login', data);
+  }
+  
+  register(data: RegisterData): Observable<LoginResult> {
+    return this.http.post<LoginResult>(this.apiUrl + 'register', data);
+  }
 }
