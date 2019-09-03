@@ -44,12 +44,16 @@ import { CommonService }    from './services/common.service';
 import { ApiService }       from './services/api.service';
 import { DataShareService } from './services/data-share.service';
 import { DialogService }    from './services/dialog.service';
+import { UserService }      from './services/user.service';
+import { AuthService }      from './services/auth.service';
 
 export const SERVICES: any[] = [
 	CommonService,
 	ApiService,
 	DataShareService,
-	DialogService
+	DialogService,
+	UserService,
+	AuthService
 ];
 
 /*
