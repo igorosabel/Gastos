@@ -29,7 +29,7 @@
 				<mat-label>Confirmar contraseña</mat-label>
 				<input matInput type="password" [(ngModel)]="registerData.conf" [disabled]="registerSending" required name="conf">
 			</mat-form-field>
-			<fieldset *ngIf="registerNameError" class="center-card-error">
+			<fieldset *ngIf="registerEmailError" class="center-card-error">
 				<legend>Error</legend>
 				El nombre de usuario ya está en uso.
 			</fieldset>
