@@ -1,16 +1,16 @@
-import { Component }    from '@angular/core';
-import { MatDialogRef } from '@angular/material/dialog';
+import { Component } from "@angular/core";
+import { MatDialogRef } from "@angular/material/dialog";
 
 @Component({
-  selector: 'otpv-confirm-dialog',
-  templateUrl: './confirm-dialog.component.html',
-  styleUrls: ['../css/dialog.component.css']
+  selector: "otpv-confirm-dialog",
+  templateUrl: "./confirm-dialog.component.html",
+  styleUrls: ["../css/dialog.component.css"],
 })
 export class ConfirmDialogComponent {
-    public title: string;
-    public content: string;
-    public ok: string;
-    public cancel: string;
+  public title: string;
+  public content: string;
+  public ok: string;
+  public cancel: string;
 
-    constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>) {}
+  constructor(public dialogRef: MatDialogRef<ConfirmDialogComponent>) {}
 }
