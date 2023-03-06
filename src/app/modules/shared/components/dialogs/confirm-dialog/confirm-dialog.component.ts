@@ -2,9 +2,9 @@ import { Component } from "@angular/core";
 import { MatDialogRef } from "@angular/material/dialog";
 
 @Component({
+  standalone: true,
   selector: "otpv-confirm-dialog",
   templateUrl: "./confirm-dialog.component.html",
-  styleUrls: ["../css/dialog.component.css"],
 })
 export class ConfirmDialogComponent {
   public title: string;
