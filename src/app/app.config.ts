@@ -15,6 +15,7 @@ import {
 import routes from '@app/app.routes';
 import provideCore from '@app/core';
 import AuthStore from '@auth/auth.store';
+import license from '@env/license';
 import AuthInterceptor from '@interceptors/auth.interceptor';
 import { es } from 'primelocale/es.json';
 import { providePrimeNG } from 'primeng/config';
@@ -45,6 +46,7 @@ const appConfig: ApplicationConfig = {
           darkModeSelector: '.gastos-app-dark',
         },
       },
+      license: license,
     }),
     provideCore(),
   ],

@@ -34,6 +34,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Inject PrimeNG License
+        run: |
+          cp src/environments/license.example.ts src/environments/license.ts
+          sed -i "s/'ENTER_PRIMENG_LICENSE_HERE'/'${{ secrets.PRIMENG_LICENSE }}'/g" src/environments/license.ts
+
       - name: Build Angular (production)
         run: npm run build -- --configuration production
 
