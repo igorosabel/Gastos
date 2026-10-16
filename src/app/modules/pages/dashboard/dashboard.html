@@ -89,6 +89,23 @@
             </div>
             }
             }
+
+            @if (!spaceStore.loading() && !spaceStore.error()) {
+            <div class="dashboard__creation">
+                @if (creatingSpace()) {
+                <app-create-space (created)="onSpaceCreated($event)"
+                                  (cancelled)="cancelCreateSpace()" />
+                } @else {
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        (click)="openCreateSpace()">
+                    Crear espacio compartido
+                </button>
+                }
+            </div>
+            }
         </section>
 
         <section class="dashboard__card"

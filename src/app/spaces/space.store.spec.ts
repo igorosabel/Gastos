@@ -6,6 +6,7 @@ import AuthStore from '@auth/auth.store';
 import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type SpacesResponse from '@interfaces/spaces-response.interface';
+import Space from '@model/spaces/space.model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('SpaceStore', () => {
@@ -180,5 +181,74 @@ describe('SpaceStore', () => {
 
     httpTesting.expectNone(`${environment.apiUrl}/spaces`);
     expect(spaceStore.spaces()).toEqual([]);
+  });
+
+  it('incorpora y selecciona un espacio recién creado', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    const createdSpace: Space = {
+      id: 9,
+      name: 'Vacaciones',
+      type: 'shared',
+      owner_id: 1,
+      is_owner: true,
+    };
+
+    expect(spaceStore.addCreated(createdSpace)).toBe(true);
+    expect(spaceStore.selectedId()).toBe(9);
+    expect(spaceStore.selected()).toEqual(createdSpace);
+    expect(spaceStore.spaces()).toContainEqual(createdSpace);
+  });
+
+  it('no sobrescribe un espacio nuevo con una carga anterior', async (): Promise<void> => {
+    const firstLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await firstLoad;
+
+    const secondLoad: Promise<void> = spaceStore.load();
+
+    const createdSpace: Space = {
+      id: 9,
+      name: 'Vacaciones',
+      type: 'shared',
+      owner_id: 1,
+      is_owner: true,
+    };
+
+    expect(spaceStore.addCreated(createdSpace)).toBe(true);
+
+    // Esta respuesta representa un listado consultado antes
+    // de que existiera el espacio recién creado.
+    flushSpaces();
+    await secondLoad;
+
+    expect(spaceStore.selectedId()).toBe(9);
+    expect(spaceStore.spaces()).toContainEqual(createdSpace);
+    expect(spaceStore.loading()).toBe(false);
+  });
+
+  it('rechaza un espacio creado después de cerrar sesión', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    authStore.clear();
+
+    const accepted: boolean = spaceStore.addCreated({
+      id: 9,
+      name: 'Vacaciones',
+      type: 'shared',
+      owner_id: 1,
+      is_owner: true,
+    });
+
+    expect(accepted).toBe(false);
+    expect(spaceStore.spaces()).toEqual([]);
+    expect(spaceStore.selected()).toBeNull();
   });
 });

@@ -121,6 +121,42 @@ export default class SpaceStore {
   }
 
   /**
+   * Incorpora un espacio compartido creado por la API y lo selecciona.
+   *
+   * No acepta espacios cuando ha cambiado o terminado la sesión.
+   * Invalida también cualquier carga de listado que estuviera pendiente.
+   */
+  addCreated(space: Space): boolean {
+    const user: AuthUser | null = this.authStore.user();
+    const token: string | null = this.authStore.token();
+
+    if (
+      user === null ||
+      token === null ||
+      this.userId() !== user.id ||
+      space.id <= 0 ||
+      space.type !== 'shared' ||
+      space.owner_id !== user.id ||
+      !space.is_owner
+    ) {
+      return false;
+    }
+
+    this.loadVersion += 1;
+    this.loadingState.set(false);
+    this.errorState.set(null);
+
+    this.availableSpaces.update((spaces: Space[]): Space[] => [
+      ...spaces.filter((existing: Space): boolean => existing.id !== space.id),
+      space,
+    ]);
+
+    this.selectedSpaceId.set(space.id);
+
+    return true;
+  }
+
+  /**
    * Elimina los datos del espacio al cerrar la sesión.
    */
   clear(): void {

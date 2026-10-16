@@ -1,0 +1,49 @@
+<form [formRoot]="spaceForm"
+      class="space-form"
+      aria-label="Crear espacio compartido">
+
+    <h3>Nuevo espacio compartido</h3>
+
+    <div class="space-form__field">
+        <label for="new-space-name">Nombre del espacio</label>
+
+        <input #nameInput
+               pInputText
+               id="new-space-name"
+               type="text"
+               autocomplete="off"
+               placeholder="Por ejemplo, Familia"
+               [formField]="spaceForm.name" />
+
+        @if (spaceForm.name().touched() && spaceForm.name().invalid()) {
+        <small class="space-form__error"
+               role="alert">
+            {{ spaceForm.name().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    @if (spaceForm().errors().length > 0) {
+    <p class="space-form__error"
+       role="alert">
+        {{ spaceForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="space-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="spaceForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="spaceForm().submitting()">
+            {{ spaceForm().submitting() ? 'Creando...' : 'Crear espacio' }}
+        </button>
+    </div>
+</form>
