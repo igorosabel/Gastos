@@ -2,7 +2,7 @@ import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { RegisterResponse } from '@interfaces/auth.interfaces';
-import Register from '@pages/register/register';
+import Register from '@modules/auth/register/register';
 import AuthService from '@services/auth.service';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

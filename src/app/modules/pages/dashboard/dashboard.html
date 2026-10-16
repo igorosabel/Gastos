@@ -1,17 +1,109 @@
-<main class="dashboard">
-    <h1>Gastos</h1>
+<div class="app-shell">
+    <header class="app-header">
+        <div class="app-header__brand">
+            <span class="app-header__logo">G</span>
 
-    <p>Bienvenido, {{ store.user()?.name }}.</p>
+            <div>
+                <strong>Gastos</strong>
+                <span>Gestión de ingresos y gastos</span>
+            </div>
+        </div>
 
-    <p>
-        La sesión está iniciada correctamente.
-        El panel económico se implementará en una fase posterior.
-    </p>
+        <div class="app-header__actions">
+            <span class="app-header__user">
+                {{ authStore.user()?.name }}
+            </span>
 
-    <button pButton
-            type="button"
-            severity="secondary"
-            (click)="logout()">
-        Cerrar sesión
-    </button>
-</main>
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    (click)="logout()">
+                <i class="pi pi-sign-out"
+                   aria-hidden="true"></i>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="dashboard">
+        <div class="dashboard__heading">
+            <h1>Inicio</h1>
+            <p>Selecciona el espacio cuyos datos quieres gestionar.</p>
+        </div>
+
+        <section class="dashboard__card"
+                 aria-labelledby="spaces-title">
+            <h2 id="spaces-title">Espacio activo</h2>
+
+            @if (spaceStore.loading()) {
+            <p class="dashboard__muted"
+               role="status">
+                Cargando espacios...
+            </p>
+            } @else if (spaceStore.error()) {
+            <div class="dashboard__error"
+                 role="alert">
+                <p>{{ spaceStore.error() }}</p>
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        (click)="reloadSpaces()">
+                    Reintentar
+                </button>
+            </div>
+            } @else if (spaceStore.spaces().length === 0) {
+            <p class="dashboard__muted">
+                No tienes espacios disponibles.
+            </p>
+            } @else {
+            <div class="dashboard__selector">
+                <label for="active-space">Seleccionar espacio</label>
+
+                <p-select inputId="active-space"
+                          [options]="spaceStore.spaces()"
+                          optionLabel="name"
+                          optionValue="id"
+                          [ngModel]="spaceStore.selectedId()"
+                          (ngModelChange)="selectSpace($event)"
+                          placeholder="Selecciona un espacio"
+                          [fluid]="true" />
+            </div>
+
+            @if (spaceStore.selected(); as selectedSpace) {
+            <div class="dashboard__space-detail">
+                <h3>{{ selectedSpace.name }}</h3>
+
+                <p>
+                    @if (selectedSpace.type === 'personal') {
+                    Espacio personal
+                    } @else {
+                    Espacio compartido
+                    }
+
+                    @if (selectedSpace.is_owner) {
+                    · Eres propietario
+                    }
+                </p>
+            </div>
+            }
+            }
+        </section>
+
+        <section class="dashboard__card"
+                 aria-labelledby="summary-title">
+            <h2 id="summary-title">Resumen económico</h2>
+
+            <p class="dashboard__muted">
+                Aquí mostraremos los ingresos, los gastos y el balance
+                del espacio seleccionado.
+            </p>
+
+            <p class="dashboard__muted">
+                En los próximos bloques conectaremos los movimientos
+                y los informes de ApiGastos.
+            </p>
+        </section>
+    </main>
+</div>

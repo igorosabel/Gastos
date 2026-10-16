@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import AuthStore from '@auth/auth.store';
 import { LoginResponse } from '@interfaces/auth.interfaces';
-import Login from '@pages/login/login';
+import Login from '@modules/auth/login/login';
 import AuthService from '@services/auth.service';
 import { of, throwError } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
