@@ -1,9 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   inject,
+  Signal,
   signal,
+  viewChild,
   type WritableSignal,
 } from '@angular/core';
 import {
@@ -96,4 +100,13 @@ export default class Register {
       },
     },
   );
+
+  private readonly nameInput: Signal<ElementRef<HTMLInputElement> | undefined> =
+    viewChild<ElementRef<HTMLInputElement>>('nameInput');
+
+  constructor() {
+    afterNextRender((): void => {
+      this.nameInput()?.nativeElement.focus();
+    });
+  }
 }

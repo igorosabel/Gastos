@@ -10,12 +10,12 @@ const routes: Routes = [
   {
     path: 'login',
     canActivate: [guestGuard],
-    loadComponent: () => import('@pages/login/login').then((m) => m.default),
+    loadComponent: () => import('@modules/auth/login/login').then((m) => m.default),
   },
   {
     path: 'register',
     canActivate: [guestGuard],
-    loadComponent: () => import('@pages/register/register').then((m) => m.default),
+    loadComponent: () => import('@modules/auth/register/register').then((m) => m.default),
   },
   {
     path: 'dashboard',

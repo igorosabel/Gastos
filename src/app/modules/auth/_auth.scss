@@ -1,0 +1,135 @@
+.auth-page {
+    box-sizing: border-box;
+    display: grid;
+    min-height: 100dvh;
+    place-items: center;
+    padding: 1.5rem;
+    background-color: var(--p-surface-50);
+}
+
+.gastos-app-dark .auth-page {
+    background-color: var(--p-surface-950);
+}
+
+.auth-page {
+    .auth-card {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 440px;
+        padding: 2rem;
+        border: 1px solid var(--p-content-border-color);
+        border-radius: 1rem;
+        background-color: var(--p-content-background);
+        color: var(--p-text-color);
+        box-shadow: 0 12px 36px rgb(0 0 0 / 12%);
+    }
+
+    .auth-header {
+        margin-bottom: 2rem;
+        text-align: center;
+
+        h1 {
+            margin: 0 0 0.5rem;
+            color: var(--p-primary-color);
+            font-size: 2rem;
+        }
+
+        p {
+            margin: 0;
+            color: var(--p-text-muted-color);
+            line-height: 1.5;
+        }
+    }
+
+    .auth-form,
+    .field {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .auth-form {
+        gap: 1.25rem;
+    }
+
+    .field {
+        gap: 0.5rem;
+
+        label {
+            font-weight: 600;
+        }
+
+        input {
+            box-sizing: border-box;
+            width: 100%;
+        }
+    }
+
+    .field-error {
+        color: var(--p-red-500);
+        font-size: 0.875rem;
+        line-height: 1.4;
+    }
+
+    .feedback {
+        padding: 0.875rem 1rem;
+        border-radius: 0.5rem;
+        line-height: 1.5;
+    }
+
+    .feedback-success {
+        margin-bottom: 1.5rem;
+        color: var(--p-green-700);
+        background-color: var(--p-green-50);
+    }
+
+    .feedback-error {
+        color: var(--p-red-700);
+        background-color: var(--p-red-50);
+    }
+
+    .submit-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .auth-footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.375rem;
+        margin-top: 2rem;
+        text-align: center;
+
+        a {
+            color: var(--p-primary-color);
+            font-weight: 600;
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}
+
+.gastos-app-dark .auth-page {
+    .feedback-success {
+        color: var(--p-green-200);
+        background-color: var(--p-green-950);
+    }
+
+    .feedback-error {
+        color: var(--p-red-200);
+        background-color: var(--p-red-950);
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-page {
+        padding: 1rem;
+
+        .auth-card {
+            padding: 1.5rem;
+        }
+    }
+}

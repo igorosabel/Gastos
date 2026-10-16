@@ -1,9 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   inject,
+  Signal,
   signal,
+  viewChild,
   type WritableSignal,
 } from '@angular/core';
 import {
@@ -43,6 +47,15 @@ export default class Login {
   readonly loginModel: WritableSignal<LoginFormModel> = signal<LoginFormModel>(
     createLoginFormInitialValue(),
   );
+
+  private readonly emailInput: Signal<ElementRef<HTMLInputElement> | undefined> =
+    viewChild<ElementRef<HTMLInputElement>>('emailInput');
+
+  constructor() {
+    afterNextRender((): void => {
+      this.emailInput()?.nativeElement.focus();
+    });
+  }
 
   readonly loginForm: FieldTree<LoginFormModel> = form(this.loginModel, loginFormSchema, {
     submission: {
