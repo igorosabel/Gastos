@@ -38,7 +38,6 @@ No inventar endpoints, parámetros ni respuestas.
 - Utilizar computed para estado derivado.
 - Utilizar input() y output().
 - Utilizar ChangeDetectionStrategy.OnPush.
-- Utilizar formularios reactivos.
 - Preferir inject() a inyección por constructor.
 - Utilizar @if, @for y @switch.
 - Aplicar lazy loading a las rutas funcionales.
@@ -173,6 +172,35 @@ const elementos: string[] = [];
   sobre el componente obsoleto `p-button`.
 - No introducir soluciones basadas en versiones
   anteriores de Angular o PrimeNG.
+
+### Formularios Angular
+
+- Utilizar Signal Forms de Angular 22 como sistema
+  principal para implementar formularios.
+- Utilizar las APIs de `@angular/forms/signals`,
+  incluyendo `form()`, `FormField` y las funciones
+  de validación correspondientes.
+- Utilizar signals para almacenar y gestionar
+  los modelos de los formularios.
+- Preferir `[formField]` para enlazar los campos
+  con sus controles visuales.
+- Gestionar las validaciones, los errores y el
+  estado del formulario mediante Signal Forms.
+- Para controles sencillos y aislados, como un
+  único campo, se permite utilizar Template Forms
+  con `ngModel` directamente.
+- No utilizar Reactive Forms en ningún caso.
+- No utilizar `FormGroup`, `FormControl`,
+  `FormBuilder` ni `ReactiveFormsModule`.
+- No incorporar patrones propios de Reactive Forms
+  en nuevos componentes.
+- Al utilizar componentes de PrimeNG, comprobar
+  su compatibilidad con Signal Forms y emplear
+  las APIs actuales de Angular 22.
+- Mantener siempre separados los archivos
+  TypeScript, HTML y SCSS de los componentes.
+- Mantener el tipado explícito también en los
+  modelos y estados de los formularios.
 
 ## PrimeNG
 
