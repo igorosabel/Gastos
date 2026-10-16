@@ -1,10 +1,5 @@
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import {
-  ApplicationConfig,
-  inject,
-  provideAppInitializer,
-  provideBrowserGlobalErrorListeners,
-} from '@angular/core';
+import { provideHttpClient } from '@angular/common/http';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import {
   InMemoryScrollingOptions,
   provideRouter,
@@ -14,9 +9,7 @@ import {
 } from '@angular/router';
 import routes from '@app/app.routes';
 import provideCore from '@app/core';
-import AuthStore from '@auth/auth.store';
 import license from '@env/license';
-import AuthInterceptor from '@interceptors/auth.interceptor';
 import { es } from 'primelocale/es.json';
 import { providePrimeNG } from 'primeng/config';
 import gastosPreset from './gastos-preset';
@@ -28,7 +21,6 @@ const scrollConfig: InMemoryScrollingOptions = {
 
 const appConfig: ApplicationConfig = {
   providers: [
-    provideAppInitializer((): void => inject(AuthStore).hydrate()),
     provideBrowserGlobalErrorListeners(),
     provideRouter(
       routes,
@@ -36,7 +28,7 @@ const appConfig: ApplicationConfig = {
       withInMemoryScrolling(scrollConfig),
       withComponentInputBinding(),
     ),
-    provideHttpClient(withInterceptors([AuthInterceptor]), withFetch()),
+    provideHttpClient(),
     providePrimeNG({
       translation: es,
       ripple: true,
