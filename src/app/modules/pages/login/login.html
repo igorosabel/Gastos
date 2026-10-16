@@ -1,1 +1,72 @@
-<p>login works!</p>
+<main class="auth-page">
+    <section class="auth-card"
+             aria-labelledby="login-title">
+        <header class="auth-header">
+            <h1 id="login-title">Gastos</h1>
+            <p>Inicia sesión para gestionar tus ingresos y gastos.</p>
+        </header>
+
+        @if (registered) {
+        <div class="feedback feedback-success"
+             role="status">
+            Tu cuenta se ha creado correctamente. Ya puedes iniciar sesión.
+        </div>
+        }
+
+        <form [formRoot]="loginForm"
+              class="auth-form">
+            <div class="field">
+                <label for="login-email">Correo electrónico</label>
+                <input pInputText
+                       id="login-email"
+                       type="email"
+                       autocomplete="email"
+                       placeholder="nombre@ejemplo.com"
+                       [formField]="loginForm.email" />
+
+                @if (loginForm.email().touched() && loginForm.email().invalid()) {
+                <small class="field-error"
+                       role="alert">
+                    {{ loginForm.email().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            <div class="field">
+                <label for="login-password">Contraseña</label>
+                <input pInputText
+                       id="login-password"
+                       type="password"
+                       autocomplete="current-password"
+                       placeholder="Introduce tu contraseña"
+                       [formField]="loginForm.password" />
+
+                @if (loginForm.password().touched() && loginForm.password().invalid()) {
+                <small class="field-error"
+                       role="alert">
+                    {{ loginForm.password().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            @if (loginForm().errors().length > 0) {
+            <div class="feedback feedback-error"
+                 role="alert">
+                {{ loginForm().errors()[0]?.message }}
+            </div>
+            }
+
+            <button pButton
+                    type="submit"
+                    class="submit-button"
+                    [disabled]="loginForm().submitting()">
+                {{ loginForm().submitting() ? 'Iniciando sesión...' : 'Entrar' }}
+            </button>
+        </form>
+
+        <footer class="auth-footer">
+            <span>¿Todavía no tienes cuenta?</span>
+            <a routerLink="/register">Crear una cuenta</a>
+        </footer>
+    </section>
+</main>

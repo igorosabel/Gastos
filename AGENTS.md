@@ -37,7 +37,9 @@ No inventar endpoints, parámetros ni respuestas.
 - Preferir signals para el estado.
 - Utilizar computed para estado derivado.
 - Utilizar input() y output().
-- Utilizar ChangeDetectionStrategy.OnPush.
+- Utilizar ChangeDetectionStrategy.OnPush (no es
+  necesario indicarlo explicitamente ya que es el por defecto
+  de Angular 22).
 - Preferir inject() a inyección por constructor.
 - Utilizar @if, @for y @switch.
 - Aplicar lazy loading a las rutas funcionales.
@@ -201,6 +203,51 @@ const elementos: string[] = [];
   TypeScript, HTML y SCSS de los componentes.
 - Mantener el tipado explícito también en los
   modelos y estados de los formularios.
+
+#### Organización de formularios
+
+- Seguir el patrón de formularios de Osumi TPV Client (https://github.com/osumionline/Osumi-TPV-Client).
+- Ubicar los modelos de formulario en
+  `src/app/model/<dominio>/`.
+- Separar las responsabilidades en archivos
+  independientes:
+  - `<nombre>-form.model.ts`: interfaz del formulario.
+  - `<nombre>-form.schema.ts`: restricciones y
+    validaciones de Signal Forms.
+  - `<nombre>-form.initial-value.ts`: función que
+    devuelve el valor inicial del formulario.
+  - `<nombre>-form.mapper.ts`: transformación
+    entre el formulario y otros modelos o contratos.
+- Crear mappers adicionales de entrada o salida
+  cuando las transformaciones sean distintas.
+- No crear mappers sin una transformación real.
+- Las funciones exportadas individualmente deben
+  utilizar `export default`.
+- Los componentes deben importar los modelos,
+  esquemas y funciones mediante aliases.
+- Los componentes no deben declarar las reglas
+  de validación dentro de `form()`.
+- Los componentes deben concentrarse en la
+  interacción, el estado de presentación y la
+  coordinación de servicios.
+
+#### Estado de los controles
+
+- Cuando un elemento utilice `[formField]`,
+  no establecer mediante bindings independientes
+  las propiedades que controla Signal Forms,
+  como `invalid`, `disabled` o `readonly`.
+- Definir las restricciones de los campos en
+  su archivo `*.schema.ts`.
+- Utilizar las funciones de Signal Forms para
+  gestionar los estados que correspondan.
+- Consultar `touched()`, `invalid()` y `errors()`
+  para mostrar mensajes de validación.
+- No duplicar el estado de validación de un campo
+  mediante variables independientes.
+- El estado de envío del formulario puede
+  gestionarse con las herramientas de Signal Forms.
+- No utilizar Reactive Forms.
 
 ## PrimeNG
 

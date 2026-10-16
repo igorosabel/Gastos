@@ -1,1 +1,84 @@
-<p>register works!</p>
+<main class="auth-page">
+    <section class="auth-card"
+             aria-labelledby="register-title">
+        <header class="auth-header">
+            <h1 id="register-title">Crear cuenta</h1>
+            <p>Empieza a organizar tus ingresos y gastos.</p>
+        </header>
+
+        <form [formRoot]="registerForm"
+              class="auth-form">
+            <div class="field">
+                <label for="register-name">Nombre</label>
+                <input pInputText
+                       id="register-name"
+                       type="text"
+                       autocomplete="name"
+                       placeholder="Tu nombre"
+                       [formField]="registerForm.name" />
+
+                @if (registerForm.name().touched() && registerForm.name().invalid()) {
+                <small class="field-error"
+                       role="alert">
+                    {{ registerForm.name().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            <div class="field">
+                <label for="register-email">Correo electrónico</label>
+                <input pInputText
+                       id="register-email"
+                       type="email"
+                       autocomplete="email"
+                       placeholder="nombre@ejemplo.com"
+                       [formField]="registerForm.email" />
+
+                @if (registerForm.email().touched() && registerForm.email().invalid()) {
+                <small class="field-error"
+                       role="alert">
+                    {{ registerForm.email().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            <div class="field">
+                <label for="register-password">Contraseña</label>
+                <input pInputText
+                       id="register-password"
+                       type="password"
+                       autocomplete="new-password"
+                       placeholder="Mínimo 12 caracteres"
+                       [formField]="registerForm.password" />
+
+                @if (registerForm.password().touched() && registerForm.password().invalid()) {
+                <small class="field-error"
+                       role="alert">
+                    {{ registerForm.password().errors()[0]?.message }}
+                </small>
+                } @else {
+                <small class="field-help">Utiliza una contraseña de al menos 12 caracteres.</small>
+                }
+            </div>
+
+            @if (registerForm().errors().length > 0) {
+            <div class="feedback feedback-error"
+                 role="alert">
+                {{ registerForm().errors()[0]?.message }}
+            </div>
+            }
+
+            <button pButton
+                    type="submit"
+                    class="submit-button"
+                    [disabled]="registerForm().submitting()">
+                {{ registerForm().submitting() ? 'Creando cuenta...' : 'Crear cuenta' }}
+            </button>
+        </form>
+
+        <footer class="auth-footer">
+            <span>¿Ya tienes cuenta?</span>
+            <a routerLink="/login">Iniciar sesión</a>
+        </footer>
+    </section>
+</main>
