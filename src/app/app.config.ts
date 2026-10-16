@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import {
   InMemoryScrollingOptions,
@@ -9,10 +9,11 @@ import {
 } from '@angular/router';
 import routes from '@app/app.routes';
 import provideCore from '@app/core';
+import gastosPreset from '@app/gastos-preset';
 import license from '@env/license';
+import authInterceptor from '@interceptors/auth.interceptor';
 import { es } from 'primelocale/es.json';
 import { providePrimeNG } from 'primeng/config';
-import gastosPreset from './gastos-preset';
 
 const scrollConfig: InMemoryScrollingOptions = {
   scrollPositionRestoration: 'top',
@@ -28,7 +29,7 @@ const appConfig: ApplicationConfig = {
       withInMemoryScrolling(scrollConfig),
       withComponentInputBinding(),
     ),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({
       translation: es,
       ripple: true,

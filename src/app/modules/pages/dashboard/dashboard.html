@@ -1,0 +1,17 @@
+<main class="dashboard">
+    <h1>Gastos</h1>
+
+    <p>Bienvenido, {{ store.user()?.name }}.</p>
+
+    <p>
+        La sesión está iniciada correctamente.
+        El panel económico se implementará en una fase posterior.
+    </p>
+
+    <button pButton
+            type="button"
+            severity="secondary"
+            (click)="logout()">
+        Cerrar sesión
+    </button>
+</main>

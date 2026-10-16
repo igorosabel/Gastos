@@ -46,6 +46,134 @@ No inventar endpoints, parámetros ni respuestas.
 - Mantener responsabilidades separadas entre
   componentes, servicios y estado.
 
+### Servicios e inyección de dependencias
+
+- Utilizar el decorador `@Service()` de Angular 22
+  para los servicios propios de la aplicación.
+- Utilizar `inject()` para obtener dependencias.
+- No utilizar inyección mediante parámetros
+  del constructor en servicios.
+- Los servicios decorados con `@Service()`
+  se registran automáticamente en el inyector raíz.
+- No registrarlos de nuevo en `app.config.ts`
+  ni en `provideCore()`.
+- Reservar `provideCore()` para proveedores externos
+  que necesiten registro manual.
+- No registrar globalmente servicios cuyo ámbito
+  deba limitarse a una ruta o componente.
+- Utilizar `@Service({ autoProvided: false })`
+  cuando un servicio propio requiera provisión manual.
+
+## Convenciones obligatorias de código
+
+### Organización de archivos
+
+- Cada archivo debe tener una responsabilidad clara y
+  pertenecer a un único dominio.
+- No agrupar clases, interfaces o responsabilidades
+  diferentes en un mismo archivo sin una razón justificada.
+- Cada componente Angular debe tener tres archivos
+  independientes:
+  - `nombre.ts`: lógica y declaración del componente.
+  - `nombre.html`: plantilla HTML.
+  - `nombre.scss`: estilos del componente.
+- No utilizar templates ni estilos inline en los
+  decoradores `@Component`.
+- Utilizar siempre `templateUrl` y `styleUrl`.
+- Respetar los directorios existentes del proyecto.
+- Los guards se ubican en `src/app/guard/`.
+- Los interceptores se ubican en `src/app/interceptors/`.
+- Las interfaces compartidas se ubican en
+  `src/app/interfaces/`.
+- No crear estructuras paralelas cuando ya exista
+  un directorio dedicado a esa responsabilidad.
+
+### Exportaciones
+
+- Si un archivo exporta una sola clase, interfaz,
+  función, constante u otro elemento, utilizar
+  siempre `export default`.
+- Si un archivo exporta varios elementos, utilizar
+  exportaciones con nombre para todos ellos.
+- No mezclar `export default` con exportaciones
+  con nombre dentro del mismo archivo.
+- Evitar declarar interfaces privadas dentro de
+  archivos dedicados a clases, componentes o servicios.
+- Extraer esas interfaces a archivos independientes.
+- Una interfaz ubicada en su propio archivo debe
+  utilizar `export default` cuando sea su única exportación.
+
+### Imports y aliases
+
+- Utilizar siempre rutas absolutas mediante los
+  aliases configurados en `tsconfig.json`.
+- No utilizar imports relativos como `./` o `../`.
+- Elegir siempre el alias más específico disponible.
+- Respetar los aliases existentes antes de crear otros.
+- Aplicar estas reglas tanto al código de producción
+  como a los tests.
+- Las rutas de `templateUrl` y `styleUrl` son
+  referencias a recursos, no imports TypeScript,
+  y deben apuntar a sus archivos correspondientes.
+
+### Orden de imports y formato
+
+- No imponer un orden manual para los imports.
+- El proyecto utiliza Prettier desde Visual Studio Code.
+- Prettier organiza los imports y elimina los que
+  no se utilizan.
+- No indicar posiciones concretas para añadir imports.
+- Al proponer un cambio, basta con indicar qué
+  imports deben añadirse o eliminarse.
+- Mantener el formato generado por las herramientas
+  configuradas en el proyecto.
+
+### Tipado TypeScript
+
+- Utilizar tipado estricto en todo el proyecto.
+- Declarar explícitamente el tipo de las variables
+  incluso cuando TypeScript pueda inferirlo.
+- Declarar explícitamente los tipos de las
+  propiedades de clase.
+- Declarar explícitamente los tipos de parámetros
+  y retornos de funciones y métodos.
+- Preferir interfaces y tipos específicos.
+- No utilizar `any`.
+- Utilizar `unknown` cuando el valor todavía no
+  tenga un tipo conocido y validarlo antes de usarlo.
+- Evitar tipos innecesariamente amplios cuando
+  exista un contrato específico.
+
+Ejemplo:
+
+```typescript
+const activo: boolean = true;
+const nombre: string = 'Gastos';
+const cantidad: number = 10;
+const elementos: string[] = [];
+```
+
+### Componentes Angular
+
+- Utilizar componentes standalone.
+- No declarar `standalone: true` explícitamente.
+- Utilizar `ChangeDetectionStrategy.OnPush`.
+- Separar siempre lógica, plantilla y estilos.
+- Evitar lógica de negocio en las plantillas.
+- Mantener los componentes pequeños y enfocados.
+- Utilizar los mecanismos actuales de Angular 22.
+
+### Compatibilidad y APIs obsoletas
+
+- No utilizar componentes, métodos, directivas
+  o propiedades marcados como deprecated.
+- Consultar la documentación de la versión
+  instalada antes de utilizar una API desconocida.
+- En PrimeNG 22, preferir la directiva `pButton`
+  sobre el componente obsoleto `p-button`.
+- No introducir soluciones basadas en versiones
+  anteriores de Angular o PrimeNG.
+
 ## PrimeNG
 
 - Mantener PrimeNG 22.

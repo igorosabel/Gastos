@@ -18,7 +18,13 @@ export interface LoginRequest {
 export interface LoginResponse extends ApiResponse {
   token: string | null;
   expires_at: number | null;
-  user: AuthUser;
+  user:
+    | AuthUser
+    | {
+        id: null;
+        name: null;
+        email: null;
+      };
 }
 
 export interface RegisterRequest {

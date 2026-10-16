@@ -3,8 +3,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import { LoginResponse } from '@interfaces/auth.interfaces';
+import AuthService from '@services/auth.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import AuthService from './auth.service';
 
 describe('AuthService', () => {
   let service: AuthService;
