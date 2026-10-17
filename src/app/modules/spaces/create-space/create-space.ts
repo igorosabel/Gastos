@@ -18,7 +18,7 @@ import {
   FormRoot,
   type TreeValidationResult,
 } from '@angular/forms/signals';
-import type CreateSpaceResponse from '@interfaces/create-space-response.interface';
+import type CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import createSpaceFormInitialValue from '@model/spaces/create-space-form.initial-value';
 import createSpaceRequest from '@model/spaces/create-space-form.mapper';
 import type CreateSpaceFormModel from '@model/spaces/create-space-form.model';

@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type CreateSpaceResponse from '@interfaces/create-space-response.interface';
+import type CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import type Space from '@model/spaces/space.model';
 import CreateSpace from '@modules/spaces/create-space/create-space';
 import SpacesService from '@services/spaces.service';

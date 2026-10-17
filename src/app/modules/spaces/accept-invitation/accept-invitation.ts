@@ -19,7 +19,7 @@ import {
   type TreeValidationResult,
 } from '@angular/forms/signals';
 import AuthStore from '@auth/auth.store';
-import type AcceptSpaceInvitationResponse from '@interfaces/accept-space-invitation-response.interface';
+import type AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
 import createAcceptInvitationFormInitialValue from '@model/spaces/accept-invitation-form.initial-value';
 import createAcceptInvitationRequest from '@model/spaces/accept-invitation-form.mapper';
 import type AcceptInvitationFormModel from '@model/spaces/accept-invitation-form.model';

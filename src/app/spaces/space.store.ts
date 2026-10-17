@@ -1,7 +1,7 @@
 import { computed, inject, Service, signal, type Signal, type WritableSignal } from '@angular/core';
 import AuthStore from '@auth/auth.store';
 import type { AuthUser } from '@interfaces/auth.interfaces';
-import type SpacesResponse from '@interfaces/spaces-response.interface';
+import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type Space from '@model/spaces/space.model';
 import SpacesService from '@services/spaces.service';
 import { firstValueFrom } from 'rxjs';

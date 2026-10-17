@@ -5,7 +5,7 @@ import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
-import type SpacesResponse from '@interfaces/spaces-response.interface';
+import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import Space from '@model/spaces/space.model';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 

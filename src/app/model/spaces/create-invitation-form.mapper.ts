@@ -1,5 +1,4 @@
-
-import type CreateSpaceInvitationRequest from '@interfaces/create-space-invitation-request.interface';
+import type CreateSpaceInvitationRequest from '@interfaces/spaces/create-space-invitation-request.interface';
 import type CreateInvitationFormModel from '@model/spaces/create-invitation-form.model';
 
 export default function createInvitationRequest(

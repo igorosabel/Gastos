@@ -1,8 +1,8 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import AuthStore from '@auth/auth.store';
-import type AcceptSpaceInvitationResponse from '@interfaces/accept-space-invitation-response.interface';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
+import type AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
 import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
 import SpacesService from '@services/spaces.service';
 import { of, throwError } from 'rxjs';

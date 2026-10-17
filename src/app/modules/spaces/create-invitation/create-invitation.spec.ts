@@ -1,7 +1,6 @@
-
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
+import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-invitation-response.interface';
 import CreateInvitation from '@modules/spaces/create-invitation/create-invitation';
 import SpacesService from '@services/spaces.service';
 import { of } from 'rxjs';
@@ -77,14 +76,13 @@ describe('CreateInvitation', () => {
       message: null,
     };
 
-    const createSpy = vi.spyOn(service, 'createInvitation')
-      .mockReturnValue(of(response));
+    const createSpy = vi.spyOn(service, 'createInvitation').mockReturnValue(of(response));
 
     const emitSpy = vi.spyOn(component.created, 'emit');
 
     component.invitationModel.set({
-  email: 'INVITADO@EXAMPLE.COM',
-});
+      email: 'INVITADO@EXAMPLE.COM',
+    });
 
     submitForm();
     await fixture.whenStable();

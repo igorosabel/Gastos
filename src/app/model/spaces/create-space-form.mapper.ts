@@ -1,4 +1,4 @@
-import type CreateSpaceRequest from '@interfaces/create-space-request.interface';
+import type CreateSpaceRequest from '@interfaces/spaces/create-space-request.interface';
 import type CreateSpaceFormModel from '@model/spaces/create-space-form.model';
 
 /**

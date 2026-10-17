@@ -9,8 +9,8 @@ import {
   type InputSignal,
   type WritableSignal,
 } from '@angular/core';
-import type RevokeSpaceInvitationResponse from '@interfaces/revoke-space-invitation-response.interface';
-import type SpaceInvitationsResponse from '@interfaces/space-invitations-response.interface';
+import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
+import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
 import type SpaceInvitation from '@model/spaces/space-invitation.model';
 import CreateInvitation from '@modules/spaces/create-invitation/create-invitation';
 import SpacesService from '@services/spaces.service';

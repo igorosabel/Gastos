@@ -1,16 +1,16 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
-import AcceptSpaceInvitationRequest from '@interfaces/accept-space-invitation-request.interface';
-import AcceptSpaceInvitationResponse from '@interfaces/accept-space-invitation-response.interface';
-import type CreateSpaceInvitationRequest from '@interfaces/create-space-invitation-request.interface';
-import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
-import CreateSpaceRequest from '@interfaces/create-space-request.interface';
-import CreateSpaceResponse from '@interfaces/create-space-response.interface';
-import RevokeSpaceInvitationRequest from '@interfaces/revoke-space-invitation-request.interface';
-import RevokeSpaceInvitationResponse from '@interfaces/revoke-space-invitation-response.interface';
-import type SpaceInvitationsResponse from '@interfaces/space-invitations-response.interface';
-import type SpacesResponse from '@interfaces/spaces-response.interface';
+import AcceptSpaceInvitationRequest from '@interfaces/spaces/accept-space-invitation-request.interface';
+import AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
+import type CreateSpaceInvitationRequest from '@interfaces/spaces/create-space-invitation-request.interface';
+import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-invitation-response.interface';
+import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interface';
+import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
+import RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
+import RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
+import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
+import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type { Observable } from 'rxjs';
 
 @Service()

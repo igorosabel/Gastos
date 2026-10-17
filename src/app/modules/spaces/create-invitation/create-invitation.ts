@@ -1,4 +1,3 @@
-
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   afterNextRender,
@@ -21,7 +20,7 @@ import {
   type FieldTree,
   type TreeValidationResult,
 } from '@angular/forms/signals';
-import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
+import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-invitation-response.interface';
 import createInvitationFormInitialValue from '@model/spaces/create-invitation-form.initial-value';
 import createInvitationRequest from '@model/spaces/create-invitation-form.mapper';
 import type CreateInvitationFormModel from '@model/spaces/create-invitation-form.model';
@@ -105,8 +104,7 @@ export default class CreateInvitation {
               if (error.status === 409) {
                 return {
                   kind: 'serverError',
-                  message:
-                    'El usuario ya pertenece al espacio o tiene una invitación pendiente.',
+                  message: 'El usuario ya pertenece al espacio o tiene una invitación pendiente.',
                 };
               }
 

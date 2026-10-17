@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type RevokeSpaceInvitationResponse from '@interfaces/revoke-space-invitation-response.interface';
-import type SpaceInvitationsResponse from '@interfaces/space-invitations-response.interface';
+import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
+import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
 import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 import SpacesService from '@services/spaces.service';
 import { from, of, type Observable } from 'rxjs';
