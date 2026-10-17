@@ -1,5 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
-import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+  TestRequest,
+} from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
@@ -10,6 +14,7 @@ import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interf
 import type RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
+import type SpaceMembersResponse from '@interfaces/spaces/space-members-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import SpacesService from '@services/spaces.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -238,6 +243,46 @@ describe('SpacesService', () => {
 
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ token });
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('consulta los miembros de un espacio mediante GET /spaces/members', (): void => {
+    const response: SpaceMembersResponse = {
+      success: true,
+      members: [
+        {
+          id: 1,
+          name: 'Propietario',
+          joined_at: '2026-10-16 18:30:00',
+          is_owner: true,
+        },
+        {
+          id: 2,
+          name: 'Invitado',
+          joined_at: '2026-10-17 10:15:00',
+          is_owner: false,
+        },
+      ],
+      error: null,
+      message: null,
+    };
+
+    let result: SpaceMembersResponse | undefined;
+
+    service.getMembers(8).subscribe((data: SpaceMembersResponse): void => {
+      result = data;
+    });
+
+    const request: TestRequest = httpTesting.expectOne(
+      (req): boolean =>
+        req.url === `${environment.apiUrl}/spaces/members` && req.params.get('spaceId') === '8',
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.keys()).toEqual(['spaceId']);
 
     request.flush(response);
 

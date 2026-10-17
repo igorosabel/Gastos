@@ -1,0 +1,56 @@
+<section class="members"
+         aria-labelledby="members-title">
+    <div class="members__heading">
+        <div>
+            <h2 id="members-title">Miembros</h2>
+            <p>Personas que pertenecen actualmente al espacio.</p>
+        </div>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            Actualizar
+        </button>
+    </div>
+
+    @if (loading()) {
+    <p class="members__muted"
+       role="status">
+        Cargando miembros...
+    </p>
+    } @else if (error()) {
+    <div class="members__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (members().length === 0) {
+    <p class="members__muted">
+        No hay miembros disponibles en este espacio.
+    </p>
+    } @else {
+    <ul class="members__list">
+        @for (member of members(); track member.id) {
+        <li class="members__item">
+            <div class="members__details">
+                <strong>{{ member.name }}</strong>
+                <span>Se unió: {{ member.joined_at }}</span>
+            </div>
+
+            <span class="members__role">
+                {{ member.is_owner ? 'Propietario' : 'Miembro' }}
+            </span>
+        </li>
+        }
+    </ul>
+    }
+</section>

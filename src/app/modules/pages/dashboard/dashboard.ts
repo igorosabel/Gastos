@@ -16,6 +16,7 @@ import CreateSpace from '@modules/spaces/create-space/create-space';
 import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
+import SpaceMembers from '@modules/spaces/space-members/space-members';
 
 @Component({
   selector: 'app-dashboard',
@@ -26,6 +27,7 @@ import { SelectModule } from 'primeng/select';
     CreateSpace,
     SpaceInvitations,
     AcceptInvitation,
+    SpaceMembers,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',

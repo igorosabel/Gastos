@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import type SpaceMembersResponse from '@interfaces/spaces/space-members-response.interface';
 import AcceptSpaceInvitationRequest from '@interfaces/spaces/accept-space-invitation-request.interface';
 import AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
 import type CreateSpaceInvitationRequest from '@interfaces/spaces/create-space-invitation-request.interface';
@@ -68,5 +69,17 @@ export default class SpacesService {
       `${this.apiUrl}/spaces/invitations/accept`,
       data,
     );
+  }
+
+  /**
+   * Consulta los miembros activos de un espacio compartido.
+   * Solo el propietario está autorizado por ApiGastos.
+   */
+  getMembers(spaceId: number): Observable<SpaceMembersResponse> {
+    return this.http.get<SpaceMembersResponse>(`${this.apiUrl}/spaces/members`, {
+      params: {
+        spaceId: String(spaceId),
+      },
+    });
   }
 }
