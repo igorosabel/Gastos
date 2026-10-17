@@ -1,0 +1,62 @@
+<form [formRoot]="invitationForm"
+      class="accept-form"
+      aria-label="Aceptar invitación">
+
+    <div class="accept-form__field">
+        <label for="accept-invitation-token">
+            Token de invitación
+        </label>
+
+        <input #tokenInput
+               pInputText
+               id="accept-invitation-token"
+               type="text"
+               autocomplete="off"
+               autocapitalize="off"
+               spellcheck="false"
+               placeholder="Pega aquí el token recibido"
+               [formField]="invitationForm.token" />
+
+        @if (
+        invitationForm.token().touched() &&
+        invitationForm.token().invalid()
+        ) {
+        <small class="accept-form__error"
+               role="alert">
+            {{ invitationForm.token().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    @if (invitationForm().errors().length > 0) {
+    <p class="accept-form__error"
+       role="alert">
+        {{ invitationForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <p class="accept-form__help">
+        Introduce el token que te ha facilitado el propietario.
+        Debes iniciar sesión con el correo al que está dirigida
+        la invitación.
+    </p>
+
+    <div class="accept-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="invitationForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="invitationForm().submitting()">
+            {{ invitationForm().submitting()
+               ? 'Aceptando...'
+               : 'Aceptar invitación' }}
+        </button>
+    </div>
+</form>

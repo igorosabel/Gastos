@@ -107,14 +107,47 @@
             </div>
             }
         </section>
-        
-@if (spaceStore.selected(); as selectedSpace) {
-    @if (selectedSpace.type === 'shared' && selectedSpace.is_owner) {
-    <section class="dashboard__card">
-        <app-space-invitations [spaceId]="selectedSpace.id" />
-    </section>
-    }
-}
+
+        <section class="dashboard__card dashboard__invitation"
+                 aria-labelledby="accept-invitation-title">
+
+            <h2 id="accept-invitation-title">
+                Unirse a un espacio compartido
+            </h2>
+
+            <p class="dashboard__muted">
+                Si otra persona te ha invitado a compartir un espacio,
+                puedes utilizar aquí el token que te ha facilitado.
+            </p>
+
+            @if (acceptanceMessage()) {
+            <p class="dashboard__acceptance-success"
+               role="status">
+                {{ acceptanceMessage() }}
+            </p>
+            }
+
+            @if (acceptingInvitation()) {
+            <app-accept-invitation (accepted)="onInvitationAccepted($event)"
+                                   (cancelled)="cancelAcceptInvitation()" />
+            } @else {
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    (click)="openAcceptInvitation()">
+                Introducir invitación
+            </button>
+            }
+        </section>
+
+        @if (spaceStore.selected(); as selectedSpace) {
+        @if (selectedSpace.type === 'shared' && selectedSpace.is_owner) {
+        <section class="dashboard__card">
+            <app-space-invitations [spaceId]="selectedSpace.id" />
+        </section>
+        }
+        }
 
         <section class="dashboard__card"
                  aria-labelledby="summary-title">

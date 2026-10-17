@@ -11,14 +11,22 @@ import { Router } from '@angular/router';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import type Space from '@model/spaces/space.model';
+import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
 import CreateSpace from '@modules/spaces/create-space/create-space';
+import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ButtonDirective, FormsModule, SelectModule, CreateSpace, SpaceInvitations],
+  imports: [
+    ButtonDirective,
+    FormsModule,
+    SelectModule,
+    CreateSpace,
+    SpaceInvitations,
+    AcceptInvitation,
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -79,6 +87,45 @@ export default class Dashboard implements OnInit {
    */
   reloadSpaces(): void {
     void this.spaceStore.load();
+  }
+
+  readonly acceptingInvitation: WritableSignal<boolean> = signal<boolean>(false);
+
+  readonly acceptanceMessage: WritableSignal<string | null> = signal<string | null>(null);
+
+  /**
+   * Abre el formulario para aceptar una invitación.
+   */
+  openAcceptInvitation(): void {
+    this.acceptanceMessage.set(null);
+    this.acceptingInvitation.set(true);
+  }
+
+  /**
+   * Cierra el formulario sin realizar ninguna operación.
+   */
+  cancelAcceptInvitation(): void {
+    this.acceptingInvitation.set(false);
+  }
+
+  /**
+   * Incorpora el espacio compartido tras aceptar la invitación.
+   */
+  onInvitationAccepted(space: Space): void {
+    const added: boolean = this.spaceStore.addAccepted(space);
+
+    this.acceptingInvitation.set(false);
+
+    if (!added) {
+      this.acceptanceMessage.set(
+        'La invitación se ha aceptado. Actualiza el listado de espacios para verla.',
+      );
+
+      void this.spaceStore.load();
+      return;
+    }
+
+    this.acceptanceMessage.set(`Te has unido al espacio «${space.name}».`);
   }
 
   /**

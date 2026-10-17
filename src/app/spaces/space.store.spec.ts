@@ -251,4 +251,69 @@ describe('SpaceStore', () => {
     expect(spaceStore.spaces()).toEqual([]);
     expect(spaceStore.selected()).toBeNull();
   });
+
+  it('incorpora y selecciona un espacio al aceptar una invitación', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    const acceptedSpace: Space = {
+      id: 9,
+      name: 'Compartido',
+      type: 'shared',
+      owner_id: 2,
+      is_owner: false,
+    };
+
+    expect(spaceStore.addAccepted(acceptedSpace)).toBe(true);
+    expect(spaceStore.selectedId()).toBe(9);
+    expect(spaceStore.spaces()).toContainEqual(acceptedSpace);
+  });
+
+  it('no permite incorporar espacios aceptados después de cerrar sesión', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    authStore.clear();
+
+    expect(
+      spaceStore.addAccepted({
+        id: 9,
+        name: 'Compartido',
+        type: 'shared',
+        owner_id: 2,
+        is_owner: false,
+      }),
+    ).toBe(false);
+
+    expect(spaceStore.spaces()).toEqual([]);
+  });
+
+  it('no sobrescribe una aceptación con una consulta anterior', async (): Promise<void> => {
+    const initialLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await initialLoad;
+
+    const pendingLoad: Promise<void> = spaceStore.load();
+
+    expect(
+      spaceStore.addAccepted({
+        id: 9,
+        name: 'Compartido',
+        type: 'shared',
+        owner_id: 2,
+        is_owner: false,
+      }),
+    ).toBe(true);
+
+    flushSpaces();
+    await pendingLoad;
+
+    expect(spaceStore.selectedId()).toBe(9);
+    expect(spaceStore.spaces().some((space: Space): boolean => space.id === 9)).toBe(true);
+  });
 });

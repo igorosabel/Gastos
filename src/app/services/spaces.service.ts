@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import AcceptSpaceInvitationRequest from '@interfaces/accept-space-invitation-request.interface';
+import AcceptSpaceInvitationResponse from '@interfaces/accept-space-invitation-response.interface';
 import type CreateSpaceInvitationRequest from '@interfaces/create-space-invitation-request.interface';
 import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
 import CreateSpaceRequest from '@interfaces/create-space-request.interface';
@@ -54,6 +56,16 @@ export default class SpacesService {
   revokeInvitation(data: RevokeSpaceInvitationRequest): Observable<RevokeSpaceInvitationResponse> {
     return this.http.post<RevokeSpaceInvitationResponse>(
       `${this.apiUrl}/spaces/invitations/revoke`,
+      data,
+    );
+  }
+
+  /**
+   * Acepta una invitación del usuario autenticado.
+   */
+  acceptInvitation(data: AcceptSpaceInvitationRequest): Observable<AcceptSpaceInvitationResponse> {
+    return this.http.post<AcceptSpaceInvitationResponse>(
+      `${this.apiUrl}/spaces/invitations/accept`,
       data,
     );
   }

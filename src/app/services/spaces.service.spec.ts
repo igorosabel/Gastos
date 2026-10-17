@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import AcceptSpaceInvitationResponse from '@interfaces/accept-space-invitation-response.interface';
 import type CreateSpaceInvitationRequest from '@interfaces/create-space-invitation-request.interface';
 import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
 import CreateSpaceRequest from '@interfaces/create-space-request.interface';
@@ -205,6 +206,38 @@ describe('SpacesService', () => {
     expect(request.request.body).toEqual({
       invitationId: 15,
     });
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('acepta una invitación mediante POST /spaces/invitations/accept', (): void => {
+    const token: string = 'a'.repeat(64);
+
+    const response: AcceptSpaceInvitationResponse = {
+      success: true,
+      space: {
+        id: 8,
+        name: 'Familia',
+        type: 'shared',
+        owner_id: 1,
+        is_owner: false,
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: AcceptSpaceInvitationResponse | undefined;
+
+    service.acceptInvitation({ token }).subscribe((data: AcceptSpaceInvitationResponse): void => {
+      result = data;
+    });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/spaces/invitations/accept`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ token });
 
     request.flush(response);
 

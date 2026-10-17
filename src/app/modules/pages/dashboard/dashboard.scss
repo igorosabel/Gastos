@@ -148,6 +148,25 @@
   border-top: 1px solid var(--p-content-border-color);
 }
 
+.dashboard__invitation {
+  display: grid;
+  gap: 1rem;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  button {
+    justify-self: start;
+  }
+}
+
+.dashboard__acceptance-success {
+  color: var(--p-primary-color);
+  line-height: 1.5;
+}
+
 @media (max-width: 640px) {
   .app-header {
     padding: 1rem;
