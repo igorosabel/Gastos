@@ -1,0 +1,55 @@
+
+<form [formRoot]="invitationForm"
+      class="invitation-form"
+      aria-label="Crear invitación">
+
+    <h3>Nueva invitación</h3>
+
+    <div class="invitation-form__field">
+        <label for="invitation-email">Correo electrónico del invitado</label>
+
+        <input #emailInput
+               pInputText
+               id="invitation-email"
+               type="email"
+               autocomplete="email"
+               placeholder="invitado@ejemplo.com"
+               [formField]="invitationForm.email" />
+
+        @if (invitationForm.email().touched() && invitationForm.email().invalid()) {
+        <small class="invitation-form__error"
+               role="alert">
+            {{ invitationForm.email().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    @if (invitationForm().errors().length > 0) {
+    <p class="invitation-form__error"
+       role="alert">
+        {{ invitationForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <p class="invitation-form__help">
+        Se generará un token que tendrás que compartir con el destinatario.
+        La aplicación no enviará ningún correo automáticamente.
+    </p>
+
+    <div class="invitation-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="invitationForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="invitationForm().submitting()">
+            {{ invitationForm().submitting() ? 'Creando...' : 'Crear invitación' }}
+        </button>
+    </div>
+</form>

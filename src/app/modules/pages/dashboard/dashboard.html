@@ -107,6 +107,14 @@
             </div>
             }
         </section>
+        
+@if (spaceStore.selected(); as selectedSpace) {
+    @if (selectedSpace.type === 'shared' && selectedSpace.is_owner) {
+    <section class="dashboard__card">
+        <app-space-invitations [spaceId]="selectedSpace.id" />
+    </section>
+    }
+}
 
         <section class="dashboard__card"
                  aria-labelledby="summary-title">

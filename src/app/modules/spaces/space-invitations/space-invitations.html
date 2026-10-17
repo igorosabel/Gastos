@@ -1,0 +1,92 @@
+
+<section class="invitations" aria-labelledby="invitations-title">
+    <div class="invitations__heading">
+        <div>
+            <h2 id="invitations-title">Invitaciones</h2>
+            <p>Gestiona las invitaciones del espacio compartido.</p>
+        </div>
+
+        @if (!creating()) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                (click)="openCreate()">
+            Nueva invitación
+        </button>
+        }
+    </div>
+
+    @if (createdToken(); as token) {
+    <div class="invitations__token"
+         role="status">
+        <strong>Invitación creada correctamente</strong>
+
+        <p>
+            Copia este token y compártelo de forma privada con la persona invitada.
+            No volverá a mostrarse cuando cierres este aviso.
+        </p>
+
+        <code>{{ token }}</code>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                (click)="hideToken()">
+            Ocultar token
+        </button>
+    </div>
+    }
+
+    @if (creating()) {
+    <div class="invitations__creation">
+        <app-create-invitation [spaceId]="spaceId()"
+                               (created)="onCreated($event)"
+                               (cancelled)="cancelCreate()" />
+    </div>
+    }
+
+    @if (loading()) {
+    <p class="invitations__muted"
+       role="status">
+        Cargando invitaciones...
+    </p>
+    } @else if (error()) {
+    <div class="invitations__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (invitations().length === 0) {
+    <p class="invitations__muted">
+        Todavía no hay invitaciones en este espacio.
+    </p>
+    } @else {
+    <ul class="invitations__list">
+        @for (invitation of invitations(); track invitation.id) {
+        <li class="invitations__item">
+            <div>
+                <strong>{{ invitation.email }}</strong>
+                <span>Caduca: {{ invitation.expires_at }}</span>
+            </div>
+
+            <span class="invitations__status">
+                @switch (invitation.status) {
+                @case ('pending') { Pendiente }
+                @case ('accepted') { Aceptada }
+                @case ('revoked') { Revocada }
+                @case ('expired') { Caducada }
+                }
+            </span>
+        </li>
+        }
+    </ul>
+    }
+</section>

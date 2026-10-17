@@ -7,6 +7,9 @@ import CreateSpaceResponse from '@interfaces/create-space-response.interface';
 import type SpacesResponse from '@interfaces/spaces-response.interface';
 import SpacesService from '@services/spaces.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type CreateSpaceInvitationRequest from '@interfaces/create-space-invitation-request.interface';
+import type CreateSpaceInvitationResponse from '@interfaces/create-space-invitation-response.interface';
+import type SpaceInvitationsResponse from '@interfaces/space-invitations-response.interface';
 
 describe('SpacesService', () => {
   let service: SpacesService;
@@ -91,4 +94,86 @@ describe('SpacesService', () => {
 
     expect(result).toEqual(response);
   });
+  
+it('consulta las invitaciones del espacio indicado', (): void => {
+  const response: SpaceInvitationsResponse = {
+    success: true,
+    invitations: [
+      {
+        id: 15,
+        space_id: 8,
+        email: 'invitado@example.com',
+        invited_by: 4,
+        expires_at: '2026-10-24 10:00:00',
+        accepted_at: null,
+        revoked_at: null,
+        status: 'pending',
+      },
+    ],
+    error: null,
+    message: null,
+  };
+
+  let result: SpaceInvitationsResponse | undefined;
+
+  service.getInvitations(8).subscribe(
+    (data: SpaceInvitationsResponse): void => {
+      result = data;
+    },
+  );
+
+  const request = httpTesting.expectOne(
+    (req): boolean =>
+      req.url === `${environment.apiUrl}/spaces/invitations` &&
+      req.params.get('spaceId') === '8',
+  );
+
+  expect(request.request.method).toBe('GET');
+
+  request.flush(response);
+
+  expect(result).toEqual(response);
+});
+
+it('crea una invitación mediante POST /spaces/invitations', (): void => {
+  const data: CreateSpaceInvitationRequest = {
+    spaceId: 8,
+    email: 'invitado@example.com',
+  };
+
+  const response: CreateSpaceInvitationResponse = {
+    success: true,
+    invitation: {
+      id: 15,
+      space_id: 8,
+      email: 'invitado@example.com',
+      token: 'token-de-prueba',
+      expires_at: '2026-10-24 10:00:00',
+    },
+    error: null,
+    message: null,
+  };
+
+  let result: CreateSpaceInvitationResponse | undefined;
+
+  service.createInvitation(data).subscribe(
+    (value: CreateSpaceInvitationResponse): void => {
+      result = value;
+    },
+  );
+
+  const request = httpTesting.expectOne(
+    `${environment.apiUrl}/spaces/invitations`,
+  );
+
+  expect(request.request.method).toBe('POST');
+  expect(request.request.body).toEqual(data);
+
+  request.flush(response, {
+    status: 201,
+    statusText: 'Created',
+  });
+
+  expect(result).toEqual(response);
+});
 });

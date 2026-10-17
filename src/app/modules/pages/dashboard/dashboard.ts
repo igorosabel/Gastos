@@ -14,10 +14,11 @@ import type Space from '@model/spaces/space.model';
 import CreateSpace from '@modules/spaces/create-space/create-space';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
+import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [ButtonDirective, FormsModule, SelectModule, CreateSpace],
+  imports: [ButtonDirective, FormsModule, SelectModule, CreateSpace, SpaceInvitations],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
