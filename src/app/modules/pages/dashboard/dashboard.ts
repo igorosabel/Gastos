@@ -13,10 +13,11 @@ import AuthStore from '@auth/auth.store';
 import type Space from '@model/spaces/space.model';
 import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
 import CreateSpace from '@modules/spaces/create-space/create-space';
+import LeaveSpace from '@modules/spaces/leave-space/leave-space';
 import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
+import SpaceMembers from '@modules/spaces/space-members/space-members';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-import SpaceMembers from '@modules/spaces/space-members/space-members';
 
 @Component({
   selector: 'app-dashboard',
@@ -28,6 +29,7 @@ import SpaceMembers from '@modules/spaces/space-members/space-members';
     SpaceInvitations,
     AcceptInvitation,
     SpaceMembers,
+    LeaveSpace,
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
@@ -39,6 +41,28 @@ export default class Dashboard implements OnInit {
   private readonly router: Router = inject(Router);
 
   readonly creatingSpace: WritableSignal<boolean> = signal<boolean>(false);
+
+  readonly membershipMessage: WritableSignal<string | null> = signal<string | null>(null);
+
+  /**
+   * Actualiza el estado después de abandonar un espacio.
+   */
+  onSpaceLeft(spaceId: number): void {
+    const space: Space | undefined = this.spaceStore
+      .spaces()
+      .find((item: Space): boolean => item.id === spaceId);
+
+    const removed: boolean = this.spaceStore.removeAfterLeave(spaceId);
+
+    if (!removed) {
+      // El servidor ha confirmado la salida, pero el estado local
+      // ha cambiado: recuperamos los espacios autorizados.
+      void this.spaceStore.load();
+      return;
+    }
+
+    this.membershipMessage.set(`Has abandonado el espacio «${space?.name ?? 'compartido'}».`);
+  }
 
   /**
    * Muestra el formulario de creación.
@@ -79,8 +103,8 @@ export default class Dashboard implements OnInit {
    * Actualiza la selección del espacio activo.
    */
   selectSpace(spaceId: number | null): void {
-    if (typeof spaceId === 'number') {
-      this.spaceStore.select(spaceId);
+    if (typeof spaceId === 'number' && this.spaceStore.select(spaceId)) {
+      this.membershipMessage.set(null);
     }
   }
 

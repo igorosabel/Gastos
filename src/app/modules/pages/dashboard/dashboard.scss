@@ -167,6 +167,12 @@
   line-height: 1.5;
 }
 
+.dashboard__membership-success {
+  margin: 1rem 0 0;
+  color: var(--p-primary-color);
+  line-height: 1.5;
+}
+
 @media (max-width: 640px) {
   .app-header {
     padding: 1rem;

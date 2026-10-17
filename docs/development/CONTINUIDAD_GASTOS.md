@@ -260,7 +260,7 @@ Una vez completada la gestión básica de miembros, continuar por unidades verif
 ## 9. Limitaciones, precauciones y puntos a revisar
 
 - El `README.md` del **frontend** es aún el _scaffold_ de Angular CLI 19 y menciona Karma; para las versiones y comandos reales usar **`package.json`**, `angular.json` y `AGENTS.md`. Más adelante conviene actualizar el README.
-- El archivo `ApiGastos/docs/api/endpoints.md` **sí existe en `main`** y documenta la API **v1.0.0**, aunque se añadió tras crear la etiqueta de la release. Utilizarlo como guía principal y contrastar dudas con el código del backend. Corregir el enlace en `Gastos/AGENTS.md` para que apunte a `blob/main/docs/api/endpoints.md`, no a `blob/v1.0.0/docs/api/endpoints.md`.
+- El archivo [`ApiGastos/docs/api/endpoints.md`](https://github.com/igorosabel/ApiGastos/blob/main/docs/api/endpoints.md) existe en la rama `main` y documenta los 33 endpoints REST de **ApiGastos v1.0.0**. Se añadió después de publicar esa release y, por tanto, no figura en la etiqueta `v1.0.0`. El enlace de `Gastos/AGENTS.md` ya está corregido. Esta guía es la referencia principal para integrar el frontend y cualquier discrepancia debe contrastarse con el código real del backend.
 - `dashboard/dashboard.scss` utiliza `--p-surface-900` para las tarjetas, decisión pensada para el tema oscuro actual. Antes de soportar plenamente el cambio a tema claro/oscuro, revisar tokens semánticos y probar ambos modos.
 - El dashboard es funcional para gestionar espacios, pero **no es aún** el panel financiero final.
 - La selección de espacio **no** se guarda al recargar; no confundir esa decisión con la persistencia de membresías en la base de datos.

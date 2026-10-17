@@ -6,11 +6,13 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import { ApiResponse } from '@interfaces/auth.interfaces';
 import AcceptSpaceInvitationResponse from '@interfaces/spaces/accept-space-invitation-response.interface';
 import type CreateSpaceInvitationRequest from '@interfaces/spaces/create-space-invitation-request.interface';
 import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-invitation-response.interface';
 import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interface';
 import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
+import LeaveSpaceRequest from '@interfaces/spaces/leave-space-request.interface';
 import type RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
@@ -283,6 +285,34 @@ describe('SpacesService', () => {
 
     expect(request.request.method).toBe('GET');
     expect(request.request.params.keys()).toEqual(['spaceId']);
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('abandona un espacio mediante POST /spaces/members/leave', (): void => {
+    const data: LeaveSpaceRequest = {
+      spaceId: 8,
+    };
+
+    const response: ApiResponse = {
+      success: true,
+      error: null,
+      message: null,
+    };
+
+    let result: ApiResponse | undefined;
+
+    service.leaveSpace(data).subscribe((value: ApiResponse): void => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/spaces/members/leave`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ spaceId: 8 });
+    expect(request.request.body).not.toHaveProperty('userId');
 
     request.flush(response);
 

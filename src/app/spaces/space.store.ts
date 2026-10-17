@@ -195,6 +195,62 @@ export default class SpaceStore {
   }
 
   /**
+   * Retira un espacio después de que la API haya confirmado
+   * que el usuario ha abandonado su membresía.
+   *
+   * Si estaba seleccionado, activa preferentemente el personal.
+   * Si el usuario había cambiado de espacio, conserva su selección.
+   */
+  removeAfterLeave(spaceId: number): boolean {
+    const user: AuthUser | null = this.authStore.user();
+    const token: string | null = this.authStore.token();
+
+    if (
+      user === null ||
+      token === null ||
+      this.userId() !== user.id ||
+      !Number.isSafeInteger(spaceId) ||
+      spaceId <= 0
+    ) {
+      return false;
+    }
+
+    const space: Space | undefined = this.spaces().find(
+      (item: Space): boolean => item.id === spaceId,
+    );
+
+    if (
+      space === undefined ||
+      space.type !== 'shared' ||
+      space.is_owner ||
+      space.owner_id === user.id
+    ) {
+      return false;
+    }
+
+    // Un GET /spaces iniciado antes de la baja no debe
+    // recuperar la membresía que acabamos de retirar.
+    this.loadVersion += 1;
+    this.loadingState.set(false);
+    this.errorState.set(null);
+
+    const remaining: Space[] = this.availableSpaces().filter(
+      (item: Space): boolean => item.id !== spaceId,
+    );
+
+    this.availableSpaces.set(remaining);
+
+    if (this.selectedSpaceId() === spaceId) {
+      const next: Space | undefined =
+        remaining.find((item: Space): boolean => item.type === 'personal') ?? remaining[0];
+
+      this.selectedSpaceId.set(next?.id ?? null);
+    }
+
+    return true;
+  }
+
+  /**
    * Elimina los datos del espacio al cerrar la sesión.
    */
   clear(): void {

@@ -106,6 +106,16 @@
                 }
             </div>
             }
+
+            <app-leave-space [space]="spaceStore.selected()"
+                             (left)="onSpaceLeft($event)" />
+
+            @if (membershipMessage()) {
+            <p class="dashboard__membership-success"
+               role="status">
+                {{ membershipMessage() }}
+            </p>
+            }
         </section>
 
         <section class="dashboard__card dashboard__invitation"

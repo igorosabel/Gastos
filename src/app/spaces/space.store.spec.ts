@@ -316,4 +316,117 @@ describe('SpaceStore', () => {
     expect(spaceStore.selectedId()).toBe(9);
     expect(spaceStore.spaces().some((space: Space): boolean => space.id === 9)).toBe(true);
   });
+
+  it('retira un espacio abandonado y selecciona el personal', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    const accepted: Space = {
+      id: 9,
+      name: 'Compartido',
+      type: 'shared',
+      owner_id: 2,
+      is_owner: false,
+    };
+
+    expect(spaceStore.addAccepted(accepted)).toBe(true);
+    expect(spaceStore.selectedId()).toBe(9);
+
+    expect(spaceStore.removeAfterLeave(9)).toBe(true);
+
+    expect(spaceStore.selectedId()).toBe(2);
+    expect(spaceStore.spaces().some((space: Space): boolean => space.id === 9)).toBe(false);
+
+    expect(spaceStore.spaces()).toEqual(response.spaces);
+  });
+
+  it('impide retirar localmente un espacio propio', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    expect(spaceStore.removeAfterLeave(7)).toBe(false);
+    expect(spaceStore.removeAfterLeave(2)).toBe(false);
+
+    expect(spaceStore.spaces()).toEqual(response.spaces);
+    expect(spaceStore.selectedId()).toBe(2);
+  });
+
+  it('conserva otro espacio seleccionado después de una salida tardía', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    expect(
+      spaceStore.addAccepted({
+        id: 9,
+        name: 'Compartido',
+        type: 'shared',
+        owner_id: 2,
+        is_owner: false,
+      }),
+    ).toBe(true);
+
+    expect(spaceStore.select(7)).toBe(true);
+
+    expect(spaceStore.removeAfterLeave(9)).toBe(true);
+
+    expect(spaceStore.selectedId()).toBe(7);
+    expect(spaceStore.spaces().some((space: Space): boolean => space.id === 9)).toBe(false);
+  });
+
+  it('no restaura un espacio abandonado con una carga anterior', async (): Promise<void> => {
+    const firstLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await firstLoad;
+
+    const accepted: Space = {
+      id: 9,
+      name: 'Compartido',
+      type: 'shared',
+      owner_id: 2,
+      is_owner: false,
+    };
+
+    spaceStore.addAccepted(accepted);
+
+    const pendingLoad: Promise<void> = spaceStore.load();
+
+    expect(spaceStore.removeAfterLeave(9)).toBe(true);
+
+    flushSpaces({
+      success: true,
+      spaces: [...response.spaces, accepted],
+    });
+
+    await pendingLoad;
+
+    expect(spaceStore.selectedId()).toBe(2);
+    expect(spaceStore.spaces()).not.toContainEqual(accepted);
+  });
+
+  it('no modifica los espacios al abandonar después de cerrar sesión', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    spaceStore.addAccepted({
+      id: 9,
+      name: 'Compartido',
+      type: 'shared',
+      owner_id: 2,
+      is_owner: false,
+    });
+
+    authStore.clear();
+
+    expect(spaceStore.removeAfterLeave(9)).toBe(false);
+    expect(spaceStore.spaces()).toEqual([]);
+  });
 });

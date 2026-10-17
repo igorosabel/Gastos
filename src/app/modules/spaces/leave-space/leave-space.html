@@ -1,0 +1,59 @@
+@if (space(); as currentSpace) {
+@if (currentSpace.type === 'shared' && !currentSpace.is_owner) {
+<div class="leave-space">
+    @if (confirming()) {
+    <div class="leave-space__confirmation"
+         role="group"
+         [attr.aria-label]="'Confirmar salida de ' + currentSpace.name">
+
+        <p>
+            ¿Seguro que quieres abandonar el espacio
+            <strong>{{ currentSpace.name }}</strong>?
+        </p>
+
+        <p class="leave-space__help">
+            Perderás el acceso a este espacio y a sus datos.
+            El propietario podrá volver a invitarte más adelante.
+        </p>
+
+        @if (error()) {
+        <p class="leave-space__error"
+           role="alert">
+            {{ error() }}
+        </p>
+        }
+
+        <div class="leave-space__actions">
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="leavingId() !== null"
+                    (click)="cancelLeave()">
+                Cancelar
+            </button>
+
+            <button pButton
+                    type="button"
+                    severity="danger"
+                    [disabled]="leavingId() !== null"
+                    (click)="confirmLeave()">
+                {{ leavingId() === currentSpace.id
+                       ? 'Abandonando...'
+                       : 'Confirmar salida' }}
+            </button>
+        </div>
+    </div>
+    } @else {
+    <button pButton
+            type="button"
+            severity="danger"
+            variant="outlined"
+            [disabled]="leavingId() !== null"
+            (click)="requestLeave()">
+        Abandonar espacio
+    </button>
+    }
+</div>
+}
+}
