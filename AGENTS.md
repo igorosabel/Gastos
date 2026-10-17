@@ -26,7 +26,7 @@ Antes de proponer cambios:
    de versiones anteriores.
 
 El contrato de la API está documentado en:
-https://github.com/igorosabel/ApiGastos/blob/v1.0.0/docs/api/endpoints.md
+https://github.com/igorosabel/ApiGastos/blob/main/docs/api/endpoints.md
 
 No inventar endpoints, parámetros ni respuestas.
 
