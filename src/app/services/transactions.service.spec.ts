@@ -68,4 +68,38 @@ describe('TransactionsService', (): void => {
 
     expect(result).toEqual(response);
   });
+
+  it('consulta la página solicitada', (): void => {
+    const response: TransactionsResponse = {
+      success: true,
+      transactions: [],
+      total: 45,
+      page: 2,
+      page_size: 20,
+      total_pages: 3,
+      error: null,
+      message: null,
+    };
+
+    let result: TransactionsResponse | null = null;
+
+    service.getTransactions(12, 2).subscribe({
+      next: (value: TransactionsResponse): void => {
+        result = value;
+      },
+    });
+
+    const request = httpTesting.expectOne(
+      (req): boolean =>
+        req.url === `${environment.apiUrl}/transactions` &&
+        req.params.get('spaceId') === '12' &&
+        req.params.get('page') === '2',
+    );
+
+    expect(request.request.method).toBe('GET');
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
 });

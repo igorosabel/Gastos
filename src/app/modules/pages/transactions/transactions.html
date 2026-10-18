@@ -99,13 +99,36 @@
             }
         </ul>
 
-        @if (total() > transactions().length) {
-        <p class="transactions__pagination-note">
-            Mostrando los primeros {{ transactions().length }}
-            de {{ total() }} movimientos.
-            La paginación estará disponible en un próximo bloque.
-        </p>
-        }
+        <div class="transactions__pagination">
+            <p class="transactions__pagination-note">
+                Página {{ page() }} de {{ totalPages() }}
+                · {{ total() }} movimientos en total
+            </p>
+
+            @if (totalPages() > 1) {
+            <nav class="transactions__pagination-actions"
+                 aria-label="Paginación de movimientos">
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        [disabled]="loading() || page() <= 1"
+                        (click)="previousPage()">
+                    Anterior
+                </button>
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        [disabled]="loading() || page() >= totalPages()"
+                        (click)="nextPage()">
+                    Siguiente
+                </button>
+            </nav>
+            }
+        </div>
         }
     </section>
     } @else {

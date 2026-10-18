@@ -107,14 +107,29 @@
     color: var(--p-red-600);
 }
 
-.transactions__muted,
-.transactions__pagination-note {
+.transactions__muted {
     color: var(--p-text-muted-color);
 }
 
+.transactions__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
 .transactions__pagination-note {
-    margin: 1.5rem 0 0;
+    margin: 0;
+    color: var(--p-text-muted-color);
     font-size: 0.875rem;
+}
+
+.transactions__pagination-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .transactions__error {
@@ -144,5 +159,18 @@
 
     .transactions__amount {
         text-align: right;
+    }
+
+    .transactions__pagination {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .transactions__pagination-actions {
+        width: 100%;
+
+        button {
+            flex: 1;
+        }
     }
 }

@@ -10,14 +10,13 @@ export default class TransactionsService {
   private readonly apiUrl: string = environment.apiUrl;
 
   /**
-   * Obtiene la primera página de movimientos de un espacio.
-   * ApiGastos utiliza por defecto 20 resultados por página.
+   * Obtiene una página de movimientos del espacio indicado.
    */
-  getTransactions(spaceId: number): Observable<TransactionsResponse> {
+  getTransactions(spaceId: number, page: number = 1): Observable<TransactionsResponse> {
     return this.http.get<TransactionsResponse>(`${this.apiUrl}/transactions`, {
       params: {
         spaceId: String(spaceId),
-        page: '1',
+        page: String(page),
       },
     });
   }

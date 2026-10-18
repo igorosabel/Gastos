@@ -27,23 +27,19 @@ import { forkJoin, type Subscription } from 'rxjs';
 })
 export default class Transactions {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
-
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly transactionsService: TransactionsService = inject(TransactionsService);
   private readonly categoriesService: CategoriesService = inject(CategoriesService);
 
   readonly transactions: WritableSignal<Transaction[]> = signal<Transaction[]>([]);
-
   readonly categories: WritableSignal<Category[]> = signal<Category[]>([]);
-
   readonly loading: WritableSignal<boolean> = signal<boolean>(false);
-
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
-
   readonly total: WritableSignal<number> = signal<number>(0);
   readonly pageSize: WritableSignal<number> = signal<number>(20);
-
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
+  readonly page: WritableSignal<number> = signal<number>(1);
+  readonly totalPages: WritableSignal<number> = signal<number>(0);
 
   readonly categoryNames: Signal<Map<number, string>> = computed((): Map<number, string> => {
     const names: Map<number, string> = new Map<number, string>();
@@ -55,16 +51,32 @@ export default class Transactions {
     return names;
   });
 
+  private previousSpaceId: number | null = null;
+  private previousToken: string | null = null;
+
   constructor() {
+    effect((): void => {
+      const spaceId: number | null = this.spaceStore.selectedId();
+      const token: string | null = this.authStore.token();
+
+      if (this.previousSpaceId !== spaceId || this.previousToken !== token) {
+        this.previousSpaceId = spaceId;
+        this.previousToken = token;
+        this.page.set(1);
+      }
+    });
+
     effect((onCleanup): void => {
       const spaceId: number | null = this.spaceStore.selectedId();
       const token: string | null = this.authStore.token();
+      const page: number = this.page();
 
       this.refreshVersion();
 
       this.transactions.set([]);
       this.categories.set([]);
       this.total.set(0);
+      this.totalPages.set(0);
       this.pageSize.set(20);
       this.error.set(null);
       this.loading.set(false);
@@ -76,14 +88,14 @@ export default class Transactions {
       this.loading.set(true);
 
       const subscription: Subscription = forkJoin({
-        transactions: this.transactionsService.getTransactions(spaceId),
+        transactions: this.transactionsService.getTransactions(spaceId, page),
         categories: this.categoriesService.getCategories(spaceId),
       }).subscribe({
         next: (response: {
           transactions: TransactionsResponse;
           categories: CategoriesResponse;
         }): void => {
-          if (!this.isCurrentContext(spaceId, token)) {
+          if (!this.isCurrentContext(spaceId, token, page)) {
             return;
           }
 
@@ -93,13 +105,14 @@ export default class Transactions {
             this.transactions.set(response.transactions.transactions);
             this.categories.set(response.categories.categories);
             this.total.set(response.transactions.total);
+            this.totalPages.set(response.transactions.total_pages);
             this.pageSize.set(response.transactions.page_size);
           }
 
           this.loading.set(false);
         },
         error: (error: unknown): void => {
-          if (!this.isCurrentContext(spaceId, token)) {
+          if (!this.isCurrentContext(spaceId, token, page)) {
             return;
           }
 
@@ -133,10 +146,46 @@ export default class Transactions {
   }
 
   /**
+   * Muestra la página anterior, si existe.
+   */
+  previousPage(): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.spaceStore.selectedId() === null ||
+      this.page() <= 1
+    ) {
+      return;
+    }
+
+    this.page.update((page: number): number => page - 1);
+  }
+
+  /**
+   * Muestra la página siguiente, si existe.
+   */
+  nextPage(): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.spaceStore.selectedId() === null ||
+      this.page() >= this.totalPages()
+    ) {
+      return;
+    }
+
+    this.page.update((page: number): number => page + 1);
+  }
+
+  /**
    * Comprueba el espacio y la sesión de la respuesta.
    */
-  private isCurrentContext(spaceId: number, token: string): boolean {
-    return this.spaceStore.selectedId() === spaceId && this.authStore.token() === token;
+  private isCurrentContext(spaceId: number, token: string, page: number): boolean {
+    return (
+      this.spaceStore.selectedId() === spaceId &&
+      this.authStore.token() === token &&
+      this.page() === page
+    );
   }
 
   /**

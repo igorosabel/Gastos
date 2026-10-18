@@ -130,9 +130,15 @@ describe('Transactions', (): void => {
     fixture.detectChanges();
   }
 
-  function completeLoad(spaceId: number, amount: string = '95.40'): void {
+  function completeLoad(
+    spaceId: number,
+    amount: string = '95.40',
+    page: number = 1,
+    total: number = 1,
+    totalPages: number = 1,
+  ): void {
     const transactionsRequest = httpTesting.expectOne(
-      `${environment.apiUrl}/transactions?spaceId=${spaceId}&page=1`,
+      `${environment.apiUrl}/transactions?spaceId=${spaceId}&page=${page}`,
     );
 
     const categoriesRequest = httpTesting.expectOne(
@@ -142,7 +148,13 @@ describe('Transactions', (): void => {
     expect(transactionsRequest.request.method).toBe('GET');
     expect(categoriesRequest.request.method).toBe('GET');
 
-    transactionsRequest.flush(transactionResponse(spaceId, amount));
+    transactionsRequest.flush({
+      ...transactionResponse(spaceId, amount),
+      page,
+      total,
+      total_pages: totalPages,
+    } satisfies TransactionsResponse);
+
     categoriesRequest.flush(categoryResponse(spaceId));
 
     fixture.detectChanges();
@@ -327,25 +339,214 @@ describe('Transactions', (): void => {
     expect(component.transactions()).toEqual([]);
   });
 
-  it('muestra un aviso cuando existen más páginas', async (): Promise<void> => {
+  it('muestra la paginación cuando existen varias páginas', async (): Promise<void> => {
     await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    expect(component.page()).toBe(1);
+    expect(component.total()).toBe(45);
+    expect(component.totalPages()).toBe(3);
+
+    expect(fixture.nativeElement.textContent).toContain('Página 1 de 3');
+
+    expect(fixture.nativeElement.textContent).toContain('45 movimientos en total');
+  });
+
+  it('avanza a la segunda página', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(2);
+    expect(component.loading()).toBe(true);
+
+    completeLoad(2, '150.00', 2, 45, 3);
+
+    expect(component.loading()).toBe(false);
+    expect(component.transactions()[0]?.amount).toBe('150.00');
+    expect(fixture.nativeElement.textContent).toContain('Página 2 de 3');
+  });
+
+  it('retrocede a la página anterior', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '150.00', 2, 45, 3);
+
+    component.previousPage();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    expect(component.transactions()[0]?.amount).toBe('95.40');
+  });
+
+  it('no permite retroceder desde la primera página', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.previousPage();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions?spaceId=2&page=0`);
+  });
+
+  it('no permite avanzar desde la última página', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '120.00', 3, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(3);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions?spaceId=2&page=4`);
+  });
+
+  it('no permite cambiar de página mientras carga', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(true);
+
+    component.nextPage();
+    component.previousPage();
+
+    expect(component.page()).toBe(2);
+
+    completeLoad(2, '100.00', 2, 45, 3);
+  });
+
+  it('actualiza la página actual sin volver a la primera', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(2);
+
+    completeLoad(2, '125.00', 2, 45, 3);
+
+    expect(component.transactions()[0]?.amount).toBe('125.00');
+  });
+
+  it('regresa a la primera página al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+    expect(component.transactions()).toEqual([]);
+
+    completeLoad(8, '75.00', 1, 1, 1);
+
+    expect(component.transactions()[0]?.space_id).toBe(8);
+    expect(component.page()).toBe(1);
+  });
+
+  it('cancela las consultas de una página al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+
+    const oldTransactions = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=2`,
+    );
+
+    const oldCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(oldTransactions.cancelled).toBe(true);
+    expect(oldCategories.cancelled).toBe(true);
+    expect(component.page()).toBe(1);
+
+    completeLoad(8);
+  });
+
+  it('restablece la paginación al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+    expect(component.transactions()).toEqual([]);
+    expect(component.totalPages()).toBe(0);
+    expect(component.total()).toBe(0);
+  });
+
+  it('no permite avanzar cuando falla la consulta', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
 
     const transactionsRequest = httpTesting.expectOne(
-      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+      `${environment.apiUrl}/transactions?spaceId=2&page=2`,
     );
 
     const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
 
-    transactionsRequest.flush({
-      ...transactionResponse(2),
-      total: 45,
-      total_pages: 3,
-    } satisfies TransactionsResponse);
+    transactionsRequest.flush(
+      {
+        success: false,
+        error: 'forbidden',
+        message: 'Sin permisos',
+      },
+      {
+        status: 403,
+        statusText: 'Forbidden',
+      },
+    );
 
-    categoriesRequest.flush(categoryResponse(2));
+    expect(categoriesRequest.cancelled).toBe(true);
     fixture.detectChanges();
 
-    expect(component.total()).toBe(45);
-    expect(fixture.nativeElement.textContent).toContain('Mostrando los primeros 1');
+    expect(component.error()).toBe('No tienes permiso para consultar estos movimientos.');
+
+    component.nextPage();
+
+    expect(component.page()).toBe(2);
   });
 });
