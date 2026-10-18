@@ -13,6 +13,7 @@ import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-
 import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interface';
 import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import LeaveSpaceRequest from '@interfaces/spaces/leave-space-request.interface';
+import type RemoveSpaceMemberRequest from '@interfaces/spaces/remove-space-member-request.interface';
 import type RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
@@ -313,6 +314,39 @@ describe('SpacesService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ spaceId: 8 });
     expect(request.request.body).not.toHaveProperty('userId');
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('expulsa a un miembro mediante POST /spaces/members/remove', (): void => {
+    const data: RemoveSpaceMemberRequest = {
+      spaceId: 8,
+      userId: 2,
+    };
+
+    const response: ApiResponse = {
+      success: true,
+      error: null,
+      message: null,
+    };
+
+    let result: ApiResponse | undefined;
+
+    service.removeMember(data).subscribe((value: ApiResponse): void => {
+      result = value;
+    });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/spaces/members/remove`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 8,
+      userId: 2,
+    });
+
+    expect(Object.keys(request.request.body)).toEqual(['spaceId', 'userId']);
 
     request.flush(response);
 

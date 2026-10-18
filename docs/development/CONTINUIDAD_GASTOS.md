@@ -151,17 +151,17 @@ Los archivos principales tienen pruebas `*.spec.ts` junto a los servicios, store
 
 Todos los bloques siguientes fueron **probados por el usuario** (`npm run lint`, `npm run test`, `npm run build` y comprobaciones funcionales según el bloque). No implica que esas suites se hayan reejecutado durante la redacción de este documento.
 
-| Bloque                              | Estado                     | Alcance                                                                                                                          | Commit de referencia        |
-| ----------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| 1. Base e integración inicial       | Completo                   | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0                  | `ea000e0` (ajustes de core) |
-| 2. Autenticación y rutas            | Completo                   | `AuthStore` JWT, guards, interceptor y dashboard protegido                                                                       | `73919b1`                   |
-| 3. Login y registro                 | Completo                   | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales | `be0859b`, `a0799d4`        |
-| 4. Selección de espacios            | Completo                   | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive                                                     | `290a0c7`                   |
-| 5. Creación de espacios compartidos | Completo                   | `POST /spaces`, formulario Signal Forms, selección inmediata                                                                     | `9882d1b`                   |
-| 6. Crear y consultar invitaciones   | Completo                   | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper                        | `1548553`                   |
-| 7. Revocar invitaciones             | Completo                   | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías                    | `3f87250`                   |
-| 8. Aceptar invitaciones             | Completo                   | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store                                 | `876b7ea`                   |
-| 9. Listar miembros                  | **Completo: punto actual** | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio              | **`f9b902a`**               |
+| Bloque                              | Estado   | Alcance                                                                                                                          | Commit de referencia        |
+| ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 1. Base e integración inicial       | Completo | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0                  | `ea000e0` (ajustes de core) |
+| 2. Autenticación y rutas            | Completo | `AuthStore` JWT, guards, interceptor y dashboard protegido                                                                       | `73919b1`                   |
+| 3. Login y registro                 | Completo | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales | `be0859b`, `a0799d4`        |
+| 4. Selección de espacios            | Completo | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive                                                     | `290a0c7`                   |
+| 5. Creación de espacios compartidos | Completo | `POST /spaces`, formulario Signal Forms, selección inmediata                                                                     | `9882d1b`                   |
+| 6. Crear y consultar invitaciones   | Completo | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper                        | `1548553`                   |
+| 7. Revocar invitaciones             | Completo | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías                    | `3f87250`                   |
+| 8. Aceptar invitaciones             | Completo | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store                                 | `876b7ea`                   |
+| 9. Listar miembros                  | Completo | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio              | **`f9b902a`**               |
 
 **Pruebas funcionales relevantes ya realizadas:** el usuario confirmó que dos cuentas independientes A (propietario) y B (invitado) pudieron crear una invitación, comprobar el rechazo de un destinatario incorrecto, aceptarla desde B, verificar la membresía persistida y el rol, y validar el listado de miembros desde A. La lista administrativa solo aparece a propietarios de espacios compartidos. El usuario confirmó asimismo la creación y revocación de invitaciones.
 

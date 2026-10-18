@@ -9,6 +9,7 @@ import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-
 import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interface';
 import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import LeaveSpaceRequest from '@interfaces/spaces/leave-space-request.interface';
+import RemoveSpaceMemberRequest from '@interfaces/spaces/remove-space-member-request.interface';
 import RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
@@ -91,5 +92,13 @@ export default class SpacesService {
    */
   leaveSpace(data: LeaveSpaceRequest): Observable<ApiResponse> {
     return this.http.post<ApiResponse>(`${this.apiUrl}/spaces/members/leave`, data);
+  }
+
+  /**
+   * Expulsa a un miembro de un espacio compartido.
+   * La API comprueba que el usuario autenticado es el propietario.
+   */
+  removeMember(data: RemoveSpaceMemberRequest): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/spaces/members/remove`, data);
   }
 }
