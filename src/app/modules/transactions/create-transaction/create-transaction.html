@@ -1,0 +1,124 @@
+<form [formRoot]="transactionForm"
+      class="transaction-form"
+      aria-label="Crear movimiento">
+
+    <h3>Nuevo movimiento</h3>
+
+    <div class="transaction-form__field">
+        <label for="new-transaction-type">Tipo</label>
+
+        <p-select inputId="new-transaction-type"
+                  [options]="typeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="transactionForm.type"
+                  (onChange)="changeType($event.value)"
+                  [fluid]="true" />
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="new-transaction-category">Categoría</label>
+
+        <p-select inputId="new-transaction-category"
+                  [options]="categoryOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Selecciona una categoría"
+                  [formField]="transactionForm.categoryId"
+                  [fluid]="true" />
+
+        @if (transactionForm.categoryId().touched() &&
+        transactionForm.categoryId().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.categoryId().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="new-transaction-amount">Importe</label>
+
+        <input #amountInput
+               pInputText
+               id="new-transaction-amount"
+               type="text"
+               inputmode="decimal"
+               autocomplete="off"
+               placeholder="95.40"
+               [formField]="transactionForm.amount" />
+
+        <small class="transaction-form__help">
+            Utiliza dos decimales y un punto como separador.
+        </small>
+
+        @if (transactionForm.amount().touched() &&
+        transactionForm.amount().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.amount().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="new-transaction-concept">Concepto</label>
+
+        <input pInputText
+               id="new-transaction-concept"
+               type="text"
+               autocomplete="off"
+               placeholder="Por ejemplo, Electricidad"
+               [formField]="transactionForm.concept" />
+
+        @if (transactionForm.concept().touched() &&
+        transactionForm.concept().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.concept().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="new-transaction-date">Fecha</label>
+
+        <input id="new-transaction-date"
+               type="date"
+               [formField]="transactionForm.date" />
+
+        @if (transactionForm.date().touched() &&
+        transactionForm.date().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.date().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    @if (transactionForm().errors().length > 0) {
+    <p class="transaction-form__error"
+       role="alert">
+        {{ transactionForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="transaction-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="transactionForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="transactionForm().submitting()">
+            {{ transactionForm().submitting()
+               ? 'Guardando...'
+               : 'Guardar movimiento' }}
+        </button>
+    </div>
+</form>

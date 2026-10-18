@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import TransactionsService from '@services/transactions.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -165,5 +166,59 @@ describe('TransactionsService', (): void => {
       error: null,
       message: null,
     } satisfies TransactionsResponse);
+  });
+
+  it('crea un movimiento mediante POST', (): void => {
+    const response: CreateTransactionResponse = {
+      success: true,
+      transaction: {
+        id: 31,
+        space_id: 12,
+        user_id: 1,
+        category_id: 7,
+        type: 'expense',
+        amount: '95.40',
+        concept: 'Electricidad',
+        date: '2026-10-20',
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: CreateTransactionResponse | null = null;
+
+    service
+      .createTransaction({
+        spaceId: 12,
+        categoryId: 7,
+        type: 'expense',
+        amount: '95.40',
+        concept: 'Electricidad',
+        date: '2026-10-20',
+      })
+      .subscribe({
+        next: (value: CreateTransactionResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      categoryId: 7,
+      type: 'expense',
+      amount: '95.40',
+      concept: 'Electricidad',
+      date: '2026-10-20',
+    });
+
+    request.flush(response, {
+      status: 201,
+      statusText: 'Created',
+    });
+
+    expect(result).toEqual(response);
   });
 });

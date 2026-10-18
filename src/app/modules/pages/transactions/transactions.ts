@@ -19,6 +19,7 @@ import transactionFiltersFormMapper from '@model/transactions/transaction-filter
 import transactionFiltersFormSchema from '@model/transactions/transaction-filters-form.schema';
 import type TransactionFilters from '@model/transactions/transaction-filters.model';
 import type Transaction from '@model/transactions/transaction.model';
+import CreateTransaction from '@modules/transactions/create-transaction/create-transaction';
 import CategoriesService from '@services/categories.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
@@ -27,7 +28,7 @@ import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
-  imports: [ButtonDirective, FormField, SelectModule],
+  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -49,6 +50,8 @@ export default class Transactions {
   readonly filtersModel: WritableSignal<TransactionFilters> = signal<TransactionFilters>(
     transactionFiltersFormInitialValue(),
   );
+  readonly creatingTransaction: WritableSignal<boolean> = signal<boolean>(false);
+  readonly creationMessage: WritableSignal<string | null> = signal<string | null>(null);
 
   readonly filtersForm: FieldTree<TransactionFilters> = form(
     this.filtersModel,
@@ -128,6 +131,8 @@ export default class Transactions {
         this.page.set(1);
         this.filtersModel.set(transactionFiltersFormInitialValue());
         this.appliedFilters.set(transactionFiltersFormInitialValue());
+        this.creatingTransaction.set(false);
+        this.creationMessage.set(null);
         this.filtersError.set(null);
       }
     });
@@ -302,6 +307,50 @@ export default class Transactions {
         type,
         categoryId: null,
       }),
+    );
+  }
+
+  /**
+   * Abre el formulario de creación.
+   */
+  openCreateTransaction(): void {
+    if (
+      this.spaceStore.selectedId() === null ||
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingTransaction()
+    ) {
+      return;
+    }
+
+    this.creationMessage.set(null);
+    this.creatingTransaction.set(true);
+  }
+
+  /**
+   * Cancela la creación del movimiento.
+   */
+  cancelCreateTransaction(): void {
+    this.creatingTransaction.set(false);
+  }
+
+  /**
+   * Actualiza el listado después de crear el movimiento.
+   */
+  onTransactionCreated(transaction: Transaction): void {
+    if (!this.creatingTransaction() || transaction.space_id !== this.spaceStore.selectedId()) {
+      return;
+    }
+
+    this.creatingTransaction.set(false);
+    this.page.set(1);
+
+    // Si ya estábamos en la primera página, forzamos igualmente
+    // una consulta. Los filtros aplicados se conservan.
+    this.refreshVersion.update((version: number): number => version + 1);
+
+    this.creationMessage.set(
+      `Se ha creado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
     );
   }
 

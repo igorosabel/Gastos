@@ -9,6 +9,7 @@ import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
+import type Transaction from '@model/transactions/transaction.model';
 import Transactions from '@pages/transactions/transactions';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -777,5 +778,241 @@ describe('Transactions', (): void => {
     expect(component.filtersModel().type).toBeNull();
     expect(component.appliedFilters().type).toBeNull();
     expect(component.transactions()).toEqual([]);
+  });
+
+  it('abre el formulario de creación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    expect(component.creatingTransaction()).toBe(true);
+
+    expect(fixture.nativeElement.querySelector('app-create-transaction')).not.toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Nuevo movimiento');
+  });
+
+  it('cancela la creación sin modificar el listado', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    component.cancelCreateTransaction();
+    fixture.detectChanges();
+
+    expect(component.creatingTransaction()).toBe(false);
+
+    expect(fixture.nativeElement.querySelector('app-create-transaction')).toBeNull();
+
+    expect(component.transactions()).toHaveLength(1);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions`);
+  });
+
+  it('no abre el formulario mientras carga', async (): Promise<void> => {
+    await loadSpaces();
+
+    component.openCreateTransaction();
+
+    expect(component.creatingTransaction()).toBe(false);
+
+    completeLoad(2);
+  });
+
+  it('recarga el listado al crear un movimiento', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const created: Transaction = {
+      id: 99,
+      space_id: 2,
+      user_id: 1,
+      category_id: 200,
+      type: 'expense',
+      amount: '120.00',
+      concept: 'Compra',
+      date: '2026-10-20',
+    };
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    component.onTransactionCreated(created);
+    fixture.detectChanges();
+
+    expect(component.creatingTransaction()).toBe(false);
+    expect(component.page()).toBe(1);
+
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    transactionsRequest.flush({
+      ...transactionResponse(2, '120.00'),
+    } satisfies TransactionsResponse);
+
+    categoriesRequest.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    expect(component.transactions()[0]?.amount).toBe('120.00');
+    expect(component.creationMessage()).toBe('Se ha creado el movimiento «Compra».');
+  });
+
+  it('vuelve a la primera página después de crear', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    const created: Transaction = {
+      id: 99,
+      space_id: 2,
+      user_id: 1,
+      category_id: 200,
+      type: 'expense',
+      amount: '30.00',
+      concept: 'Compra',
+      date: '2026-10-20',
+    };
+
+    component.onTransactionCreated(created);
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    transactionsRequest.flush(transactionResponse(2, '30.00'));
+    categoriesRequest.flush(categoryResponse(2));
+    fixture.detectChanges();
+  });
+
+  it('conserva los filtros aplicados después de crear', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const filteredTransactions = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const filteredCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    filteredTransactions.flush(transactionResponse(2));
+    filteredCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    const created: Transaction = {
+      id: 99,
+      space_id: 2,
+      user_id: 1,
+      category_id: 200,
+      type: 'expense',
+      amount: '15.00',
+      concept: 'Café',
+      date: '2026-10-20',
+    };
+
+    component.onTransactionCreated(created);
+    fixture.detectChanges();
+
+    expect(component.appliedFilters().type).toBe('expense');
+
+    const refreshedTransactions = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const refreshedCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    refreshedTransactions.flush(transactionResponse(2, '15.00'));
+    refreshedCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    expect(component.creationMessage()).toContain('Café');
+  });
+
+  it('ignora un movimiento creado en otro espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    const external: Transaction = {
+      id: 80,
+      space_id: 8,
+      user_id: 1,
+      category_id: 800,
+      type: 'expense',
+      amount: '10.00',
+      concept: 'Otro espacio',
+      date: '2026-10-20',
+    };
+
+    component.onTransactionCreated(external);
+    fixture.detectChanges();
+
+    expect(component.creationMessage()).toBeNull();
+    expect(component.transactions()).toHaveLength(1);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions?spaceId=2&page=1`);
+  });
+
+  it('cierra la creación al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.creatingTransaction()).toBe(false);
+    expect(component.creationMessage()).toBeNull();
+
+    completeLoad(8);
+  });
+
+  it('cierra la creación al finalizar la sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateTransaction();
+    fixture.detectChanges();
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.creatingTransaction()).toBe(false);
+    expect(component.transactions()).toEqual([]);
+    expect(component.creationMessage()).toBeNull();
   });
 });

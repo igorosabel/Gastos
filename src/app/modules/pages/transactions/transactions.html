@@ -19,7 +19,32 @@
             <span>Actualizar</span>
         </button>
         }
+
+        @if (spaceStore.selectedId() !== null &&
+        !spaceStore.loading() &&
+        !spaceStore.error()) {
+        <button pButton
+                type="button"
+                [disabled]="loading() || creatingTransaction()"
+                (click)="openCreateTransaction()">
+            Nuevo movimiento
+        </button>
+        }
     </header>
+
+    @if (creatingTransaction() && spaceStore.selectedId(); as spaceId) {
+    <app-create-transaction [spaceId]="spaceId"
+                            [categories]="categories()"
+                            (created)="onTransactionCreated($event)"
+                            (cancelled)="cancelCreateTransaction()" />
+    }
+
+    @if (creationMessage()) {
+    <p class="transactions__success"
+       role="status">
+        {{ creationMessage() }}
+    </p>
+    }
 
     @if (spaceStore.selected() && !spaceStore.loading() && !spaceStore.error()) {
     <section class="transactions__filters"

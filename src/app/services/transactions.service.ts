@@ -1,6 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import type CreateTransactionRequest from '@interfaces/transactions/create-transaction-request.interface';
+import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type TransactionFilters from '@model/transactions/transaction-filters.model';
 import type { Observable } from 'rxjs';
@@ -41,5 +43,12 @@ export default class TransactionsService {
     }
 
     return this.http.get<TransactionsResponse>(`${this.apiUrl}/transactions`, { params });
+  }
+
+  /**
+   * Registra un ingreso o gasto real en ApiGastos.
+   */
+  createTransaction(data: CreateTransactionRequest): Observable<CreateTransactionResponse> {
+    return this.http.post<CreateTransactionResponse>(`${this.apiUrl}/transactions`, data);
   }
 }
