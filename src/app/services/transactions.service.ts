@@ -4,6 +4,8 @@ import { environment } from '@env/environment';
 import type CreateTransactionRequest from '@interfaces/transactions/create-transaction-request.interface';
 import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
+import type UpdateTransactionRequest from '@interfaces/transactions/update-transaction-request.interface';
+import type UpdateTransactionResponse from '@interfaces/transactions/update-transaction-response.interface';
 import type TransactionFilters from '@model/transactions/transaction-filters.model';
 import type { Observable } from 'rxjs';
 
@@ -50,5 +52,12 @@ export default class TransactionsService {
    */
   createTransaction(data: CreateTransactionRequest): Observable<CreateTransactionResponse> {
     return this.http.post<CreateTransactionResponse>(`${this.apiUrl}/transactions`, data);
+  }
+
+  /**
+   * Actualiza un movimiento independiente existente.
+   */
+  updateTransaction(data: UpdateTransactionRequest): Observable<UpdateTransactionResponse> {
+    return this.http.post<UpdateTransactionResponse>(`${this.apiUrl}/transactions/update`, data);
   }
 }

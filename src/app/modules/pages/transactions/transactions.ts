@@ -20,6 +20,7 @@ import transactionFiltersFormSchema from '@model/transactions/transaction-filter
 import type TransactionFilters from '@model/transactions/transaction-filters.model';
 import type Transaction from '@model/transactions/transaction.model';
 import CreateTransaction from '@modules/transactions/create-transaction/create-transaction';
+import EditTransaction from '@modules/transactions/edit-transaction/edit-transaction';
 import CategoriesService from '@services/categories.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
@@ -28,7 +29,7 @@ import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
-  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction],
+  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction, EditTransaction],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -52,6 +53,9 @@ export default class Transactions {
   );
   readonly creatingTransaction: WritableSignal<boolean> = signal<boolean>(false);
   readonly creationMessage: WritableSignal<string | null> = signal<string | null>(null);
+  readonly editingTransaction: WritableSignal<Transaction | null> = signal<Transaction | null>(
+    null,
+  );
 
   readonly filtersForm: FieldTree<TransactionFilters> = form(
     this.filtersModel,
@@ -132,6 +136,7 @@ export default class Transactions {
         this.filtersModel.set(transactionFiltersFormInitialValue());
         this.appliedFilters.set(transactionFiltersFormInitialValue());
         this.creatingTransaction.set(false);
+        this.editingTransaction.set(null);
         this.creationMessage.set(null);
         this.filtersError.set(null);
       }
@@ -206,6 +211,8 @@ export default class Transactions {
     if (this.spaceStore.selectedId() === null || this.loading()) {
       return;
     }
+
+    this.editingTransaction.set(null);
 
     this.refreshVersion.update((version: number): number => version + 1);
   }
@@ -318,7 +325,8 @@ export default class Transactions {
       this.spaceStore.selectedId() === null ||
       this.loading() ||
       this.error() !== null ||
-      this.creatingTransaction()
+      this.creatingTransaction() ||
+      this.editingTransaction() !== null
     ) {
       return;
     }
@@ -351,6 +359,57 @@ export default class Transactions {
 
     this.creationMessage.set(
       `Se ha creado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
+    );
+  }
+
+  /**
+   * Abre el formulario de edición del movimiento.
+   */
+  openEditTransaction(transaction: Transaction): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingTransaction() ||
+      this.editingTransaction() !== null ||
+      transaction.space_id !== this.spaceStore.selectedId() ||
+      !this.transactions().some(
+        (item: Transaction): boolean =>
+          item.id === transaction.id && item.space_id === transaction.space_id,
+      )
+    ) {
+      return;
+    }
+
+    this.creationMessage.set(null);
+    this.editingTransaction.set(transaction);
+  }
+
+  /**
+   * Cancela la edición.
+   */
+  cancelEditTransaction(): void {
+    this.editingTransaction.set(null);
+  }
+
+  /**
+   * Vuelve a consultar los movimientos tras guardar los cambios.
+   */
+  onTransactionSaved(transaction: Transaction): void {
+    if (
+      transaction.space_id !== this.spaceStore.selectedId() ||
+      this.editingTransaction()?.id !== transaction.id
+    ) {
+      this.editingTransaction.set(null);
+      return;
+    }
+
+    this.editingTransaction.set(null);
+
+    // Conserva la página y los filtros aplicados.
+    this.refreshVersion.update((version: number): number => version + 1);
+
+    this.creationMessage.set(
+      `Se ha actualizado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
     );
   }
 

@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
+import type UpdateTransactionResponse from '@interfaces/transactions/update-transaction-response.interface';
 import TransactionsService from '@services/transactions.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -218,6 +219,59 @@ describe('TransactionsService', (): void => {
       status: 201,
       statusText: 'Created',
     });
+
+    expect(result).toEqual(response);
+  });
+
+  it('actualiza un movimiento mediante POST', (): void => {
+    const response: UpdateTransactionResponse = {
+      success: true,
+      transaction: {
+        id: 31,
+        space_id: 12,
+        user_id: 1,
+        category_id: 7,
+        type: 'expense',
+        amount: '98.00',
+        concept: 'Electricidad ajustada',
+        date: '2026-10-20',
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: UpdateTransactionResponse | null = null;
+
+    service
+      .updateTransaction({
+        spaceId: 12,
+        transactionId: 31,
+        categoryId: 7,
+        type: 'expense',
+        amount: '98.00',
+        concept: 'Electricidad ajustada',
+        date: '2026-10-20',
+      })
+      .subscribe({
+        next: (value: UpdateTransactionResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/update`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      transactionId: 31,
+      categoryId: 7,
+      type: 'expense',
+      amount: '98.00',
+      concept: 'Electricidad ajustada',
+      date: '2026-10-20',
+    });
+
+    request.flush(response);
 
     expect(result).toEqual(response);
   });

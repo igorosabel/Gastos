@@ -1,0 +1,122 @@
+<form [formRoot]="transactionForm"
+      class="transaction-form"
+      aria-label="Editar movimiento">
+
+    <h3>Editar movimiento</h3>
+
+    <div class="transaction-form__field">
+        <label for="edit-transaction-type">Tipo</label>
+
+        <p-select inputId="edit-transaction-type"
+                  [options]="typeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="transactionForm.type"
+                  (onChange)="changeType($event.value)"
+                  [fluid]="true" />
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="edit-transaction-category">Categoría</label>
+
+        <p-select inputId="edit-transaction-category"
+                  [options]="categoryOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Selecciona una categoría"
+                  [formField]="transactionForm.categoryId"
+                  [fluid]="true" />
+
+        @if (transactionForm.categoryId().touched() &&
+        transactionForm.categoryId().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.categoryId().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="edit-transaction-amount">Importe</label>
+
+        <input #amountInput
+               pInputText
+               id="edit-transaction-amount"
+               type="text"
+               inputmode="decimal"
+               autocomplete="off"
+               [formField]="transactionForm.amount" />
+
+        <small class="transaction-form__help">
+            Introduce dos decimales separados por un punto.
+        </small>
+
+        @if (transactionForm.amount().touched() &&
+        transactionForm.amount().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.amount().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="edit-transaction-concept">Concepto</label>
+
+        <input pInputText
+               id="edit-transaction-concept"
+               type="text"
+               autocomplete="off"
+               [formField]="transactionForm.concept" />
+
+        @if (transactionForm.concept().touched() &&
+        transactionForm.concept().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.concept().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="transaction-form__field">
+        <label for="edit-transaction-date">Fecha</label>
+
+        <input id="edit-transaction-date"
+               type="date"
+               [formField]="transactionForm.date" />
+
+        @if (transactionForm.date().touched() &&
+        transactionForm.date().invalid()) {
+        <small class="transaction-form__error"
+               role="alert">
+            {{ transactionForm.date().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    @if (transactionForm().errors().length > 0) {
+    <p class="transaction-form__error"
+       role="alert">
+        {{ transactionForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="transaction-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="transactionForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="transactionForm().submitting()">
+            {{ transactionForm().submitting()
+               ? 'Guardando...'
+               : 'Guardar cambios' }}
+        </button>
+    </div>
+</form>

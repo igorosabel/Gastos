@@ -195,6 +195,10 @@
     font-weight: 600;
 }
 
+.transactions__item>button {
+    flex-shrink: 0;
+}
+
 .transactions__error {
     display: grid;
     justify-items: start;
@@ -247,5 +251,13 @@
 
     .transactions__filter-actions button {
         flex: 1;
+    }
+
+    .transactions__item {
+        flex-wrap: wrap;
+    }
+
+    .transactions__item>button {
+        margin-left: auto;
     }
 }

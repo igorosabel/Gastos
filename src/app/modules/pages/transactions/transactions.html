@@ -25,7 +25,7 @@
         !spaceStore.error()) {
         <button pButton
                 type="button"
-                [disabled]="loading() || creatingTransaction()"
+                [disabled]="loading() || creatingTransaction() || editingTransaction() !== null"
                 (click)="openCreateTransaction()">
             Nuevo movimiento
         </button>
@@ -37,6 +37,13 @@
                             [categories]="categories()"
                             (created)="onTransactionCreated($event)"
                             (cancelled)="cancelCreateTransaction()" />
+    }
+
+    @if (editingTransaction(); as transaction) {
+    <app-edit-transaction [transaction]="transaction"
+                          [categories]="categories()"
+                          (saved)="onTransactionSaved($event)"
+                          (cancelled)="cancelEditTransaction()" />
     }
 
     @if (creationMessage()) {
@@ -221,6 +228,17 @@
                         {{ transaction.amount }} €
                     </strong>
                 </div>
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        [disabled]="loading() ||
+                                    creatingTransaction() ||
+                                    editingTransaction() !== null"
+                        (click)="openEditTransaction(transaction)">
+                    Editar
+                </button>
             </li>
             }
         </ul>

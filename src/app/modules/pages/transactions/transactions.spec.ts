@@ -1015,4 +1015,236 @@ describe('Transactions', (): void => {
     expect(component.transactions()).toEqual([]);
     expect(component.creationMessage()).toBeNull();
   });
+
+  it('abre el formulario de edición del movimiento', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const transaction: Transaction = component.transactions()[0]!;
+
+    component.openEditTransaction(transaction);
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toEqual(transaction);
+
+    expect(fixture.nativeElement.querySelector('app-edit-transaction')).not.toBeNull();
+  });
+
+  it('cancela la edición sin modificar el listado', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    component.cancelEditTransaction();
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+    expect(component.transactions()).toHaveLength(1);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions/update`);
+  });
+
+  it('impide editar un movimiento de otro espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const external: Transaction = {
+      ...component.transactions()[0]!,
+      id: 80,
+      space_id: 8,
+    };
+
+    component.openEditTransaction(external);
+
+    expect(component.editingTransaction()).toBeNull();
+  });
+
+  it('impide abrir creación mientras se está editando', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditTransaction(component.transactions()[0]!);
+    component.openCreateTransaction();
+
+    expect(component.editingTransaction()).not.toBeNull();
+    expect(component.creatingTransaction()).toBe(false);
+  });
+
+  it('actualiza el listado tras guardar una edición', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const updated: Transaction = {
+      ...component.transactions()[0]!,
+      amount: '120.00',
+      concept: 'Electricidad ajustada',
+    };
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    component.onTransactionSaved(updated);
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    transactionsRequest.flush(transactionResponse(2, '120.00'));
+    categoriesRequest.flush(categoryResponse(2));
+
+    fixture.detectChanges();
+
+    expect(component.transactions()[0]?.amount).toBe('120.00');
+    expect(component.creationMessage()).toBe(
+      'Se ha actualizado el movimiento «Electricidad ajustada».',
+    );
+  });
+
+  it('conserva la página actual después de editar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    const updated: Transaction = {
+      ...component.transactions()[0]!,
+      amount: '110.00',
+    };
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    component.onTransactionSaved(updated);
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(2);
+
+    completeLoad(2, '110.00', 2, 45, 3);
+
+    expect(component.transactions()[0]?.amount).toBe('110.00');
+  });
+
+  it('conserva los filtros aplicados después de editar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const filtered = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const filteredCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    filtered.flush(transactionResponse(2));
+    filteredCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    const updated: Transaction = {
+      ...component.transactions()[0]!,
+      concept: 'Nuevo concepto',
+    };
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    component.onTransactionSaved(updated);
+    fixture.detectChanges();
+
+    const refreshed = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const refreshedCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    refreshed.flush(transactionResponse(2));
+    refreshedCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    expect(component.appliedFilters().type).toBe('expense');
+  });
+
+  it('descarta una respuesta de edición de otro espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const original: Transaction = component.transactions()[0]!;
+
+    component.openEditTransaction(original);
+
+    component.onTransactionSaved({
+      ...original,
+      space_id: 8,
+      amount: '500.00',
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+    expect(component.transactions()[0]?.amount).toBe('95.40');
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions?spaceId=2&page=1`);
+  });
+
+  it('cierra la edición al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+    expect(component.creationMessage()).toBeNull();
+
+    completeLoad(8);
+  });
+
+  it('cierra la edición al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+    expect(component.transactions()).toEqual([]);
+  });
+
+  it('cierra la edición al actualizar manualmente', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditTransaction(component.transactions()[0]!);
+    fixture.detectChanges();
+
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.editingTransaction()).toBeNull();
+
+    completeLoad(2);
+  });
 });
