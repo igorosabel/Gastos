@@ -18,9 +18,15 @@ const routes: Routes = [
     loadComponent: () => import('@modules/auth/register/register').then((m) => m.default),
   },
   {
-    path: 'dashboard',
+    path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('@pages/dashboard/dashboard').then((m) => m.default),
+    loadComponent: () => import('@layout/private-layout/private-layout').then((m) => m.default),
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('@pages/dashboard/dashboard').then((m) => m.default),
+      },
+    ],
   },
   {
     path: '**',

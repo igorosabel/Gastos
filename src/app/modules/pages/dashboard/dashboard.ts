@@ -2,14 +2,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   inject,
-  OnInit,
   signal,
   type WritableSignal,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import SpaceStore from '@app/spaces/space.store';
-import AuthStore from '@auth/auth.store';
 import type Space from '@model/spaces/space.model';
 import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
 import CreateSpace from '@modules/spaces/create-space/create-space';
@@ -17,14 +13,11 @@ import LeaveSpace from '@modules/spaces/leave-space/leave-space';
 import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 import SpaceMembers from '@modules/spaces/space-members/space-members';
 import { ButtonDirective } from 'primeng/button';
-import { SelectModule } from 'primeng/select';
 
 @Component({
   selector: 'app-dashboard',
   imports: [
     ButtonDirective,
-    FormsModule,
-    SelectModule,
     CreateSpace,
     SpaceInvitations,
     AcceptInvitation,
@@ -35,34 +28,13 @@ import { SelectModule } from 'primeng/select';
   styleUrl: './dashboard.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class Dashboard implements OnInit {
-  readonly authStore: AuthStore = inject(AuthStore);
+export default class Dashboard {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
-  private readonly router: Router = inject(Router);
 
   readonly creatingSpace: WritableSignal<boolean> = signal<boolean>(false);
-
+  readonly acceptingInvitation: WritableSignal<boolean> = signal<boolean>(false);
+  readonly acceptanceMessage: WritableSignal<string | null> = signal<string | null>(null);
   readonly membershipMessage: WritableSignal<string | null> = signal<string | null>(null);
-
-  /**
-   * Actualiza el estado después de abandonar un espacio.
-   */
-  onSpaceLeft(spaceId: number): void {
-    const space: Space | undefined = this.spaceStore
-      .spaces()
-      .find((item: Space): boolean => item.id === spaceId);
-
-    const removed: boolean = this.spaceStore.removeAfterLeave(spaceId);
-
-    if (!removed) {
-      // El servidor ha confirmado la salida, pero el estado local
-      // ha cambiado: recuperamos los espacios autorizados.
-      void this.spaceStore.load();
-      return;
-    }
-
-    this.membershipMessage.set(`Has abandonado el espacio «${space?.name ?? 'compartido'}».`);
-  }
 
   /**
    * Muestra el formulario de creación.
@@ -87,37 +59,9 @@ export default class Dashboard implements OnInit {
     this.creatingSpace.set(false);
 
     if (!added) {
-      // Si cambió la sesión o el estado, recuperar el listado real.
       void this.spaceStore.load();
     }
   }
-
-  /**
-   * Recupera los espacios al entrar en el dashboard.
-   */
-  ngOnInit(): void {
-    void this.spaceStore.load();
-  }
-
-  /**
-   * Actualiza la selección del espacio activo.
-   */
-  selectSpace(spaceId: number | null): void {
-    if (typeof spaceId === 'number' && this.spaceStore.select(spaceId)) {
-      this.membershipMessage.set(null);
-    }
-  }
-
-  /**
-   * Reintenta la consulta de espacios.
-   */
-  reloadSpaces(): void {
-    void this.spaceStore.load();
-  }
-
-  readonly acceptingInvitation: WritableSignal<boolean> = signal<boolean>(false);
-
-  readonly acceptanceMessage: WritableSignal<string | null> = signal<string | null>(null);
 
   /**
    * Abre el formulario para aceptar una invitación.
@@ -128,14 +72,14 @@ export default class Dashboard implements OnInit {
   }
 
   /**
-   * Cierra el formulario sin realizar ninguna operación.
+   * Cierra el formulario sin aceptar.
    */
   cancelAcceptInvitation(): void {
     this.acceptingInvitation.set(false);
   }
 
   /**
-   * Incorpora el espacio compartido tras aceptar la invitación.
+   * Incorpora un espacio compartido recién aceptado.
    */
   onInvitationAccepted(space: Space): void {
     const added: boolean = this.spaceStore.addAccepted(space);
@@ -155,11 +99,20 @@ export default class Dashboard implements OnInit {
   }
 
   /**
-   * Cierra la sesión y elimina los datos del espacio.
+   * Retira del estado un espacio que se acaba de abandonar.
    */
-  logout(): void {
-    this.spaceStore.clear();
-    this.authStore.clear();
-    void this.router.navigateByUrl('/login');
+  onSpaceLeft(spaceId: number): void {
+    const space: Space | undefined = this.spaceStore
+      .spaces()
+      .find((item: Space): boolean => item.id === spaceId);
+
+    const removed: boolean = this.spaceStore.removeAfterLeave(spaceId);
+
+    if (!removed) {
+      void this.spaceStore.load();
+      return;
+    }
+
+    this.membershipMessage.set(`Has abandonado el espacio «${space?.name ?? 'compartido'}».`);
   }
 }

@@ -1,8 +1,8 @@
 # Gastos — Documento de continuidad del desarrollo frontend
 
 **Actualizado:** 18 de octubre de 2026
-**Estado:** bloques 1 a 9 completados y validados; pendiente comenzar el bloque 10.
-**Frontend (rama `main`, commit verificado):** [`f9b902ac23cf1de27a422101ef0d1225c837066e`](https://github.com/igorosabel/Gastos/commit/f9b902ac23cf1de27a422101ef0d1225c837066e) — `feat(spaces): consultar miembros de espacios compartidos`.
+**Estado:** bloques 1 a 11 completados y validados; pendiente comenzar el bloque 12.
+**Frontend (rama `main`, commit verificado):** [`ef06f07675a8487af15ef4d2ccb70b83c04e7af0`](https://github.com/igorosabel/Gastos/commit/ef06f07675a8487af15ef4d2ccb70b83c04e7af0) — `feat(spaces): expulsar miembros de espacios compartidos`.
 **Backend de referencia:** **ApiGastos v1.0.0**, publicado el 16 de octubre de 2026.
 
 > **Propósito:** documento de traspaso para retomar el desarrollo en otra conversación de ChatGPT. Es una fotografía del estado del proyecto en la fecha indicada, **no** sustituye al código, `AGENTS.md` ni a los contratos del backend. Al reanudar, volver a consultar el último commit y los archivos reales: el repositorio puede haber cambiado.
@@ -143,25 +143,26 @@ Los archivos principales tienen pruebas `*.spec.ts` junto a los servicios, store
 - `SpaceStore` mantiene la lista disponible y el espacio seleccionado mediante signals, con estado de carga y errores.
 - Carga `GET /spaces`, prioriza el espacio personal al entrar y conserva una selección válida en recargas de listado dentro de la misma instancia.
 - La **selección del espacio no se persiste** entre recargas completas del navegador: al recargar se vuelve inicialmente al personal. La **membresía sí es persistente en el backend**.
-- Métodos relevantes: `load()`, `select(spaceId)`, `addCreated(space)`, `addAccepted(space)`, `clear()`.
+- Métodos relevantes: `load()`, `select(spaceId)`, `addCreated(space)`, `addAccepted(space)`, `clear()`, `removeAfterLeave(spaceId)`.
 - Protege contra respuestas antiguas mediante versiones de carga y comprobación de sesión; un `spaceId` no autorizado no puede seleccionarse localmente.
-- En el futuro, al abandonar un espacio, habrá que incorporar una operación de retirada del listado en `SpaceStore`, seleccionar otro espacio permitido y evitar respuestas tardías que lo restauren.
 
 ## 5. Bloques de desarrollo realizados y validados
 
 Todos los bloques siguientes fueron **probados por el usuario** (`npm run lint`, `npm run test`, `npm run build` y comprobaciones funcionales según el bloque). No implica que esas suites se hayan reejecutado durante la redacción de este documento.
 
-| Bloque                              | Estado   | Alcance                                                                                                                          | Commit de referencia        |
-| ----------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| 1. Base e integración inicial       | Completo | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0                  | `ea000e0` (ajustes de core) |
-| 2. Autenticación y rutas            | Completo | `AuthStore` JWT, guards, interceptor y dashboard protegido                                                                       | `73919b1`                   |
-| 3. Login y registro                 | Completo | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales | `be0859b`, `a0799d4`        |
-| 4. Selección de espacios            | Completo | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive                                                     | `290a0c7`                   |
-| 5. Creación de espacios compartidos | Completo | `POST /spaces`, formulario Signal Forms, selección inmediata                                                                     | `9882d1b`                   |
-| 6. Crear y consultar invitaciones   | Completo | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper                        | `1548553`                   |
-| 7. Revocar invitaciones             | Completo | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías                    | `3f87250`                   |
-| 8. Aceptar invitaciones             | Completo | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store                                 | `876b7ea`                   |
-| 9. Listar miembros                  | Completo | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio              | **`f9b902a`**               |
+| Bloque                              | Estado   | Alcance                                                                                                                                                           | Commit de referencia        |
+| ----------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| 1. Base e integración inicial       | Completo | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0                                                   | `ea000e0` (ajustes de core) |
+| 2. Autenticación y rutas            | Completo | `AuthStore` JWT, guards, interceptor y dashboard protegido                                                                                                        | `73919b1`                   |
+| 3. Login y registro                 | Completo | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales                                  | `be0859b`, `a0799d4`        |
+| 4. Selección de espacios            | Completo | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive                                                                                      | `290a0c7`                   |
+| 5. Creación de espacios compartidos | Completo | `POST /spaces`, formulario Signal Forms, selección inmediata                                                                                                      | `9882d1b`                   |
+| 6. Crear y consultar invitaciones   | Completo | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper                                                         | `1548553`                   |
+| 7. Revocar invitaciones             | Completo | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías                                                     | `3f87250`                   |
+| 8. Aceptar invitaciones             | Completo | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store                                                                  | `876b7ea`                   |
+| 9. Listar miembros                  | Completo | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio                                               | **`f9b902a`**               |
+| 10. Abandono voluntario de espacios | Completo | `POST /spaces/members/leave`, confirmación, baja lógica de membresía, actualización de `SpaceStore`, selección alternativa y protección contra respuestas tardías | `7f85d27`                   |
+| 11. Expulsión de miembros           | Completo | `POST /spaces/members/remove`, confirmación por miembro, protección del propietario, actualización del listado y controles de sesión, concurrencia y permisos     | `ef06f07`                   |
 
 **Pruebas funcionales relevantes ya realizadas:** el usuario confirmó que dos cuentas independientes A (propietario) y B (invitado) pudieron crear una invitación, comprobar el rechazo de un destinatario incorrecto, aceptarla desde B, verificar la membresía persistida y el rol, y validar el listado de miembros desde A. La lista administrativa solo aparece a propietarios de espacios compartidos. El usuario confirmó asimismo la creación y revocación de invitaciones.
 
@@ -212,37 +213,30 @@ Verificar los DTO y las respuestas reales antes de implementar:
 
 **Fechas e importes:** las fechas contables (`DATE`) no tienen zona horaria; no aplicar conversiones UTC automáticas. Los informes devuelven importes como cadenas decimales. La generación de ocurrencias recurrentes es **explícita**, no programada automáticamente; las previsiones incluyen solo ocurrencias pendientes **ya generadas**. Distinguir datos reales y previsiones y prevenir doble contabilización.
 
-## 7. Punto exacto para reanudar: **bloque 10**
+## 7. Punto exacto para reanudar: **bloque 12**
 
-### Abandono voluntario de un espacio compartido
+### Layout privado y navegación
 
-**Objetivo:** permitir que el usuario B (miembro **no propietario**) abandone un espacio compartido de A, sin alterar su espacio personal ni otros espacios. El comportamiento debe ser verificable con las dos cuentas de prueba ya utilizadas.
+**Estado:** siguiente bloque de desarrollo, pendiente de validación.
 
-**Contrato comprobado en backend:**
+Los bloques 1 a 11 están completados. La gestión básica de espacios personales y compartidos incluye creación, selección, invitaciones, aceptación, revocación, consulta de miembros, abandono voluntario y expulsión.
 
-- `POST /spaces/members/leave`
-- Petición JSON: `{ "spaceId": 8 }` (identificador de ejemplo).
-- El usuario se determina desde el JWT; **no** enviar `userId`.
-- El backend impide salir de espacios personales, abandonar como propietario o abandonar un espacio donde ya no se es miembro activo. Sus componentes devuelven `success`, `error`, `message`; contemplar respuestas **400/403/409** según la causa.
-- La operación marca `left_at`, **no borra** el espacio ni el historial.
+**Objetivo del bloque 12:** extraer del dashboard la cabecera, el selector de espacios, el cierre de sesión y la carga inicial del listado para crear un layout privado compartido por las futuras páginas funcionales.
 
-**Propuesta para estudiar y validar antes de escribir código:**
+**Plan previsto:**
 
-1. Añadir contratos `LeaveSpaceRequest`/`LeaveSpaceResponse` en `src/app/interfaces/spaces/` y `leaveSpace()` a `SpacesService`.
-2. Mostrar «Abandonar espacio» solo cuando `SpaceStore.selected()?.type === 'shared'` e `is_owner === false`, con **confirmación explícita**. No tiene por qué ser un formulario Signal Forms: no hay campos editables.
-3. Tras éxito, retirar el espacio de `SpaceStore`, seleccionar el espacio personal (o el siguiente disponible), invalidar cargas antiguas y borrar las vistas relacionadas con el espacio abandonado. No conservar una selección ahora prohibida.
-4. Proteger las operaciones asincrónicas ante cambios de sesión/espacio y evitar dobles envíos; no inventar un mecanismo de autorización frontend.
-5. Tests HTTP, tests de store (retirada, selección alternativa, carrera de peticiones, cambio de usuario), tests de confirmación y errores, y pruebas responsive.
-6. **Plan funcional con A y B:** verificar membresía antes; B cancela la salida (sin petición); B confirma salida; su selector deja de contener el compartido; recargar B y comprobar persistencia; A refresca el listado de miembros y ya no ve a B; A conserva el espacio y su propiedad; el servidor rechaza posteriores peticiones de B al espacio. Documentar cualquier fallo HTTP sin exponer JWT.
+1. Crear `PrivateLayout` con TypeScript, HTML y SCSS independientes.
+2. Introducir una ruta privada padre protegida por `authGuard`, con el dashboard como ruta hija lazy.
+3. Mover la carga inicial de `SpaceStore` desde `Dashboard` al layout.
+4. Mantener en el dashboard las funcionalidades actuales de gestión de espacios.
+5. Añadir pruebas del layout, rutas, selección y logout.
+6. Verificar que todas las operaciones anteriores siguen funcionando, especialmente con cambios de espacio y en móvil.
 
-**Importante:** los puntos anteriores son un **plan**, **todavía no están implementados**, y deben contrastarse con el `HEAD` del repositorio antes de generar los cambios. No empezar el bloque 11 hasta que el usuario confirme pruebas, funcionamiento y commit del 10.
+**Siguiente objetivo:** comenzar el módulo de categorías usando `GET /categories` y la navegación compartida, consultando previamente `ApiGastos/docs/api/endpoints.md`.
 
-### Bloque 11 — expulsar miembros (pendiente)
+No modificar ApiGastos ni Osumi Framework para este refactor.
 
-- Endpoint `POST /spaces/members/remove` con `{ "spaceId": ..., "userId": ... }`.
-- Solo el propietario, nunca contra sí mismo; confirmar antes de expulsar.
-- Tras éxito, actualizar el listado de miembros; la sesión de B no recibe por ello una notificación automática. Al refrescar su `GET /spaces`, el espacio ya no aparecerá, y las llamadas no autorizadas al espacio deben rechazarse en el servidor.
-- Tests con dos usuarios: autorizaciones, propietario protegido, concurrencia y persistencia.
+**Importante:** el bloque 12 todavía no está validado. Antes de avanzar, ejecutar lint, tests, build y pruebas funcionales. Esperar confirmación y commit del usuario.
 
 ## 8. Hoja de ruta posterior (provisional, no bloques comprometidos)
 
@@ -273,14 +267,14 @@ Una vez completada la gestión básica de miembros, continuar por unidades verif
 
 1. Facilitar este archivo o indicar su ruta en el repositorio (`docs/development/CONTINUIDAD_GASTOS.md`).
 2. Pedir al asistente **leer primero `AGENTS.md`**, comprobar el `HEAD` y la estructura actual de `igorosabel/Gastos`, y contrastar el contrato con **ApiGastos v1.0.0** y su código real.
-3. Confirmar que el último bloque validado es el **9 (consulta de miembros)** y que el siguiente propuesto es el **10 (abandono voluntario de un espacio compartido)**, salvo que existan commits posteriores.
+3. Confirmar que el último bloque validado es el 11 **(expulsión de miembros)**, commit `ef06f07`, y que el siguiente propuesto es el 12 **(layout privado y navegación)**, salvo que existan commits posteriores.
 4. Implementar **solo el bloque siguiente**, proponiendo los archivos, código, pruebas y plan funcional entre dos usuarios (A propietario, B miembro).
 5. Esperar los resultados de `npm run lint`, `npm run test`, `npm run build`, pruebas funcionales y commit/push del usuario antes de avanzar.
 6. Actualizar este documento tras cada hito importante: fecha, `HEAD`, decisiones nuevas, último bloque validado, siguiente bloque y riesgos o problemas abiertos.
 
 ### Texto breve que se puede pegar en una nueva conversación
 
-> Estamos desarrollando **Gastos** (`https://github.com/igorosabel/Gastos`), frontend Angular 22/PrimeNG 22 con Signal Forms, contra **ApiGastos v1.0.0** (`https://github.com/igorosabel/ApiGastos`). Lee el documento `docs/development/CONTINUIDAD_GASTOS.md`, el `AGENTS.md` vigente y el código actual del repositorio antes de proponer cambios. El último bloque confirmado fue el **9, listado de miembros** (commit `f9b902a`); continuaremos con el **bloque 10, abandono voluntario de espacios compartidos**. Trabajamos de forma incremental, con tests, pruebas funcionales de dos usuarios y commit validado antes de avanzar. Revisa siempre el `HEAD`: el documento puede haber quedado desactualizado.
+> Estamos desarrollando **Gastos** (`https://github.com/igorosabel/Gastos`), frontend Angular 22/PrimeNG 22 con Signal Forms, contra **ApiGastos v1.0.0** (`https://github.com/igorosabel/ApiGastos`). Lee el documento `docs/development/CONTINUIDAD_GASTOS.md`, el `AGENTS.md` vigente y el código actual del repositorio antes de proponer cambios. El último bloque confirmado fue el **9, listado de miembros** (commit `f9b902a`); continuaremos con el **bloque 10, abandono voluntario de espacios compartidos**. Trabajamos de forma incremental, con tests, pruebas funcionales de dos usuarios y commit validado antes de avanzar. Revisa siempre el `HEAD`: el documento puede haber quedado desactualizado. El último bloque confirmado fue el 11, **expulsión de miembros** (commit `ef06f07`); continuaremos con el **bloque 12**, **layout privado y navegación**.
 
 ---
 

@@ -1,0 +1,42 @@
+import type { Route } from '@angular/router';
+import routes from '@app/app.routes';
+import { authGuard } from '@guard/auth.guards';
+import { describe, expect, it } from 'vitest';
+
+describe('Rutas privadas', (): void => {
+  const privateRoute: Route | undefined = routes.find(
+    (route: Route): boolean => route.path === '' && route.children !== undefined,
+  );
+
+  it('protege el layout privado con authGuard', (): void => {
+    expect(privateRoute).toBeDefined();
+    expect(privateRoute?.canActivate).toContain(authGuard);
+    expect(privateRoute?.loadComponent).toBeDefined();
+  });
+
+  it('mantiene el dashboard como ruta hija diferida', (): void => {
+    const dashboardRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'dashboard',
+    );
+
+    expect(dashboardRoute).toBeDefined();
+    expect(dashboardRoute?.loadComponent).toBeDefined();
+    expect(dashboardRoute?.component).toBeUndefined();
+  });
+
+  it('mantiene login y registro fuera del layout privado', (): void => {
+    const login: Route | undefined = routes.find((route: Route): boolean => route.path === 'login');
+
+    const register: Route | undefined = routes.find(
+      (route: Route): boolean => route.path === 'register',
+    );
+
+    expect(login?.loadComponent).toBeDefined();
+    expect(register?.loadComponent).toBeDefined();
+    expect(
+      privateRoute?.children?.some(
+        (route: Route): boolean => route.path === 'login' || route.path === 'register',
+      ),
+    ).toBe(false);
+  });
+});

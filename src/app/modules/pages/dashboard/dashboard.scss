@@ -1,80 +1,10 @@
 :host {
   display: block;
-  min-height: 100dvh;
-}
-
-.app-shell {
-  min-height: 100dvh;
-  background: var(--p-content-background);
-  color: var(--p-text-color);
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  padding: 1rem max(1.5rem, calc((100vw - 1120px) / 2));
-  border-bottom: 1px solid var(--p-content-border-color);
-}
-
-.app-header__brand {
-  display: flex;
-  align-items: center;
-  gap: 0.875rem;
-
-  >div {
-    display: flex;
-    flex-direction: column;
-    gap: 0.125rem;
-  }
-
-  strong {
-    color: var(--p-primary-color);
-    font-size: 1.25rem;
-  }
-
-  span:not(.app-header__logo) {
-    color: var(--p-text-muted-color);
-    font-size: 0.8125rem;
-  }
-}
-
-.app-header__logo {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border-radius: 0.75rem;
-  background: var(--p-primary-color);
-  color: var(--p-primary-contrast-color);
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.app-header__actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-
-  button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-}
-
-.app-header__user {
-  color: var(--p-text-muted-color);
-  font-size: 0.875rem;
 }
 
 .dashboard {
   display: grid;
   gap: 1.5rem;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
 }
 
 .dashboard__heading {
@@ -101,21 +31,7 @@
   }
 }
 
-.dashboard__selector {
-  display: grid;
-  gap: 0.5rem;
-  max-width: 420px;
-
-  label {
-    font-weight: 600;
-  }
-}
-
 .dashboard__space-detail {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid var(--p-content-border-color);
-
   h3 {
     margin: 0 0 0.375rem;
     font-size: 1.125rem;
@@ -130,16 +46,6 @@
 .dashboard__muted {
   color: var(--p-text-muted-color);
   line-height: 1.6;
-}
-
-.dashboard__error {
-  display: grid;
-  justify-items: start;
-  gap: 0.75rem;
-
-  p {
-    margin: 0;
-  }
 }
 
 .dashboard__creation {
@@ -162,36 +68,17 @@
   }
 }
 
-.dashboard__acceptance-success {
+.dashboard__acceptance-success,
+.dashboard__membership-success {
   color: var(--p-primary-color);
   line-height: 1.5;
 }
 
 .dashboard__membership-success {
   margin: 1rem 0 0;
-  color: var(--p-primary-color);
-  line-height: 1.5;
 }
 
 @media (max-width: 640px) {
-  .app-header {
-    padding: 1rem;
-  }
-
-  .app-header__brand {
-    >div>span {
-      display: none;
-    }
-  }
-
-  .app-header__user {
-    display: none;
-  }
-
-  .dashboard {
-    padding: 1.5rem 1rem;
-  }
-
   .dashboard__card {
     padding: 1.25rem;
   }

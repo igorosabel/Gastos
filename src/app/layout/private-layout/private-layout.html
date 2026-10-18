@@ -1,0 +1,81 @@
+<div class="private-layout">
+    <header class="private-layout__header">
+        <div class="private-layout__header-inner">
+            <div class="private-layout__brand">
+                <span class="private-layout__logo">G</span>
+
+                <div>
+                    <strong>Gastos</strong>
+                    <span>Gestión de ingresos y gastos</span>
+                </div>
+            </div>
+
+            <nav class="private-layout__nav"
+                 aria-label="Navegación principal">
+                <a routerLink="/dashboard"
+                   routerLinkActive="private-layout__nav-link--active"
+                   [routerLinkActiveOptions]="{ exact: true }">
+                    Inicio
+                </a>
+            </nav>
+
+            <div class="private-layout__actions">
+                <span class="private-layout__user">
+                    {{ authStore.user()?.name }}
+                </span>
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        (click)="logout()">
+                    <i class="pi pi-sign-out"
+                       aria-hidden="true"></i>
+                    <span>Cerrar sesión</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="private-layout__context"
+             aria-label="Selección del espacio contable">
+        <div class="private-layout__context-inner">
+            @if (spaceStore.loading()) {
+            <p role="status">Cargando espacios...</p>
+            } @else if (spaceStore.error()) {
+            <div class="private-layout__error"
+                 role="alert">
+                <p>{{ spaceStore.error() }}</p>
+
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        (click)="reloadSpaces()">
+                    Reintentar
+                </button>
+            </div>
+            } @else if (spaceStore.spaces().length === 0) {
+            <p>No tienes espacios disponibles.</p>
+            } @else {
+            <div class="private-layout__selector">
+                <label for="active-space">
+                    Espacio activo
+                </label>
+
+                <p-select inputId="active-space"
+                          [options]="spaceStore.spaces()"
+                          optionLabel="name"
+                          optionValue="id"
+                          [ngModel]="spaceStore.selectedId()"
+                          (ngModelChange)="selectSpace($event)"
+                          placeholder="Selecciona un espacio"
+                          [fluid]="true" />
+            </div>
+            }
+        </div>
+    </section>
+
+    <main class="private-layout__main">
+        <router-outlet />
+    </main>
+</div>
