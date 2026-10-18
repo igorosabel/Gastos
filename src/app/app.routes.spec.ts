@@ -49,4 +49,14 @@ describe('Rutas privadas', (): void => {
     expect(categoriesRoute?.loadComponent).toBeDefined();
     expect(categoriesRoute?.component).toBeUndefined();
   });
+
+  it('mantiene movimientos como ruta hija diferida', (): void => {
+    const transactionsRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'transactions',
+    );
+
+    expect(transactionsRoute).toBeDefined();
+    expect(transactionsRoute?.loadComponent).toBeDefined();
+    expect(transactionsRoute?.component).toBeUndefined();
+  });
 });

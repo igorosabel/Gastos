@@ -1,0 +1,148 @@
+:host {
+    display: block;
+}
+
+.transactions {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.transactions__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+    }
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
+
+.transactions__content {
+    padding: 1.5rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.75rem;
+    background: var(--p-content-background);
+}
+
+.transactions__section-heading {
+    margin-bottom: 1.5rem;
+
+    h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+    }
+}
+
+.transactions__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.transactions__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0.5rem;
+    border-bottom: 1px solid var(--p-content-border-color);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.transactions__details {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+
+    strong {
+        overflow-wrap: anywhere;
+    }
+
+    span {
+        color: var(--p-text-muted-color);
+        font-size: 0.875rem;
+    }
+}
+
+.transactions__amount {
+    display: grid;
+    justify-items: end;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.transactions__type {
+    color: var(--p-text-muted-color);
+    font-size: 0.8125rem;
+}
+
+.transactions__amount--income strong {
+    color: var(--p-green-600);
+}
+
+.transactions__amount--expense strong {
+    color: var(--p-red-600);
+}
+
+.transactions__muted,
+.transactions__pagination-note {
+    color: var(--p-text-muted-color);
+}
+
+.transactions__pagination-note {
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+}
+
+.transactions__error {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    color: var(--p-red-500);
+
+    p {
+        margin: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .transactions__heading {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .transactions__content {
+        padding: 1rem;
+    }
+
+    .transactions__item {
+        align-items: flex-start;
+    }
+
+    .transactions__amount {
+        text-align: right;
+    }
+}

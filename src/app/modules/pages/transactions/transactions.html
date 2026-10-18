@@ -1,0 +1,116 @@
+<div class="transactions">
+    <header class="transactions__heading">
+        <div>
+            <h1>Movimientos</h1>
+            <p>
+                Consulta los ingresos y gastos del espacio seleccionado.
+            </p>
+        </div>
+
+        @if (spaceStore.selectedId() !== null) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            <i class="pi pi-refresh"
+               aria-hidden="true"></i>
+            <span>Actualizar</span>
+        </button>
+        }
+    </header>
+
+    @if (spaceStore.loading()) {
+    <p class="transactions__muted"
+       role="status">
+        Cargando espacios...
+    </p>
+    } @else if (spaceStore.error()) {
+    <p class="transactions__error"
+       role="alert">
+        No se han podido cargar los espacios.
+    </p>
+    } @else if (spaceStore.selected(); as selectedSpace) {
+    <section class="transactions__content"
+             aria-labelledby="transactions-title">
+
+        <div class="transactions__section-heading">
+            <h2 id="transactions-title">
+                {{ selectedSpace.name }}
+            </h2>
+            <p>
+                Últimos movimientos registrados en este espacio.
+            </p>
+        </div>
+
+        @if (loading()) {
+        <p class="transactions__muted"
+           role="status">
+            Cargando movimientos...
+        </p>
+        } @else if (error()) {
+        <div class="transactions__error"
+             role="alert">
+            <p>{{ error() }}</p>
+
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    (click)="reload()">
+                Reintentar
+            </button>
+        </div>
+        } @else if (transactions().length === 0) {
+        <p class="transactions__muted">
+            Este espacio todavía no tiene movimientos.
+        </p>
+        } @else {
+        <ul class="transactions__list">
+            @for (transaction of transactions(); track transaction.id) {
+            <li class="transactions__item">
+                <div class="transactions__details">
+                    <strong>
+                        {{ transaction.concept || categoryName(transaction.category_id) }}
+                    </strong>
+
+                    <span>
+                        {{ transaction.date }}
+                        · {{ categoryName(transaction.category_id) }}
+                    </span>
+                </div>
+
+                <div class="transactions__amount"
+                     [class.transactions__amount--income]="transaction.type === 'income'"
+                     [class.transactions__amount--expense]="transaction.type === 'expense'">
+
+                    <span class="transactions__type">
+                        {{ transaction.type === 'income'
+                           ? 'Ingreso'
+                           : 'Gasto' }}
+                    </span>
+
+                    <strong>
+                        {{ transaction.type === 'income' ? '+' : '−' }}
+                        {{ transaction.amount }} €
+                    </strong>
+                </div>
+            </li>
+            }
+        </ul>
+
+        @if (total() > transactions().length) {
+        <p class="transactions__pagination-note">
+            Mostrando los primeros {{ transactions().length }}
+            de {{ total() }} movimientos.
+            La paginación estará disponible en un próximo bloque.
+        </p>
+        }
+        }
+    </section>
+    } @else {
+    <p class="transactions__muted">
+        Selecciona un espacio para consultar sus movimientos.
+    </p>
+    }
+</div>

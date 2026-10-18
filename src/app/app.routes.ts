@@ -30,6 +30,10 @@ const routes: Routes = [
         path: 'categories',
         loadComponent: () => import('@pages/categories/categories').then((m) => m.default),
       },
+      {
+        path: 'transactions',
+        loadComponent: () => import('@pages/transactions/transactions').then((m) => m.default),
+      },
     ],
   },
   {
