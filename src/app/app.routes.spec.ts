@@ -39,4 +39,14 @@ describe('Rutas privadas', (): void => {
       ),
     ).toBe(false);
   });
+
+  it('mantiene categorías como ruta hija diferida', (): void => {
+    const categoriesRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'categories',
+    );
+
+    expect(categoriesRoute).toBeDefined();
+    expect(categoriesRoute?.loadComponent).toBeDefined();
+    expect(categoriesRoute?.component).toBeUndefined();
+  });
 });

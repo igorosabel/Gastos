@@ -1,0 +1,104 @@
+<div class="categories">
+    <header class="categories__heading">
+        <div>
+            <h1>Categorías</h1>
+            <p>
+                Consulta las categorías de ingresos y gastos
+                del espacio seleccionado.
+            </p>
+        </div>
+
+        @if (spaceStore.selectedId() !== null) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            <i class="pi pi-refresh"
+               aria-hidden="true"></i>
+            <span>Actualizar</span>
+        </button>
+        }
+    </header>
+
+    @if (spaceStore.loading()) {
+    <p class="categories__muted"
+       role="status">
+        Cargando espacios...
+    </p>
+    } @else if (spaceStore.error()) {
+    <p class="categories__error"
+       role="alert">
+        No se han podido cargar los espacios.
+    </p>
+    } @else if (spaceStore.selected(); as selectedSpace) {
+    <section class="categories__content"
+             aria-labelledby="categories-title">
+
+        <div class="categories__section-heading">
+            <h2 id="categories-title">
+                {{ selectedSpace.name }}
+            </h2>
+            <p>
+                Categorías disponibles en este espacio.
+            </p>
+        </div>
+
+        @if (loading()) {
+        <p class="categories__muted"
+           role="status">
+            Cargando categorías...
+        </p>
+        } @else if (error()) {
+        <div class="categories__error"
+             role="alert">
+            <p>{{ error() }}</p>
+
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    (click)="reload()">
+                Reintentar
+            </button>
+        </div>
+        } @else if (rows().length === 0) {
+        <p class="categories__muted">
+            Este espacio todavía no tiene categorías.
+        </p>
+        } @else {
+        <ul class="categories__list">
+            @for (row of rows(); track row.category.id) {
+            <li class="categories__item">
+                <div class="categories__category"
+                     [style.--category-depth]="row.depth">
+
+                    <div class="categories__details">
+                        <strong>{{ row.category.name }}</strong>
+
+                        @if (row.parentName !== null) {
+                        <span class="categories__parent">
+                            Dentro de {{ row.parentName }}
+                        </span>
+                        }
+                    </div>
+
+                    <span class="categories__type"
+                          [class.categories__type--income]="row.category.default_type === 'income'"
+                          [class.categories__type--expense]="row.category.default_type === 'expense'">
+                        {{ row.category.default_type === 'income'
+                           ? 'Ingreso'
+                           : 'Gasto' }}
+                    </span>
+                </div>
+            </li>
+            }
+        </ul>
+        }
+    </section>
+    } @else {
+    <p class="categories__muted">
+        Selecciona un espacio para consultar sus categorías.
+    </p>
+    }
+</div>

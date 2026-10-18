@@ -26,6 +26,10 @@ const routes: Routes = [
         path: 'dashboard',
         loadComponent: () => import('@pages/dashboard/dashboard').then((m) => m.default),
       },
+      {
+        path: 'categories',
+        loadComponent: () => import('@pages/categories/categories').then((m) => m.default),
+      },
     ],
   },
   {

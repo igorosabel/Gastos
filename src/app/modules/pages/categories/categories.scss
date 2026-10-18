@@ -1,0 +1,152 @@
+:host {
+    display: block;
+}
+
+.categories {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.categories__heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+    }
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+}
+
+.categories__content {
+    padding: 1.5rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.75rem;
+    background: var(--p-content-background);
+}
+
+.categories__section-heading {
+    margin-bottom: 1.5rem;
+
+    h2 {
+        margin: 0 0 0.5rem;
+        font-size: 1.25rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+    }
+}
+
+.categories__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.categories__item {
+    border-bottom: 1px solid var(--p-content-border-color);
+
+    &:last-child {
+        border-bottom: none;
+    }
+}
+
+.categories__category {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 0.5rem;
+    padding-left: calc(0.5rem + min(var(--category-depth) * 1.5rem, 6rem));
+}
+
+.categories__details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+
+    strong {
+        overflow-wrap: anywhere;
+    }
+}
+
+.categories__parent {
+    font-size: 0.8125rem;
+    color: var(--p-text-muted-color);
+}
+
+.categories__type {
+    flex-shrink: 0;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.categories__type--income {
+    background: var(--p-green-100);
+    color: var(--p-green-800);
+}
+
+.categories__type--expense {
+    background: var(--p-red-100);
+    color: var(--p-red-800);
+}
+
+.categories__muted {
+    color: var(--p-text-muted-color);
+}
+
+.categories__error {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    color: var(--p-red-500);
+
+    p {
+        margin: 0;
+    }
+}
+
+:host-context(.gastos-app-dark) {
+    .categories__type--income {
+        background: var(--p-green-900);
+        color: var(--p-green-100);
+    }
+
+    .categories__type--expense {
+        background: var(--p-red-900);
+        color: var(--p-red-100);
+    }
+}
+
+@media (max-width: 640px) {
+    .categories__heading {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .categories__content {
+        padding: 1rem;
+    }
+
+    .categories__category {
+        padding-left: calc(0.5rem + min(var(--category-depth) * 0.75rem, 3rem));
+    }
+}
