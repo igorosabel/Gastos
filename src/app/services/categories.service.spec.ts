@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import { ApiResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import CreateCategoryResponse from '@interfaces/categories/create-category-response.interface';
 import UpdateCategoryResponse from '@interfaces/categories/update-category-response.interface';
@@ -153,6 +154,39 @@ describe('CategoriesService', (): void => {
       name: 'Casa',
       parentId: null,
       sortOrder: 5,
+    });
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('elimina una categoría mediante POST', (): void => {
+    const response: ApiResponse = {
+      success: true,
+      error: null,
+      message: null,
+    };
+
+    let result: ApiResponse | null = null;
+
+    service
+      .deleteCategory({
+        spaceId: 12,
+        categoryId: 7,
+      })
+      .subscribe({
+        next: (value: ApiResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      categoryId: 7,
     });
 
     request.flush(response);

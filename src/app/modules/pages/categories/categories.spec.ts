@@ -397,4 +397,271 @@ describe('Categories', (): void => {
     expect(component.editingCategory()).toBeNull();
     expect(component.categories()).toEqual([]);
   });
+
+  it('solicita confirmación antes de eliminar', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBe(category.id);
+    expect(component.deletingId()).toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Confirmar eliminación');
+
+    httpTesting.expectNone(`${environment.apiUrl}/categories/delete`);
+  });
+
+  it('permite cancelar sin eliminar', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+    component.cancelDelete();
+
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deleteError()).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/categories/delete`);
+  });
+
+  it('impide eliminar una categoría de otro espacio', async (): Promise<void> => {
+    await loadCategories();
+
+    const external: Category = {
+      id: 80,
+      space_id: 8,
+      parent_id: null,
+      name: 'Externa',
+      default_type: 'expense',
+      sort_order: 0,
+    };
+
+    component.requestDelete(external);
+
+    expect(component.confirmationId()).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/categories/delete`);
+  });
+
+  it('elimina y actualiza el listado después de confirmar', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    expect(component.deletingId()).toBe(category.id);
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 2,
+      categoryId: category.id,
+    });
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    const refresh = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    refresh.flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+
+    expect(component.categories()).toEqual([]);
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deletingId()).toBeNull();
+
+    expect(component.creationMessage()).toBe('Se ha eliminado la categoría «Hogar».');
+  });
+
+  it('evita eliminar dos veces durante una petición', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+
+    const first: Promise<void> = component.confirmDelete();
+    const second: Promise<void> = component.confirmDelete();
+
+    const requests = httpTesting.match(`${environment.apiUrl}/categories/delete`);
+
+    expect(requests).toHaveLength(1);
+
+    requests[0]!.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await Promise.all([first, second]);
+    fixture.detectChanges();
+
+    const refresh = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    refresh.flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+  });
+
+  it.each([
+    [400, 'Los identificadores de la categoría no son válidos.'],
+    [403, 'No tienes permiso para eliminar esta categoría.'],
+    [404, 'La categoría ya no está disponible. Actualiza el listado.'],
+    [409, 'No se puede eliminar esta categoría porque tiene dependencias.'],
+    [0, 'No se ha podido conectar con el servidor.'],
+  ])(
+    'muestra el error de eliminación HTTP %i',
+    async (status: number, message: string): Promise<void> => {
+      const category: Category = await loadCategories();
+
+      component.requestDelete(category);
+
+      const deletion: Promise<void> = component.confirmDelete();
+
+      const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+      request.flush(
+        {
+          success: false,
+          error: 'category_in_use',
+          message: 'Error de prueba',
+        },
+        {
+          status,
+          statusText: status === 0 ? 'Unknown Error' : 'Error',
+        },
+      );
+
+      await deletion;
+      fixture.detectChanges();
+
+      expect(component.deleteError()).toBe(message);
+      expect(component.confirmationId()).toBe(category.id);
+      expect(component.deletingId()).toBeNull();
+      expect(component.categories()).toHaveLength(1);
+      expect(fixture.nativeElement.textContent).toContain(message);
+    },
+  );
+
+  it('mantiene la categoría si la API devuelve success false', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+    request.flush({
+      success: false,
+      error: 'category_in_use',
+      message: 'No se puede eliminar',
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.deleteError()).toBe('No se ha podido eliminar la categoría.');
+    expect(component.categories()[0]?.id).toBe(category.id);
+  });
+
+  it('descarta una eliminación pendiente al cambiar de espacio', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deletingId()).toBeNull();
+    expect(component.creationMessage()).toBeNull();
+
+    const next = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=8`);
+
+    next.flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+
+    expect(component.categories()).toEqual([]);
+  });
+
+  it('descarta la eliminación pendiente al cerrar sesión', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/delete`);
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.categories()).toEqual([]);
+    expect(component.confirmationId()).toBeNull();
+    expect(component.creationMessage()).toBeNull();
+  });
+
+  it('cancela la confirmación al recargar el listado', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.requestDelete(category);
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    request.flush(categoryResponse(2, 'Hogar'));
+    fixture.detectChanges();
+  });
 });

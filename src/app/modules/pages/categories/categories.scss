@@ -150,7 +150,36 @@
     gap: 0.75rem;
 }
 
+.categories__confirmation {
+    display: grid;
+    gap: 1rem;
+    margin: 0.5rem 0 1rem;
+    padding: 1rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.75rem;
+    background: var(--p-content-hover-background);
+
+    p {
+        margin: 0;
+    }
+
+    strong {
+        overflow-wrap: anywhere;
+    }
+}
+
+.categories__confirmation-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
 @media (max-width: 640px) {
+    .categories__confirmation-actions button {
+        flex: 1;
+    }
+
     .categories__heading {
         flex-direction: column;
         align-items: stretch;

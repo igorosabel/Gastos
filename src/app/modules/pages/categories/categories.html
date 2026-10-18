@@ -13,7 +13,7 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                [disabled]="loading()"
+                [disabled]="loading() || deletingId() !== null"
                 (click)="reload()">
             <i class="pi pi-refresh"
                aria-hidden="true"></i>
@@ -26,7 +26,7 @@
         !spaceStore.error()) {
         <button pButton
                 type="button"
-                [disabled]="loading() || creatingCategory()"
+                [disabled]="loading() || creatingCategory() || deletingId() !== null"
                 (click)="openCreateCategory()">
             Nueva categoría
         </button>
@@ -134,8 +134,68 @@
                                 (click)="openEditCategory(row.category)">
                             Editar
                         </button>
+
+                        @if (confirmationId() !== row.category.id) {
+                        <button pButton
+                                type="button"
+                                severity="danger"
+                                variant="outlined"
+                                [disabled]="loading() ||
+                                            creatingCategory() ||
+                                            editingCategory() !== null ||
+                                            deletingId() !== null"
+                                (click)="requestDelete(row.category)">
+                            Eliminar
+                        </button>
+                        }
                     </div>
                 </div>
+                @if (confirmationId() === row.category.id) {
+                <div class="categories__confirmation"
+                     role="group"
+                     [attr.aria-label]="'Confirmar eliminación de ' + row.category.name">
+
+                    <p>
+                        ¿Seguro que quieres eliminar la categoría
+                        <strong>{{ row.category.name }}</strong>?
+                    </p>
+
+                    <p class="categories__muted">
+                        Esta acción no se puede deshacer.
+                        Si la categoría tiene subcategorías, movimientos
+                        u otras dependencias, el servidor puede impedir
+                        su eliminación.
+                    </p>
+
+                    @if (deleteError()) {
+                    <p class="categories__error"
+                       role="alert">
+                        {{ deleteError() }}
+                    </p>
+                    }
+
+                    <div class="categories__confirmation-actions">
+                        <button pButton
+                                type="button"
+                                severity="secondary"
+                                variant="outlined"
+                                [disabled]="deletingId() !== null"
+                                (click)="cancelDelete()">
+                            Cancelar
+                        </button>
+
+                        <button pButton
+                                type="button"
+                                severity="danger"
+                                [disabled]="deletingId() !== null"
+                                (click)="confirmDelete()">
+                            {{ deletingId() === row.category.id
+                               ? 'Eliminando...'
+                               : 'Confirmar eliminación' }}
+                        </button>
+                    </div>
+                </div>
+                }
             </li>
             }
         </ul>
