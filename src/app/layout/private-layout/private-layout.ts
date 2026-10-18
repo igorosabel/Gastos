@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import SpaceStore from '@app/spaces/space.store';
@@ -11,7 +11,6 @@ import { SelectModule } from 'primeng/select';
   imports: [ButtonDirective, FormsModule, RouterLink, RouterLinkActive, RouterOutlet, SelectModule],
   templateUrl: './private-layout.html',
   styleUrl: './private-layout.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class PrivateLayout implements OnInit {
   readonly authStore: AuthStore = inject(AuthStore);

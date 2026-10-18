@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import CreateCategoryResponse from '@interfaces/categories/create-category-response.interface';
+import UpdateCategoryResponse from '@interfaces/categories/update-category-response.interface';
 import CategoriesService from '@services/categories.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -108,6 +109,53 @@ describe('CategoriesService', (): void => {
       status: 201,
       statusText: 'Created',
     });
+
+    expect(result).toEqual(response);
+  });
+
+  it('actualiza una categoría mediante POST', (): void => {
+    const response: UpdateCategoryResponse = {
+      success: true,
+      category: {
+        id: 7,
+        space_id: 12,
+        parent_id: null,
+        name: 'Casa',
+        default_type: 'expense',
+        sort_order: 5,
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: UpdateCategoryResponse | null = null;
+
+    service
+      .updateCategory({
+        spaceId: 12,
+        categoryId: 7,
+        name: 'Casa',
+        parentId: null,
+        sortOrder: 5,
+      })
+      .subscribe({
+        next: (value: UpdateCategoryResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories/update`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      categoryId: 7,
+      name: 'Casa',
+      parentId: null,
+      sortOrder: 5,
+    });
+
+    request.flush(response);
 
     expect(result).toEqual(response);
   });

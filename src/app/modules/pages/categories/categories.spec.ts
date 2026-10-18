@@ -8,6 +8,7 @@ import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
+import type Category from '@model/categories/category.model';
 import Categories from '@pages/categories/categories';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -103,6 +104,32 @@ describe('Categories', (): void => {
     request.flush(spacesResponse);
     await loading;
     fixture.detectChanges();
+  }
+
+  async function loadCategories(): Promise<Category> {
+    await loadSpaces();
+
+    const category: Category = {
+      id: 20,
+      space_id: 2,
+      parent_id: null,
+      name: 'Hogar',
+      default_type: 'expense',
+      sort_order: 0,
+    };
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    request.flush({
+      success: true,
+      categories: [category],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+
+    return category;
   }
 
   it('consulta las categorías del espacio seleccionado', async (): Promise<void> => {
@@ -217,5 +244,157 @@ describe('Categories', (): void => {
 
     expect(component.categories()).toEqual([]);
     expect(component.rows()).toEqual([]);
+  });
+
+  it('abre el formulario de edición de una categoría', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toEqual(category);
+
+    expect(fixture.nativeElement.querySelector('app-edit-category')).not.toBeNull();
+  });
+
+  it('permite cancelar la edición', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    component.cancelEditCategory();
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+
+    expect(fixture.nativeElement.querySelector('app-edit-category')).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/categories/update`);
+  });
+
+  it('impide editar una categoría de otro espacio', async (): Promise<void> => {
+    await loadCategories();
+
+    const external: Category = {
+      id: 50,
+      space_id: 8,
+      parent_id: null,
+      name: 'Categoría externa',
+      default_type: 'expense',
+      sort_order: 0,
+    };
+
+    component.openEditCategory(external);
+
+    expect(component.editingCategory()).toBeNull();
+  });
+
+  it('impide abrir creación y edición simultáneamente', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    component.openCreateCategory();
+
+    expect(component.editingCategory()).toEqual(category);
+    expect(component.creatingCategory()).toBe(false);
+  });
+
+  it('cierra la edición cuando cambia el espacio', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=8`);
+
+    request.flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+  });
+
+  it('cierra la edición al actualizar el listado', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    request.flush(categoryResponse(2, 'Hogar'));
+    fixture.detectChanges();
+  });
+
+  it('actualiza las categorías después de guardar', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    component.onCategorySaved({
+      ...category,
+      name: 'Casa',
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    request.flush(categoryResponse(2, 'Casa'));
+    fixture.detectChanges();
+
+    expect(component.categories()[0]?.name).toBe('Casa');
+    expect(component.creationMessage()).toBe('Se ha actualizado la categoría «Casa».');
+  });
+
+  it('ignora una respuesta de edición de otro espacio', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+
+    component.onCategorySaved({
+      ...category,
+      space_id: 8,
+      name: 'Categoría externa',
+    });
+
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/categories?spaceId=2`);
+
+    expect(component.categories()[0]?.name).toBe('Hogar');
+  });
+
+  it('cierra la edición al finalizar la sesión', async (): Promise<void> => {
+    const category: Category = await loadCategories();
+
+    component.openEditCategory(category);
+    fixture.detectChanges();
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.editingCategory()).toBeNull();
+    expect(component.categories()).toEqual([]);
   });
 });

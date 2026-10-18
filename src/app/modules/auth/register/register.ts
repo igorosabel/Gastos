@@ -1,7 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   afterNextRender,
-  ChangeDetectionStrategy,
   Component,
   ElementRef,
   inject,
@@ -33,7 +32,6 @@ import { firstValueFrom } from 'rxjs';
   imports: [ButtonDirective, FormField, FormRoot, InputTextModule, RouterLink],
   templateUrl: './register.html',
   styleUrl: './register.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Register {
   private readonly authService: AuthService = inject(AuthService);

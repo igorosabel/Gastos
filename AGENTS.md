@@ -158,7 +158,9 @@ const elementos: string[] = [];
 
 - Utilizar componentes standalone.
 - No declarar `standalone: true` explícitamente.
-- Utilizar `ChangeDetectionStrategy.OnPush`.
+- Utilizar ChangeDetectionStrategy.OnPush (no es
+  necesario indicarlo explicitamente ya que es el por defecto
+  de Angular 22).
 - Separar siempre lógica, plantilla y estilos.
 - Evitar lógica de negocio en las plantillas.
 - Mantener los componentes pequeños y enfocados.

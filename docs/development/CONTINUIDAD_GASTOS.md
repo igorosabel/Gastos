@@ -67,7 +67,7 @@ Existe `.github/workflows/deploy-angular.yml`: se ejecuta en `push` a `main` o m
 Consultar y obedecer **el `AGENTS.md` vigente** antes de proponer código. Resumen operativo:
 
 1. **Un bloque pequeño y verificable cada vez**. Antes de cambiar algo: leer código actual, arquitectura documentada y contrato de la API; explicar cambios y pruebas; esperar resultados del usuario y su commit para avanzar.
-2. Cada componente Angular dispone de `nombre.ts`, `nombre.html` y `nombre.scss` **separados**; no templates ni estilos inline. Usar `ChangeDetectionStrategy.OnPush` según las convenciones actuales.
+2. Cada componente Angular dispone de `nombre.ts`, `nombre.html` y `nombre.scss` **separados**; no templates ni estilos inline. Usar `ChangeDetectionStrategy.OnPush` según las convenciones actuales, pero no es necesario indicarlo explicitamente ya que es el por defecto de Angular 22.
 3. Componentes y servicios con responsabilidades separadas; `@Service()` de Angular 22, registrado automáticamente en raíz para servicios de aplicación; `inject()`, sin proveedores globales redundantes.
 4. **Imports TypeScript mediante el alias más específico** (`@app`, `@auth`, `@guard`, `@interfaces`, `@interceptors`, `@model`, `@modules`, `@pages`, `@services`, `@env`, etc.), nunca `./` ni `../`. Las rutas de plantilla/estilo en `@Component` sí son referencias relativas a recursos.
 5. Archivo con **una sola exportación**: `export default`; con varias exportaciones: todas nombradas. Tipar explícitamente constantes, variables, propiedades, parámetros y retornos; evitar `any`.

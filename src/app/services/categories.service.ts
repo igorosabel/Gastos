@@ -4,6 +4,8 @@ import { environment } from '@env/environment';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type CreateCategoryRequest from '@interfaces/categories/create-category-request.interface';
 import type CreateCategoryResponse from '@interfaces/categories/create-category-response.interface';
+import type UpdateCategoryRequest from '@interfaces/categories/update-category-request.interface';
+import type UpdateCategoryResponse from '@interfaces/categories/update-category-response.interface';
 import type { Observable } from 'rxjs';
 
 @Service()
@@ -27,5 +29,12 @@ export default class CategoriesService {
    */
   createCategory(data: CreateCategoryRequest): Observable<CreateCategoryResponse> {
     return this.http.post<CreateCategoryResponse>(`${this.apiUrl}/categories`, data);
+  }
+
+  /**
+   * Actualiza una categoría existente.
+   */
+  updateCategory(data: UpdateCategoryRequest): Observable<UpdateCategoryResponse> {
+    return this.http.post<UpdateCategoryResponse>(`${this.apiUrl}/categories/update`, data);
   }
 }

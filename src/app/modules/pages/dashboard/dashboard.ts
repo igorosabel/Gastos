@@ -1,10 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  inject,
-  signal,
-  type WritableSignal,
-} from '@angular/core';
+import { Component, inject, signal, type WritableSignal } from '@angular/core';
 import SpaceStore from '@app/spaces/space.store';
 import type Space from '@model/spaces/space.model';
 import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
@@ -26,7 +20,6 @@ import { ButtonDirective } from 'primeng/button';
   ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Dashboard {
   readonly spaceStore: SpaceStore = inject(SpaceStore);

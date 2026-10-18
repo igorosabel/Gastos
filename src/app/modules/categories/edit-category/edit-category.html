@@ -1,0 +1,89 @@
+<form [formRoot]="editForm"
+      class="category-form"
+      aria-label="Editar categoría">
+
+    <h3>Editar categoría</h3>
+
+    <p class="category-form__type">
+        Tipo:
+        <strong>
+            {{ category().default_type === 'income'
+               ? 'Ingreso'
+               : 'Gasto' }}
+        </strong>
+    </p>
+
+    <div class="category-form__field">
+        <label for="edit-category-name">
+            Nombre de la categoría
+        </label>
+
+        <input #nameInput
+               pInputText
+               id="edit-category-name"
+               type="text"
+               autocomplete="off"
+               [formField]="editForm.name" />
+
+        @if (editForm.name().touched() &&
+        editForm.name().invalid()) {
+        <small class="category-form__error"
+               role="alert">
+            {{ editForm.name().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="category-form__field">
+        <label for="edit-category-parent">
+            Categoría padre
+        </label>
+
+        <p-select inputId="edit-category-parent"
+                  [options]="parentOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="editForm.parentId"
+                  [fluid]="true">
+
+            <ng-template #item
+                         let-option>
+                <div [style.padding-left.rem]="option.depth * 1.25">
+                    {{ option.label }}
+                </div>
+            </ng-template>
+
+        </p-select>
+
+        <small class="category-form__help">
+            No puedes seleccionar esta categoría
+            ni ninguna de sus subcategorías como padre.
+        </small>
+    </div>
+
+    @if (editForm().errors().length > 0) {
+    <p class="category-form__error"
+       role="alert">
+        {{ editForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="category-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="editForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="editForm().submitting()">
+            {{ editForm().submitting()
+               ? 'Guardando...'
+               : 'Guardar cambios' }}
+        </button>
+    </div>
+</form>

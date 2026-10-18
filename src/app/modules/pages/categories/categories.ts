@@ -1,6 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import {
-  ChangeDetectionStrategy,
   Component,
   computed,
   effect,
@@ -16,16 +15,16 @@ import categoriesToRows from '@model/categories/categories-to-rows.mapper';
 import type CategoryRow from '@model/categories/category-row.model';
 import type Category from '@model/categories/category.model';
 import CreateCategory from '@modules/categories/create-category/create-category';
+import EditCategory from '@modules/categories/edit-category/edit-category';
 import CategoriesService from '@services/categories.service';
 import { ButtonDirective } from 'primeng/button';
 import type { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-categories',
-  imports: [ButtonDirective, CreateCategory],
+  imports: [ButtonDirective, CreateCategory, EditCategory],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Categories {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
@@ -35,6 +34,7 @@ export default class Categories {
 
   readonly categories: WritableSignal<Category[]> = signal<Category[]>([]);
   readonly loading: WritableSignal<boolean> = signal<boolean>(false);
+  readonly editingCategory: WritableSignal<Category | null> = signal<Category | null>(null);
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
 
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
@@ -51,7 +51,12 @@ export default class Categories {
    * Abre el formulario de creación.
    */
   openCreateCategory(): void {
-    if (this.spaceStore.selectedId() === null || this.loading() || this.error() !== null) {
+    if (
+      this.spaceStore.selectedId() === null ||
+      this.loading() ||
+      this.error() !== null ||
+      this.editingCategory() !== null
+    ) {
       return;
     }
 
@@ -82,12 +87,63 @@ export default class Categories {
     this.creationMessage.set(`Se ha creado la categoría «${category.name}».`);
   }
 
+  /**
+   * Abre la edición de una categoría existente.
+   */
+  openEditCategory(category: Category): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingCategory() ||
+      this.editingCategory() !== null ||
+      category.space_id !== this.spaceStore.selectedId() ||
+      !this.categories().some((item: Category): boolean => item.id === category.id)
+    ) {
+      return;
+    }
+
+    this.creationMessage.set(null);
+    this.editingCategory.set(category);
+  }
+
+  /**
+   * Cancela la edición.
+   */
+  cancelEditCategory(): void {
+    this.editingCategory.set(null);
+  }
+
+  /**
+   * Actualiza el listado tras editar una categoría.
+   */
+  onCategorySaved(category: Category): void {
+    if (
+      category.space_id !== this.spaceStore.selectedId() ||
+      this.editingCategory()?.id !== category.id
+    ) {
+      this.editingCategory.set(null);
+      return;
+    }
+
+    this.editingCategory.set(null);
+    this.reload();
+
+    this.creationMessage.set(`Se ha actualizado la categoría «${category.name}».`);
+  }
+
   constructor() {
+    effect((): void => {
+      this.spaceStore.selectedId();
+      this.authStore.token();
+
+      this.creatingCategory.set(false);
+      this.editingCategory.set(null);
+      this.creationMessage.set(null);
+    });
+
     effect((onCleanup): void => {
       const spaceId: number | null = this.spaceStore.selectedId();
       const token: string | null = this.authStore.token();
-      this.creatingCategory.set(false);
-      this.creationMessage.set(null);
 
       this.refreshVersion();
 
@@ -138,6 +194,9 @@ export default class Categories {
     if (this.spaceStore.selectedId() === null) {
       return;
     }
+
+    this.creatingCategory.set(false);
+    this.editingCategory.set(null);
 
     this.refreshVersion.update((version: number): number => version + 1);
   }

@@ -40,6 +40,13 @@
                          (cancelled)="cancelCreateCategory()" />
     }
 
+    @if (editingCategory(); as category) {
+    <app-edit-category [category]="category"
+                       [categories]="categories()"
+                       (saved)="onCategorySaved($event)"
+                       (cancelled)="cancelEditCategory()" />
+    }
+
     @if (creationMessage()) {
     <p role="status"
        class="categories__success">
@@ -108,13 +115,26 @@
                         }
                     </div>
 
-                    <span class="categories__type"
-                          [class.categories__type--income]="row.category.default_type === 'income'"
-                          [class.categories__type--expense]="row.category.default_type === 'expense'">
-                        {{ row.category.default_type === 'income'
-                           ? 'Ingreso'
-                           : 'Gasto' }}
-                    </span>
+                    <div class="categories__controls">
+                        <span class="categories__type"
+                              [class.categories__type--income]="row.category.default_type === 'income'"
+                              [class.categories__type--expense]="row.category.default_type === 'expense'">
+                            {{ row.category.default_type === 'income'
+                               ? 'Ingreso'
+                               : 'Gasto' }}
+                        </span>
+
+                        <button pButton
+                                type="button"
+                                severity="secondary"
+                                variant="outlined"
+                                [disabled]="loading() ||
+                                            creatingCategory() ||
+                                            editingCategory() !== null"
+                                (click)="openEditCategory(row.category)">
+                            Editar
+                        </button>
+                    </div>
                 </div>
             </li>
             }
