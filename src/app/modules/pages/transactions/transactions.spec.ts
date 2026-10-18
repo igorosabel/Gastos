@@ -160,6 +160,32 @@ describe('Transactions', (): void => {
     fixture.detectChanges();
   }
 
+  function completeFilteredLoad(
+    spaceId: number,
+    query: string,
+    total: number = 1,
+    page: number = 1,
+    totalPages: number = 1,
+  ): void {
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?${query}`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/categories?spaceId=${spaceId}`,
+    );
+
+    transactionsRequest.flush({
+      ...transactionResponse(spaceId),
+      total,
+      page,
+      total_pages: totalPages,
+    } satisfies TransactionsResponse);
+
+    categoriesRequest.flush(categoryResponse(spaceId));
+    fixture.detectChanges();
+  }
+
   it('no consulta movimientos sin espacio seleccionado', (): void => {
     expect(component.transactions()).toEqual([]);
     expect(component.loading()).toBe(false);
@@ -548,5 +574,208 @@ describe('Transactions', (): void => {
     component.nextPage();
 
     expect(component.page()).toBe(2);
+  });
+
+  it('mantiene los filtros vacíos por defecto', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    expect(component.filtersModel()).toEqual({
+      dateFrom: '',
+      dateTo: '',
+      type: null,
+      categoryId: null,
+    });
+
+    expect(component.appliedFilters()).toEqual(component.filtersModel());
+  });
+
+  it('no realiza peticiones al editar filtros sin aplicarlos', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      dateFrom: '2026-10-01',
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions`);
+
+    expect(component.appliedFilters().dateFrom).toBe('');
+    expect(component.appliedFilters().type).toBeNull();
+  });
+
+  it('aplica los filtros y consulta la primera página', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.set({
+      dateFrom: '2026-10-01',
+      dateTo: '2026-10-31',
+      type: 'expense',
+      categoryId: 200,
+    });
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+
+    completeFilteredLoad(
+      2,
+      'spaceId=2&page=1&dateFrom=2026-10-01&dateTo=2026-10-31&type=expense&categoryId=200',
+    );
+
+    expect(component.appliedFilters()).toEqual({
+      dateFrom: '2026-10-01',
+      dateTo: '2026-10-31',
+      type: 'expense',
+      categoryId: 200,
+    });
+
+    expect(component.transactions()).toHaveLength(1);
+  });
+
+  it('conserva los filtros al cambiar de página', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    completeFilteredLoad(2, 'spaceId=2&page=1&type=expense', 45, 1, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(2);
+
+    completeFilteredLoad(2, 'spaceId=2&page=2&type=expense', 45, 2, 3);
+
+    expect(component.appliedFilters().type).toBe('expense');
+  });
+
+  it('rechaza un rango de fechas invertido', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      dateFrom: '2026-10-31',
+      dateTo: '2026-10-01',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+
+    expect(component.filtersError()).toBe(
+      'La fecha inicial no puede ser posterior a la fecha final.',
+    );
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions`);
+  });
+
+  it('impide filtrar por una categoría incompatible', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'income',
+      categoryId: 200,
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+
+    expect(component.filtersError()).toBe(
+      'La categoría seleccionada no es válida para este filtro.',
+    );
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions`);
+  });
+
+  it('limpia los filtros aplicados', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    completeFilteredLoad(2, 'spaceId=2&page=1&type=expense');
+
+    component.clearFilters();
+    fixture.detectChanges();
+
+    completeLoad(2);
+
+    expect(component.filtersModel().type).toBeNull();
+    expect(component.appliedFilters().type).toBeNull();
+    expect(component.page()).toBe(1);
+  });
+
+  it('reinicia los filtros al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    completeFilteredLoad(2, 'spaceId=2&page=1&type=expense');
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.filtersModel().type).toBeNull();
+    expect(component.appliedFilters().type).toBeNull();
+    expect(component.page()).toBe(1);
+
+    completeLoad(8);
+  });
+
+  it('reinicia los filtros al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    completeFilteredLoad(2, 'spaceId=2&page=1&type=expense');
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.filtersModel().type).toBeNull();
+    expect(component.appliedFilters().type).toBeNull();
+    expect(component.transactions()).toEqual([]);
   });
 });

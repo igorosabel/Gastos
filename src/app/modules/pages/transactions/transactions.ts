@@ -8,20 +8,26 @@ import {
   type Signal,
   type WritableSignal,
 } from '@angular/core';
+import { form, FormField, type FieldTree } from '@angular/forms/signals';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type Category from '@model/categories/category.model';
+import transactionFiltersFormInitialValue from '@model/transactions/transaction-filters-form.initial-value';
+import transactionFiltersFormMapper from '@model/transactions/transaction-filters-form.mapper';
+import transactionFiltersFormSchema from '@model/transactions/transaction-filters-form.schema';
+import type TransactionFilters from '@model/transactions/transaction-filters.model';
 import type Transaction from '@model/transactions/transaction.model';
 import CategoriesService from '@services/categories.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
+import { SelectModule } from 'primeng/select';
 import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
-  imports: [ButtonDirective],
+  imports: [ButtonDirective, FormField, SelectModule],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
@@ -40,6 +46,62 @@ export default class Transactions {
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
   readonly page: WritableSignal<number> = signal<number>(1);
   readonly totalPages: WritableSignal<number> = signal<number>(0);
+  readonly filtersModel: WritableSignal<TransactionFilters> = signal<TransactionFilters>(
+    transactionFiltersFormInitialValue(),
+  );
+
+  readonly filtersForm: FieldTree<TransactionFilters> = form(
+    this.filtersModel,
+    transactionFiltersFormSchema,
+  );
+
+  readonly appliedFilters: WritableSignal<TransactionFilters> = signal<TransactionFilters>(
+    transactionFiltersFormInitialValue(),
+  );
+
+  readonly filtersError: WritableSignal<string | null> = signal<string | null>(null);
+
+  readonly typeOptions: {
+    label: string;
+    value: 'income' | 'expense' | null;
+  }[] = [
+    { label: 'Todos', value: null },
+    { label: 'Gastos', value: 'expense' },
+    { label: 'Ingresos', value: 'income' },
+  ];
+
+  readonly categoryOptions: Signal<
+    {
+      label: string;
+      value: number | null;
+    }[]
+  > = computed(
+    (): {
+      label: string;
+      value: number | null;
+    }[] => {
+      const options: {
+        label: string;
+        value: number | null;
+      }[] = [{ label: 'Todas las categorías', value: null }];
+
+      const selectedType: 'income' | 'expense' | null = this.filtersModel().type;
+
+      for (const category of this.categories()) {
+        if (
+          category.space_id === this.spaceStore.selectedId() &&
+          (selectedType === null || category.default_type === selectedType)
+        ) {
+          options.push({
+            label: category.name,
+            value: category.id,
+          });
+        }
+      }
+
+      return options;
+    },
+  );
 
   readonly categoryNames: Signal<Map<number, string>> = computed((): Map<number, string> => {
     const names: Map<number, string> = new Map<number, string>();
@@ -62,7 +124,11 @@ export default class Transactions {
       if (this.previousSpaceId !== spaceId || this.previousToken !== token) {
         this.previousSpaceId = spaceId;
         this.previousToken = token;
+
         this.page.set(1);
+        this.filtersModel.set(transactionFiltersFormInitialValue());
+        this.appliedFilters.set(transactionFiltersFormInitialValue());
+        this.filtersError.set(null);
       }
     });
 
@@ -70,6 +136,7 @@ export default class Transactions {
       const spaceId: number | null = this.spaceStore.selectedId();
       const token: string | null = this.authStore.token();
       const page: number = this.page();
+      const filters: TransactionFilters = this.appliedFilters();
 
       this.refreshVersion();
 
@@ -88,7 +155,7 @@ export default class Transactions {
       this.loading.set(true);
 
       const subscription: Subscription = forkJoin({
-        transactions: this.transactionsService.getTransactions(spaceId, page),
+        transactions: this.transactionsService.getTransactions(spaceId, page, filters),
         categories: this.categoriesService.getCategories(spaceId),
       }).subscribe({
         next: (response: {
@@ -175,6 +242,67 @@ export default class Transactions {
     }
 
     this.page.update((page: number): number => page + 1);
+  }
+
+  /**
+   * Aplica los filtros introducidos y vuelve a la primera página.
+   */
+  applyFilters(): void {
+    if (this.spaceStore.selectedId() === null || this.loading() || this.filtersForm().invalid()) {
+      return;
+    }
+
+    const filters: TransactionFilters = transactionFiltersFormMapper(this.filtersModel());
+
+    if (filters.dateFrom !== '' && filters.dateTo !== '' && filters.dateFrom > filters.dateTo) {
+      this.filtersError.set('La fecha inicial no puede ser posterior a la fecha final.');
+      return;
+    }
+
+    const selectedCategory: Category | undefined = this.categories().find(
+      (category: Category): boolean =>
+        category.id === filters.categoryId && category.space_id === this.spaceStore.selectedId(),
+    );
+
+    if (
+      filters.categoryId !== null &&
+      (selectedCategory === undefined ||
+        (filters.type !== null && selectedCategory.default_type !== filters.type))
+    ) {
+      this.filtersError.set('La categoría seleccionada no es válida para este filtro.');
+      return;
+    }
+
+    this.filtersError.set(null);
+    this.page.set(1);
+    this.appliedFilters.set(filters);
+  }
+
+  /**
+   * Limpia todos los filtros y consulta de nuevo la primera página.
+   */
+  clearFilters(): void {
+    if (this.spaceStore.selectedId() === null || this.loading()) {
+      return;
+    }
+
+    this.filtersModel.set(transactionFiltersFormInitialValue());
+    this.appliedFilters.set(transactionFiltersFormInitialValue());
+    this.filtersError.set(null);
+    this.page.set(1);
+  }
+
+  /**
+   * Impide conservar una categoría incompatible con el tipo elegido.
+   */
+  changeFilterType(type: 'income' | 'expense' | null): void {
+    this.filtersModel.update(
+      (model: TransactionFilters): TransactionFilters => ({
+        ...model,
+        type,
+        categoryId: null,
+      }),
+    );
   }
 
   /**

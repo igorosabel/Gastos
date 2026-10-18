@@ -102,4 +102,68 @@ describe('TransactionsService', (): void => {
 
     expect(result).toEqual(response);
   });
+
+  it('envía todos los filtros informados', (): void => {
+    service
+      .getTransactions(12, 2, {
+        dateFrom: '2026-10-01',
+        dateTo: '2026-10-31',
+        type: 'expense',
+        categoryId: 7,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne(
+      (req): boolean =>
+        req.url === `${environment.apiUrl}/transactions` &&
+        req.params.get('spaceId') === '12' &&
+        req.params.get('page') === '2' &&
+        req.params.get('dateFrom') === '2026-10-01' &&
+        req.params.get('dateTo') === '2026-10-31' &&
+        req.params.get('type') === 'expense' &&
+        req.params.get('categoryId') === '7',
+    );
+
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      success: true,
+      transactions: [],
+      total: 0,
+      page: 2,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies TransactionsResponse);
+  });
+
+  it('omite los filtros vacíos', (): void => {
+    service
+      .getTransactions(12, 1, {
+        dateFrom: '',
+        dateTo: '',
+        type: null,
+        categoryId: null,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions?spaceId=12&page=1`);
+
+    expect(request.request.params.has('dateFrom')).toBe(false);
+    expect(request.request.params.has('dateTo')).toBe(false);
+    expect(request.request.params.has('type')).toBe(false);
+    expect(request.request.params.has('categoryId')).toBe(false);
+
+    request.flush({
+      success: true,
+      transactions: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies TransactionsResponse);
+  });
 });

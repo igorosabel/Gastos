@@ -21,6 +21,98 @@
         }
     </header>
 
+    @if (spaceStore.selected() && !spaceStore.loading() && !spaceStore.error()) {
+    <section class="transactions__filters"
+             aria-labelledby="transaction-filters-title">
+
+        <h2 id="transaction-filters-title">
+            Filtrar movimientos
+        </h2>
+
+        <div class="transactions__filter-grid">
+            <div class="transactions__filter-field">
+                <label for="transactions-date-from">Desde</label>
+
+                <input id="transactions-date-from"
+                       type="date"
+                       [formField]="filtersForm.dateFrom" />
+
+                @if (filtersForm.dateFrom().touched() &&
+                filtersForm.dateFrom().invalid()) {
+                <small class="transactions__filter-error"
+                       role="alert">
+                    {{ filtersForm.dateFrom().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            <div class="transactions__filter-field">
+                <label for="transactions-date-to">Hasta</label>
+
+                <input id="transactions-date-to"
+                       type="date"
+                       [formField]="filtersForm.dateTo" />
+
+                @if (filtersForm.dateTo().touched() &&
+                filtersForm.dateTo().invalid()) {
+                <small class="transactions__filter-error"
+                       role="alert">
+                    {{ filtersForm.dateTo().errors()[0]?.message }}
+                </small>
+                }
+            </div>
+
+            <div class="transactions__filter-field">
+                <label for="transactions-type">Tipo</label>
+
+                <p-select inputId="transactions-type"
+                          [options]="typeOptions"
+                          optionLabel="label"
+                          optionValue="value"
+                          [formField]="filtersForm.type"
+                          (onChange)="changeFilterType($event.value)"
+                          [fluid]="true" />
+            </div>
+
+            <div class="transactions__filter-field">
+                <label for="transactions-category">Categoría</label>
+
+                <p-select inputId="transactions-category"
+                          [options]="categoryOptions()"
+                          optionLabel="label"
+                          optionValue="value"
+                          [formField]="filtersForm.categoryId"
+                          [fluid]="true" />
+            </div>
+        </div>
+
+        @if (filtersError()) {
+        <p class="transactions__filter-error"
+           role="alert">
+            {{ filtersError() }}
+        </p>
+        }
+
+        <div class="transactions__filter-actions">
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading()"
+                    (click)="clearFilters()">
+                Limpiar filtros
+            </button>
+
+            <button pButton
+                    type="button"
+                    [disabled]="loading() || filtersForm().invalid()"
+                    (click)="applyFilters()">
+                Aplicar filtros
+            </button>
+        </div>
+    </section>
+    }
+
     @if (spaceStore.loading()) {
     <p class="transactions__muted"
        role="status">
@@ -63,7 +155,16 @@
         </div>
         } @else if (transactions().length === 0) {
         <p class="transactions__muted">
+            @if (
+            appliedFilters().dateFrom !== '' ||
+            appliedFilters().dateTo !== '' ||
+            appliedFilters().type !== null ||
+            appliedFilters().categoryId !== null
+            ) {
+            No hay movimientos que coincidan con los filtros seleccionados.
+            } @else {
             Este espacio todavía no tiene movimientos.
+            }
         </p>
         } @else {
         <ul class="transactions__list">
