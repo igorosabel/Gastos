@@ -20,7 +20,32 @@
             <span>Actualizar</span>
         </button>
         }
+
+        @if (spaceStore.selectedId() !== null &&
+        !spaceStore.loading() &&
+        !spaceStore.error()) {
+        <button pButton
+                type="button"
+                [disabled]="loading() || creatingCategory()"
+                (click)="openCreateCategory()">
+            Nueva categoría
+        </button>
+        }
     </header>
+
+    @if (creatingCategory() && spaceStore.selectedId(); as spaceId) {
+    <app-create-category [spaceId]="spaceId"
+                         [categories]="categories()"
+                         (created)="onCategoryCreated($event)"
+                         (cancelled)="cancelCreateCategory()" />
+    }
+
+    @if (creationMessage()) {
+    <p role="status"
+       class="categories__success">
+        {{ creationMessage() }}
+    </p>
+    }
 
     @if (spaceStore.loading()) {
     <p class="categories__muted"

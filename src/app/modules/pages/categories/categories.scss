@@ -136,6 +136,12 @@
     }
 }
 
+.categories__success {
+    margin: 0;
+    color: var(--p-primary-color);
+    font-weight: 600;
+}
+
 @media (max-width: 640px) {
     .categories__heading {
         flex-direction: column;

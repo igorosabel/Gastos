@@ -15,13 +15,14 @@ import type CategoriesResponse from '@interfaces/categories/categories-response.
 import categoriesToRows from '@model/categories/categories-to-rows.mapper';
 import type CategoryRow from '@model/categories/category-row.model';
 import type Category from '@model/categories/category.model';
+import CreateCategory from '@modules/categories/create-category/create-category';
 import CategoriesService from '@services/categories.service';
 import { ButtonDirective } from 'primeng/button';
 import type { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-categories',
-  imports: [ButtonDirective],
+  imports: [ButtonDirective, CreateCategory],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,10 +43,51 @@ export default class Categories {
     categoriesToRows(this.categories()),
   );
 
+  readonly creatingCategory: WritableSignal<boolean> = signal<boolean>(false);
+
+  readonly creationMessage: WritableSignal<string | null> = signal<string | null>(null);
+
+  /**
+   * Abre el formulario de creación.
+   */
+  openCreateCategory(): void {
+    if (this.spaceStore.selectedId() === null || this.loading() || this.error() !== null) {
+      return;
+    }
+
+    this.creationMessage.set(null);
+    this.creatingCategory.set(true);
+  }
+
+  /**
+   * Cancela la creación.
+   */
+  cancelCreateCategory(): void {
+    this.creatingCategory.set(false);
+  }
+
+  /**
+   * Actualiza el listado después de crear una categoría.
+   */
+
+  onCategoryCreated(category: Category): void {
+    if (category.space_id !== this.spaceStore.selectedId()) {
+      this.creatingCategory.set(false);
+      return;
+    }
+
+    this.creatingCategory.set(false);
+    this.reload();
+
+    this.creationMessage.set(`Se ha creado la categoría «${category.name}».`);
+  }
+
   constructor() {
     effect((onCleanup): void => {
       const spaceId: number | null = this.spaceStore.selectedId();
       const token: string | null = this.authStore.token();
+      this.creatingCategory.set(false);
+      this.creationMessage.set(null);
 
       this.refreshVersion();
 

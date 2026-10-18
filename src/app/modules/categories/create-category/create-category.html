@@ -1,0 +1,93 @@
+<form [formRoot]="categoryForm"
+      class="category-form"
+      aria-label="Crear categoría">
+
+    <h3>Nueva categoría</h3>
+
+    <div class="category-form__field">
+        <label for="new-category-name">
+            Nombre de la categoría
+        </label>
+
+        <input #nameInput
+               pInputText
+               id="new-category-name"
+               type="text"
+               autocomplete="off"
+               placeholder="Por ejemplo, Alimentación"
+               [formField]="categoryForm.name" />
+
+        @if (categoryForm.name().touched() &&
+        categoryForm.name().invalid()) {
+        <small class="category-form__error"
+               role="alert">
+            {{ categoryForm.name().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="category-form__field">
+        <label for="new-category-type">
+            Tipo
+        </label>
+
+        <p-select inputId="new-category-type"
+                  [options]="categoryTypes"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="categoryForm.defaultType"
+                  (onChange)="changeType($event.value)"
+                  [fluid]="true" />
+    </div>
+
+    <div class="category-form__field">
+        <label for="new-category-parent">
+            Categoría padre
+        </label>
+
+        <p-select inputId="new-category-parent"
+                  [options]="parentOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="categoryForm.parentId"
+                  [fluid]="true">
+            <ng-template #item
+                         let-option>
+                <div [style.padding-left.rem]="option.depth * 1.25">
+                    {{ option.label }}
+                </div>
+            </ng-template>
+        </p-select>
+
+        <small class="category-form__help">
+            Selecciona «Categoría principal» para crear
+            una categoría sin padre.
+        </small>
+    </div>
+
+    @if (categoryForm().errors().length > 0) {
+    <p class="category-form__error"
+       role="alert">
+        {{ categoryForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="category-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="categoryForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="categoryForm().submitting()">
+            {{ categoryForm().submitting()
+               ? 'Creando...'
+               : 'Crear categoría' }}
+        </button>
+    </div>
+</form>
