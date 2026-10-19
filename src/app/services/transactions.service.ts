@@ -1,8 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import type { ApiResponse } from '@interfaces/auth.interfaces';
 import type CreateTransactionRequest from '@interfaces/transactions/create-transaction-request.interface';
 import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
+import type DeleteTransactionRequest from '@interfaces/transactions/delete-transaction-request.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type UpdateTransactionRequest from '@interfaces/transactions/update-transaction-request.interface';
 import type UpdateTransactionResponse from '@interfaces/transactions/update-transaction-response.interface';
@@ -59,5 +61,12 @@ export default class TransactionsService {
    */
   updateTransaction(data: UpdateTransactionRequest): Observable<UpdateTransactionResponse> {
     return this.http.post<UpdateTransactionResponse>(`${this.apiUrl}/transactions/update`, data);
+  }
+
+  /**
+   * Elimina un movimiento económico independiente.
+   */
+  deleteTransaction(data: DeleteTransactionRequest): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/transactions/delete`, data);
   }
 }

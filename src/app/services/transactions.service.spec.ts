@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import type { ApiResponse } from '@interfaces/auth.interfaces';
 import type CreateTransactionResponse from '@interfaces/transactions/create-transaction-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type UpdateTransactionResponse from '@interfaces/transactions/update-transaction-response.interface';
@@ -269,6 +270,39 @@ describe('TransactionsService', (): void => {
       amount: '98.00',
       concept: 'Electricidad ajustada',
       date: '2026-10-20',
+    });
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('elimina un movimiento mediante POST', (): void => {
+    const response: ApiResponse = {
+      success: true,
+      error: null,
+      message: null,
+    };
+
+    let result: ApiResponse | null = null;
+
+    service
+      .deleteTransaction({
+        spaceId: 12,
+        transactionId: 31,
+      })
+      .subscribe({
+        next: (value: ApiResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      transactionId: 31,
     });
 
     request.flush(response);

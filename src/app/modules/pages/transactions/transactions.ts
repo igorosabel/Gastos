@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   signal,
@@ -11,6 +12,7 @@ import {
 import { form, FormField, type FieldTree } from '@angular/forms/signals';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
+import type { ApiResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type Category from '@model/categories/category.model';
@@ -25,7 +27,7 @@ import CategoriesService from '@services/categories.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
-import { forkJoin, type Subscription } from 'rxjs';
+import { firstValueFrom, forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
@@ -38,6 +40,7 @@ export default class Transactions {
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly transactionsService: TransactionsService = inject(TransactionsService);
   private readonly categoriesService: CategoriesService = inject(CategoriesService);
+  private readonly destroyRef: DestroyRef = inject(DestroyRef);
 
   readonly transactions: WritableSignal<Transaction[]> = signal<Transaction[]>([]);
   readonly categories: WritableSignal<Category[]> = signal<Category[]>([]);
@@ -56,6 +59,9 @@ export default class Transactions {
   readonly editingTransaction: WritableSignal<Transaction | null> = signal<Transaction | null>(
     null,
   );
+  readonly confirmationId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly deletingId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly deleteError: WritableSignal<string | null> = signal<string | null>(null);
 
   readonly filtersForm: FieldTree<TransactionFilters> = form(
     this.filtersModel,
@@ -139,6 +145,9 @@ export default class Transactions {
         this.editingTransaction.set(null);
         this.creationMessage.set(null);
         this.filtersError.set(null);
+        this.confirmationId.set(null);
+        this.deletingId.set(null);
+        this.deleteError.set(null);
       }
     });
 
@@ -150,6 +159,8 @@ export default class Transactions {
 
       this.refreshVersion();
 
+      this.confirmationId.set(null);
+      this.deleteError.set(null);
       this.transactions.set([]);
       this.categories.set([]);
       this.total.set(0);
@@ -208,7 +219,7 @@ export default class Transactions {
    * Vuelve a consultar los movimientos del espacio activo.
    */
   reload(): void {
-    if (this.spaceStore.selectedId() === null || this.loading()) {
+    if (this.spaceStore.selectedId() === null || this.loading() || this.deletingId() !== null) {
       return;
     }
 
@@ -232,7 +243,8 @@ export default class Transactions {
       this.loading() ||
       this.error() !== null ||
       this.spaceStore.selectedId() === null ||
-      this.page() <= 1
+      this.page() <= 1 ||
+      this.deletingId() !== null
     ) {
       return;
     }
@@ -248,7 +260,8 @@ export default class Transactions {
       this.loading() ||
       this.error() !== null ||
       this.spaceStore.selectedId() === null ||
-      this.page() >= this.totalPages()
+      this.page() >= this.totalPages() ||
+      this.deletingId() !== null
     ) {
       return;
     }
@@ -260,7 +273,12 @@ export default class Transactions {
    * Aplica los filtros introducidos y vuelve a la primera página.
    */
   applyFilters(): void {
-    if (this.spaceStore.selectedId() === null || this.loading() || this.filtersForm().invalid()) {
+    if (
+      this.spaceStore.selectedId() === null ||
+      this.loading() ||
+      this.filtersForm().invalid() ||
+      this.deletingId() !== null
+    ) {
       return;
     }
 
@@ -294,7 +312,7 @@ export default class Transactions {
    * Limpia todos los filtros y consulta de nuevo la primera página.
    */
   clearFilters(): void {
-    if (this.spaceStore.selectedId() === null || this.loading()) {
+    if (this.spaceStore.selectedId() === null || this.loading() || this.deletingId() !== null) {
       return;
     }
 
@@ -326,7 +344,9 @@ export default class Transactions {
       this.loading() ||
       this.error() !== null ||
       this.creatingTransaction() ||
-      this.editingTransaction() !== null
+      this.editingTransaction() !== null ||
+      this.confirmationId() !== null ||
+      this.deletingId() !== null
     ) {
       return;
     }
@@ -371,6 +391,8 @@ export default class Transactions {
       this.error() !== null ||
       this.creatingTransaction() ||
       this.editingTransaction() !== null ||
+      this.confirmationId() !== null ||
+      this.deletingId() !== null ||
       transaction.space_id !== this.spaceStore.selectedId() ||
       !this.transactions().some(
         (item: Transaction): boolean =>
@@ -411,6 +433,171 @@ export default class Transactions {
     this.creationMessage.set(
       `Se ha actualizado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
     );
+  }
+
+  /**
+   * Abre la confirmación de eliminación.
+   */
+  requestDelete(transaction: Transaction): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingTransaction() ||
+      this.editingTransaction() !== null ||
+      this.deletingId() !== null ||
+      transaction.space_id !== this.spaceStore.selectedId() ||
+      !this.transactions().some(
+        (item: Transaction): boolean =>
+          item.id === transaction.id && item.space_id === transaction.space_id,
+      )
+    ) {
+      return;
+    }
+
+    this.confirmationId.set(transaction.id);
+    this.deleteError.set(null);
+    this.creationMessage.set(null);
+  }
+
+  /**
+   * Cancela una confirmación, sin enviar ninguna petición.
+   */
+  cancelDelete(): void {
+    if (this.deletingId() !== null) {
+      return;
+    }
+
+    this.confirmationId.set(null);
+    this.deleteError.set(null);
+  }
+
+  /**
+   * Ejecuta la eliminación confirmada.
+   */
+  async confirmDelete(): Promise<void> {
+    const transactionId: number | null = this.confirmationId();
+    const spaceId: number | null = this.spaceStore.selectedId();
+    const token: string | null = this.authStore.token();
+    const userId: number | undefined = this.authStore.user()?.id;
+    const page: number = this.page();
+    const filters: TransactionFilters = this.appliedFilters();
+
+    if (
+      transactionId === null ||
+      spaceId === null ||
+      token === null ||
+      userId === undefined ||
+      this.loading() ||
+      this.error() !== null ||
+      this.deletingId() !== null
+    ) {
+      return;
+    }
+
+    const transaction: Transaction | undefined = this.transactions().find(
+      (item: Transaction): boolean => item.id === transactionId && item.space_id === spaceId,
+    );
+
+    if (transaction === undefined) {
+      this.cancelDelete();
+      return;
+    }
+
+    this.deletingId.set(transactionId);
+    this.deleteError.set(null);
+
+    try {
+      const response: ApiResponse = await firstValueFrom(
+        this.transactionsService.deleteTransaction({
+          spaceId,
+          transactionId,
+        }),
+      );
+
+      if (!this.isCurrentDeleteContext(spaceId, token, userId, page, filters)) {
+        return;
+      }
+
+      if (!response.success) {
+        this.deleteError.set('No se ha podido eliminar el movimiento.');
+        return;
+      }
+
+      this.confirmationId.set(null);
+      this.deletingId.set(null);
+
+      if (page > 1 && this.transactions().length === 1) {
+        // Era el último resultado de una página posterior.
+        // Cambiar page ya desencadena la nueva consulta.
+        this.page.set(page - 1);
+      } else {
+        // Conservamos la página y los filtros actuales.
+        this.refreshVersion.update((version: number): number => version + 1);
+      }
+
+      this.creationMessage.set(
+        `Se ha eliminado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
+      );
+    } catch (error: unknown) {
+      if (!this.isCurrentDeleteContext(spaceId, token, userId, page, filters)) {
+        return;
+      }
+
+      this.deleteError.set(this.getDeleteError(error));
+    } finally {
+      if (this.isCurrentDeleteContext(spaceId, token, userId, page, filters)) {
+        this.deletingId.set(null);
+      }
+    }
+  }
+
+  /**
+   * Comprueba que sigue vigente el contexto de la petición.
+   */
+  private isCurrentDeleteContext(
+    spaceId: number,
+    token: string,
+    userId: number,
+    page: number,
+    filters: TransactionFilters,
+  ): boolean {
+    return (
+      !this.destroyRef.destroyed &&
+      this.spaceStore.selectedId() === spaceId &&
+      this.authStore.token() === token &&
+      this.authStore.user()?.id === userId &&
+      this.page() === page &&
+      this.appliedFilters() === filters
+    );
+  }
+
+  /**
+   * Mensajes para los errores de eliminación.
+   */
+  private getDeleteError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 400:
+          return 'Los identificadores del movimiento no son válidos.';
+
+        case 401:
+          return 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+        case 403:
+          return 'No tienes permiso para eliminar este movimiento.';
+
+        case 404:
+          return 'El movimiento ya no está disponible. Actualiza el listado.';
+
+        case 409:
+          return 'No se puede eliminar un movimiento vinculado a una ocurrencia recurrente.';
+
+        case 0:
+          return 'No se ha podido conectar con el servidor.';
+      }
+    }
+
+    return 'No se ha podido eliminar el movimiento. Inténtalo de nuevo.';
   }
 
   /**

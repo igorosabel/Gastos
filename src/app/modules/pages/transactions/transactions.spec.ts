@@ -1247,4 +1247,391 @@ describe('Transactions', (): void => {
 
     completeLoad(2);
   });
+
+  it('solicita confirmación antes de eliminar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const transaction: Transaction = component.transactions()[0]!;
+
+    component.requestDelete(transaction);
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBe(transaction.id);
+    expect(component.deletingId()).toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Confirmar eliminación');
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions/delete`);
+  });
+
+  it('cancela sin eliminar el movimiento', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+    component.cancelDelete();
+
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deleteError()).toBeNull();
+    expect(component.transactions()).toHaveLength(1);
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions/delete`);
+  });
+
+  it('rechaza la eliminación de otro espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const external: Transaction = {
+      ...component.transactions()[0]!,
+      id: 80,
+      space_id: 8,
+    };
+
+    component.requestDelete(external);
+
+    expect(component.confirmationId()).toBeNull();
+  });
+
+  it('impide crear o editar durante una confirmación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const transaction: Transaction = component.transactions()[0]!;
+
+    component.requestDelete(transaction);
+    component.openCreateTransaction();
+    component.openEditTransaction(transaction);
+
+    expect(component.creatingTransaction()).toBe(false);
+    expect(component.editingTransaction()).toBeNull();
+    expect(component.confirmationId()).toBe(transaction.id);
+  });
+
+  it('elimina el movimiento y recarga la página actual', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const transaction: Transaction = component.transactions()[0]!;
+
+    component.requestDelete(transaction);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    expect(component.deletingId()).toBe(transaction.id);
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 2,
+      transactionId: transaction.id,
+    });
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    transactionsRequest.flush({
+      success: true,
+      transactions: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies TransactionsResponse);
+
+    categoriesRequest.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    expect(component.transactions()).toEqual([]);
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deletingId()).toBeNull();
+
+    expect(component.creationMessage()).toBe('Se ha eliminado el movimiento «Electricidad».');
+  });
+
+  it('regresa a la página anterior si elimina su único movimiento', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 21, 2);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 21, 2);
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(1);
+
+    completeLoad(2, '95.40', 1, 20, 1);
+
+    expect(component.transactions()).toHaveLength(1);
+    expect(component.total()).toBe(20);
+  });
+
+  it('impide enviar dos peticiones simultáneas de eliminación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const first: Promise<void> = component.confirmDelete();
+    const second: Promise<void> = component.confirmDelete();
+
+    const requests = httpTesting.match(`${environment.apiUrl}/transactions/delete`);
+
+    expect(requests).toHaveLength(1);
+
+    requests[0]!.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await Promise.all([first, second]);
+    fixture.detectChanges();
+
+    const transactionsRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const categoriesRequest = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    transactionsRequest.flush(transactionResponse(2));
+    categoriesRequest.flush(categoryResponse(2));
+    fixture.detectChanges();
+  });
+
+  it.each([
+    [400, 'Los identificadores del movimiento no son válidos.'],
+    [401, 'Tu sesión ha caducado. Vuelve a iniciar sesión.'],
+    [403, 'No tienes permiso para eliminar este movimiento.'],
+    [404, 'El movimiento ya no está disponible. Actualiza el listado.'],
+    [409, 'No se puede eliminar un movimiento vinculado a una ocurrencia recurrente.'],
+    [0, 'No se ha podido conectar con el servidor.'],
+  ])(
+    'muestra el error HTTP %i al eliminar',
+    async (status: number, message: string): Promise<void> => {
+      await loadSpaces();
+      completeLoad(2);
+
+      const transaction: Transaction = component.transactions()[0]!;
+
+      component.requestDelete(transaction);
+
+      const deletion: Promise<void> = component.confirmDelete();
+
+      const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+      request.flush(
+        {
+          success: false,
+          error: status === 409 ? 'transaction_conflict' : 'test_error',
+          message: 'Error de prueba',
+        },
+        {
+          status,
+          statusText: status === 0 ? 'Unknown Error' : 'Error',
+        },
+      );
+
+      await deletion;
+      fixture.detectChanges();
+
+      expect(component.deleteError()).toBe(message);
+      expect(component.confirmationId()).toBe(transaction.id);
+      expect(component.deletingId()).toBeNull();
+      expect(component.transactions()).toHaveLength(1);
+      expect(fixture.nativeElement.textContent).toContain(message);
+    },
+  );
+
+  it('mantiene el movimiento si la API devuelve success false', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    request.flush({
+      success: false,
+      error: 'transaction_conflict',
+      message: 'Operación rechazada',
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.deleteError()).toBe('No se ha podido eliminar el movimiento.');
+
+    expect(component.transactions()).toHaveLength(1);
+  });
+
+  it('descarta la respuesta si cambia el espacio durante la eliminación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+    expect(component.deletingId()).toBeNull();
+    expect(component.creationMessage()).toBeNull();
+
+    completeLoad(8);
+
+    expect(component.transactions()[0]?.space_id).toBe(8);
+  });
+
+  it('descarta la respuesta si se cierra la sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.transactions()).toEqual([]);
+    expect(component.confirmationId()).toBeNull();
+    expect(component.creationMessage()).toBeNull();
+  });
+
+  it('cierra la confirmación al actualizar manualmente', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.requestDelete(component.transactions()[0]!);
+    component.reload();
+    fixture.detectChanges();
+
+    expect(component.confirmationId()).toBeNull();
+
+    completeLoad(2);
+  });
+
+  it('conserva los filtros aplicados después de eliminar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.filtersModel.update((model) => ({
+      ...model,
+      type: 'expense',
+    }));
+
+    fixture.detectChanges();
+    component.applyFilters();
+    fixture.detectChanges();
+
+    const filtered = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const filteredCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    filtered.flush(transactionResponse(2));
+    filteredCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    component.requestDelete(component.transactions()[0]!);
+
+    const deletion: Promise<void> = component.confirmDelete();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions/delete`);
+
+    request.flush({
+      success: true,
+      error: null,
+      message: null,
+    });
+
+    await deletion;
+    fixture.detectChanges();
+
+    expect(component.appliedFilters().type).toBe('expense');
+
+    const refreshed = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1&type=expense`,
+    );
+
+    const refreshedCategories = httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`);
+
+    refreshed.flush({
+      success: true,
+      transactions: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies TransactionsResponse);
+
+    refreshedCategories.flush(categoryResponse(2));
+    fixture.detectChanges();
+
+    expect(component.appliedFilters().type).toBe('expense');
+    expect(component.transactions()).toEqual([]);
+  });
 });

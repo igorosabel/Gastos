@@ -12,7 +12,7 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                [disabled]="loading()"
+                [disabled]="loading() || deletingId() !== null"
                 (click)="reload()">
             <i class="pi pi-refresh"
                aria-hidden="true"></i>
@@ -25,7 +25,12 @@
         !spaceStore.error()) {
         <button pButton
                 type="button"
-                [disabled]="loading() || creatingTransaction() || editingTransaction() !== null"
+                [disabled]="loading() ||
+                  creatingTransaction() ||
+                  editingTransaction() !== null ||
+                  deletingId() !== null ||
+                  confirmationId() !== null
+                "
                 (click)="openCreateTransaction()">
             Nuevo movimiento
         </button>
@@ -130,14 +135,14 @@
                     type="button"
                     severity="secondary"
                     variant="outlined"
-                    [disabled]="loading()"
+                    [disabled]="loading() || deletingId() !== null"
                     (click)="clearFilters()">
                 Limpiar filtros
             </button>
 
             <button pButton
                     type="button"
-                    [disabled]="loading() || filtersForm().invalid()"
+                    [disabled]="loading() || filtersForm().invalid() || deletingId() !== null"
                     (click)="applyFilters()">
                 Aplicar filtros
             </button>
@@ -235,10 +240,75 @@
                         variant="outlined"
                         [disabled]="loading() ||
                                     creatingTransaction() ||
-                                    editingTransaction() !== null"
+                                    editingTransaction() !== null ||
+                                    deletingId() !== null ||
+                                    confirmationId() !== null
+                        "
                         (click)="openEditTransaction(transaction)">
                     Editar
                 </button>
+
+                @if (confirmationId() !== transaction.id) {
+                <button pButton
+                        type="button"
+                        severity="danger"
+                        variant="outlined"
+                        [disabled]="loading() ||
+                                    creatingTransaction() ||
+                                    editingTransaction() !== null ||
+                                    deletingId() !== null"
+                        (click)="requestDelete(transaction)">
+                    Eliminar
+                </button>
+                }
+
+                @if (confirmationId() === transaction.id) {
+                <div class="transactions__confirmation"
+                     role="group"
+                     [attr.aria-label]="'Confirmar eliminación del movimiento ' + transaction.id">
+
+                    <p>
+                        ¿Seguro que quieres eliminar el movimiento
+                        <strong>
+                            {{ transaction.concept || transaction.amount + ' €' }}
+                        </strong>?
+                    </p>
+
+                    <p class="transactions__muted">
+                        Esta acción es definitiva y no se puede deshacer.
+                        Los movimientos vinculados a ocurrencias recurrentes
+                        no pueden eliminarse desde aquí.
+                    </p>
+
+                    @if (deleteError()) {
+                    <p class="transactions__error"
+                       role="alert">
+                        {{ deleteError() }}
+                    </p>
+                    }
+
+                    <div class="transactions__confirmation-actions">
+                        <button pButton
+                                type="button"
+                                severity="secondary"
+                                variant="outlined"
+                                [disabled]="deletingId() !== null"
+                                (click)="cancelDelete()">
+                            Cancelar
+                        </button>
+
+                        <button pButton
+                                type="button"
+                                severity="danger"
+                                [disabled]="deletingId() !== null"
+                                (click)="confirmDelete()">
+                            {{ deletingId() === transaction.id
+                               ? 'Eliminando...'
+                               : 'Confirmar eliminación' }}
+                        </button>
+                    </div>
+                </div>
+                }
             </li>
             }
         </ul>
@@ -257,7 +327,7 @@
                         type="button"
                         severity="secondary"
                         variant="outlined"
-                        [disabled]="loading() || page() <= 1"
+                        [disabled]="loading() || page() <= 1 || deletingId() !== null"
                         (click)="previousPage()">
                     Anterior
                 </button>
@@ -266,7 +336,7 @@
                         type="button"
                         severity="secondary"
                         variant="outlined"
-                        [disabled]="loading() || page() >= totalPages()"
+                        [disabled]="loading() || page() >= totalPages() || deletingId() !== null"
                         (click)="nextPage()">
                     Siguiente
                 </button>
