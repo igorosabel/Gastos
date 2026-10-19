@@ -71,6 +71,26 @@
         </nav>
     </section>
 
+    <div class="reports__views"
+         role="group"
+         aria-label="Tipo de informe">
+
+        <button type="button"
+                [class.reports__view--active]="activeView() === 'evolution'"
+                [attr.aria-pressed]="activeView() === 'evolution'"
+                (click)="selectView('evolution')">
+            Evolución
+        </button>
+
+        <button type="button"
+                [class.reports__view--active]="activeView() === 'categories'"
+                [attr.aria-pressed]="activeView() === 'categories'"
+                (click)="selectView('categories')">
+            Categorías
+        </button>
+    </div>
+
+    @if (activeView() === 'evolution') {
     @if (loading()) {
     <p class="reports__muted"
        role="status">
@@ -127,7 +147,7 @@
                     </div>
 
                     <div class="reports__value
-                                reports__value--balance">
+                                    reports__value--balance">
                         <dt>Resultado</dt>
                         <dd [class.reports__expense]="month.balance.startsWith('-')"
                             [class.reports__income]="!month.balance.startsWith('-')">
@@ -139,6 +159,33 @@
             </li>
             }
         </ul>
+    </section>
+    }
+    } @else {
+    <section class="reports__categories-view"
+             aria-labelledby="reports-categories-title">
+
+        <h2 id="reports-categories-title">
+            Análisis mensual por categorías
+        </h2>
+
+        <div class="reports__category-month">
+            <label for="reports-category-month">
+                Mes a analizar
+            </label>
+
+            <p-select inputId="reports-category-month"
+                      [options]="categoryMonthOptions()"
+                      optionLabel="label"
+                      optionValue="value"
+                      [ngModel]="categoryMonth()"
+                      (ngModelChange)="selectCategoryMonth($event)"
+                      [fluid]="true" />
+        </div>
+
+        <app-monthly-categories [spaceId]="selectedSpace.id"
+                                [month]="categoryMonth()"
+                                [summary]="selectedSummary()" />
     </section>
     }
     } @else {

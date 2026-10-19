@@ -1,0 +1,117 @@
+<section class="monthly-categories"
+         aria-labelledby="monthly-categories-title">
+
+    <header class="monthly-categories__header">
+        <div>
+            <h3 id="monthly-categories-title">
+                Distribución por categorías
+            </h3>
+            <p>{{ monthLabel(month()) }}</p>
+        </div>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            Actualizar
+        </button>
+    </header>
+
+    <div class="monthly-categories__types"
+         role="group"
+         aria-label="Tipo de movimientos">
+        <button type="button"
+                [class.monthly-categories__type--active]="categoryType() === 'expense'"
+                [attr.aria-pressed]="categoryType() === 'expense'"
+                (click)="setCategoryType('expense')">
+            Gastos
+        </button>
+
+        <button type="button"
+                [class.monthly-categories__type--active]="categoryType() === 'income'"
+                [attr.aria-pressed]="categoryType() === 'income'"
+                (click)="setCategoryType('income')">
+            Ingresos
+        </button>
+    </div>
+
+    @if (summary()) {
+    <div class="monthly-categories__total">
+        <span>
+            {{ categoryType() === 'expense'
+               ? 'Gastos totales del mes'
+               : 'Ingresos totales del mes' }}
+        </span>
+        <strong>{{ formatMoney(total()) }}</strong>
+    </div>
+    }
+
+    @if (loading()) {
+    <p class="monthly-categories__muted"
+       role="status">
+        Cargando categorías...
+    </p>
+    } @else if (error()) {
+    <div class="monthly-categories__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (visibleCategories().length === 0) {
+    <p class="monthly-categories__muted">
+        @if (categoryType() === 'expense') {
+        No hay gastos asignados a categorías este mes.
+        } @else {
+        No hay ingresos asignados a categorías este mes.
+        }
+    </p>
+    } @else {
+    <ul class="monthly-categories__list">
+        @for (category of visibleCategories(); track category.category_id) {
+        <li class="monthly-categories__item">
+            <div class="monthly-categories__item-header">
+                <div class="monthly-categories__details">
+                    <strong>{{ category.name }}</strong>
+                    <span>
+                        {{ category.transaction_count }}
+                        {{ category.transaction_count === 1
+                           ? 'movimiento'
+                           : 'movimientos' }}
+                    </span>
+                </div>
+
+                <strong class="monthly-categories__amount">
+                    {{ formatMoney(category.amount) }}
+                </strong>
+            </div>
+
+            @if (summary()) {
+            <div class="monthly-categories__bar-track"
+                 aria-hidden="true">
+                <div class="monthly-categories__bar"
+                     [style.width.%]="percentageOf(
+                         category.amount,
+                         total()
+                     )"></div>
+            </div>
+            }
+        </li>
+        }
+    </ul>
+
+    <p class="monthly-categories__muted
+              monthly-categories__note">
+        Cada categoría incluye únicamente los movimientos
+        asignados directamente a ella, no los de sus
+        subcategorías.
+    </p>
+    }
+</section>

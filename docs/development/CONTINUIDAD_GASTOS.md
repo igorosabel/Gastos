@@ -177,6 +177,7 @@ Todos los bloques siguientes fueron **probados por el usuario** (`npm run lint`,
 | 23. Recuperación del diseño responsive y navegación | Completo | Diseño mobile-first documentado; navegación inferior fija en móvil y menú lateral en escritorio; selector de espacio en cabecera; traslado de la administración a Ajustes; estructura del dashboard económico; entrada de Informes; integración de iconos SVG de PrimeIcons, pruebas funcionales y responsive.                                             | `e45cde1` y `ba972c9`           |
 | 24. Dashboard económico mensual                     | Completo | Informes mensuales reales mediante ApiGastos; cuatro indicadores económicos, desglose por categorías y últimos cinco movimientos; presentación monetaria decimal exacta con bigint para porcentajes; actualización manual, estados vacíos, gestión de errores, aislamiento de espacio y sesión, diseño responsive y pruebas.                               | `9463478`                       |
 | 25. Registro rápido de movimientos                  | Completo | Modal global desde la navegación móvil y lateral; reutilización de CreateTransaction, carga de categorías por espacio, selector jerárquico, normalización de importes, validaciones tras el envío, notificación y actualización de datos, confirmación con cierre automático a los cuatro segundos, protección de sesión, tests y verificación responsive. | `488c51e`, `d164e0b`, `4cdb559` |
+| 26. Informes de evolución mensual                   | Completo | Consulta `GET /reports/evolution`; visualización de ingresos, gastos y resultado de periodos de doce meses; navegación histórica, importes decimales exactos, actualización tras registrar movimientos, protección de espacio y sesión, estados de carga y error, diseño mobile-first y pruebas.                                                           | `afac3fc`                       |
 
 **Pruebas funcionales relevantes ya realizadas:** el usuario confirmó que dos cuentas independientes A (propietario) y B (invitado) pudieron crear una invitación, comprobar el rechazo de un destinatario incorrecto, aceptarla desde B, verificar la membresía persistida y el rol, y validar el listado de miembros desde A. La lista administrativa solo aparece a propietarios de espacios compartidos. El usuario confirmó asimismo la creación y revocación de invitaciones.
 
@@ -289,6 +290,11 @@ Una vez completada la gestión básica de miembros, continuar por unidades verif
 ### Texto breve que se puede pegar en una nueva conversación
 
 > Estamos desarrollando **Gastos** (`https://github.com/igorosabel/Gastos`), frontend Angular 22/PrimeNG 22 con Signal Forms, contra **ApiGastos v1.0.0** (`https://github.com/igorosabel/ApiGastos`). Lee el documento `docs/development/CONTINUIDAD_GASTOS.md`, el `AGENTS.md` vigente y el código actual del repositorio antes de proponer cambios. El último bloque confirmado fue el **9, listado de miembros** (commit `f9b902a`); continuaremos con el **bloque 10, abandono voluntario de espacios compartidos**. Trabajamos de forma incremental, con tests, pruebas funcionales de dos usuarios y commit validado antes de avanzar. Revisa siempre el `HEAD`: el documento puede haber quedado desactualizado. El último bloque confirmado fue el 11, **expulsión de miembros** (commit `ef06f07`); continuaremos con el **bloque 12**, **layout privado y navegación**.
+
+## 11. Mejoras pendientes
+
+| Bloque | Estado | Alcance |
+| Persistencia del espacio seleccionado | Pendiente | Recordar por usuario el último espacio contable utilizado y restaurarlo tras cerrar y volver a abrir Gastos, incluso después de un nuevo inicio de sesión. Evaluar persistencia en backend, posibles cambios de contrato y comportamiento cuando el espacio ya no esté disponible. |
 
 ---
 

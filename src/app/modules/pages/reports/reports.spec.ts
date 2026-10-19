@@ -402,4 +402,152 @@ describe('Reports', (): void => {
     expect(component.months()).toEqual([]);
     expect(component.error()).toBe('No se ha podido obtener la evolución económica.');
   });
+
+  it('mantiene Evolución como vista inicial', (): void => {
+    expect(component.activeView()).toBe('evolution');
+    expect(component.categoryMonth()).toBe(component.currentMonth);
+  });
+
+  it('abre el análisis de categorías del mes seleccionado', async (): Promise<void> => {
+    await loadSpaces();
+    completeEvolution(2);
+
+    component.selectView('categories');
+    fixture.detectChanges();
+
+    expect(component.activeView()).toBe('categories');
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${component.categoryMonth()}`,
+    );
+
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      success: true,
+      report: {
+        space_id: 2,
+        month: component.categoryMonth(),
+        categories: [
+          {
+            category_id: 20,
+            parent_id: null,
+            name: 'Hogar',
+            type: 'expense',
+            amount: '450.00',
+            transaction_count: 3,
+          },
+        ],
+      },
+      error: null,
+      message: null,
+    });
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Análisis mensual por categorías');
+    expect(fixture.nativeElement.textContent).toContain('Hogar');
+    expect(fixture.nativeElement.textContent).toContain('450,00 €');
+
+    component.selectView('evolution');
+    fixture.detectChanges();
+
+    expect(component.activeView()).toBe('evolution');
+    expect(fixture.nativeElement.querySelector('app-monthly-categories')).toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Resumen por meses');
+  });
+
+  it('cambia el mes de categorías sin recargar la evolución', async (): Promise<void> => {
+    await loadSpaces();
+    completeEvolution(2);
+
+    component.selectView('categories');
+    fixture.detectChanges();
+
+    const previousRequest: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${component.currentMonth}`,
+    );
+
+    const previousMonth: string = shiftMonth(component.currentMonth, -1);
+
+    component.selectCategoryMonth(previousMonth);
+    fixture.detectChanges();
+
+    expect(component.categoryMonth()).toBe(previousMonth);
+    expect(previousRequest.cancelled).toBe(true);
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${previousMonth}`,
+    );
+
+    request.flush({
+      success: true,
+      report: {
+        space_id: 2,
+        month: previousMonth,
+        categories: [],
+      },
+      error: null,
+      message: null,
+    });
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'No hay gastos asignados a categorías este mes.',
+    );
+
+    expect(
+      httpTesting.match(
+        (request): boolean => request.url === `${environment.apiUrl}/reports/evolution`,
+      ),
+    ).toHaveLength(0);
+  });
+
+  it('rechaza seleccionar un mes fuera del periodo visible', (): void => {
+    const original: string = component.categoryMonth();
+
+    component.selectCategoryMonth(shiftMonth(component.currentMonth, 1));
+
+    expect(component.categoryMonth()).toBe(original);
+  });
+
+  it('sincroniza el mes de categorías al cambiar de periodo', async (): Promise<void> => {
+    await loadSpaces();
+    completeEvolution(2);
+
+    component.selectView('categories');
+    fixture.detectChanges();
+
+    const oldCategories: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${component.currentMonth}`,
+    );
+
+    component.previousPeriod();
+    fixture.detectChanges();
+
+    const previousEnd: string = shiftMonth(component.currentMonth, -12);
+
+    expect(component.periodEnd()).toBe(previousEnd);
+    expect(component.categoryMonth()).toBe(previousEnd);
+    expect(oldCategories.cancelled).toBe(true);
+
+    completeEvolution(2, previousEnd);
+
+    httpTesting
+      .expectOne(`${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${previousEnd}`)
+      .flush({
+        success: true,
+        report: {
+          space_id: 2,
+          month: previousEnd,
+          categories: [],
+        },
+        error: null,
+        message: null,
+      });
+
+    fixture.detectChanges();
+  });
 });
