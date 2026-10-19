@@ -29,6 +29,15 @@
                 <span>Movimientos</span>
             </a>
 
+            <a routerLink="/recurring"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <svg data-p-icon="refresh"
+                     [size]="20"
+                     aria-hidden="true"></svg>
+                <span>Recurrentes</span>
+            </a>
+
             <a routerLink="/reports"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">

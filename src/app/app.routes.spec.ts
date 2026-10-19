@@ -79,4 +79,14 @@ describe('Rutas privadas', (): void => {
     expect(reportsRoute?.loadComponent).toBeDefined();
     expect(reportsRoute?.component).toBeUndefined();
   });
+
+  it('mantiene recurrentes como ruta privada diferida', (): void => {
+    const recurringRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'recurring',
+    );
+
+    expect(recurringRoute).toBeDefined();
+    expect(recurringRoute?.loadComponent).toBeDefined();
+    expect(recurringRoute?.component).toBeUndefined();
+  });
 });

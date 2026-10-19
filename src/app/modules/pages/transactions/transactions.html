@@ -1,41 +1,48 @@
 <div class="transactions">
     <header class="transactions__heading">
-        <div>
+        <div class="transactions__heading-title">
             <h1>Movimientos</h1>
             <p>
                 Consulta los ingresos y gastos del espacio seleccionado.
             </p>
         </div>
 
-        @if (spaceStore.selectedId() !== null) {
-        <button pButton
-                type="button"
-                severity="secondary"
-                variant="outlined"
-                [disabled]="loading() || deletingId() !== null"
-                (click)="reload()">
-            <svg data-p-icon="refresh"
-                 [size]="16"
-                 aria-hidden="true"></svg>
-            <span>Actualizar</span>
-        </button>
-        }
+        <div class="transactions__heading-actions">
+            <a routerLink="/recurring"
+               class="transactions__recurring-link">
+                Ver recurrentes
+            </a>
 
-        @if (spaceStore.selectedId() !== null &&
-        !spaceStore.loading() &&
-        !spaceStore.error()) {
-        <button pButton
-                type="button"
-                [disabled]="loading() ||
-                  creatingTransaction() ||
-                  editingTransaction() !== null ||
-                  deletingId() !== null ||
-                  confirmationId() !== null
-                "
-                (click)="openCreateTransaction()">
-            Nuevo movimiento
-        </button>
-        }
+            @if (spaceStore.selectedId() !== null) {
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading() || deletingId() !== null"
+                    (click)="reload()">
+                <svg data-p-icon="refresh"
+                     [size]="16"
+                     aria-hidden="true"></svg>
+                <span>Actualizar</span>
+            </button>
+            }
+
+            @if (spaceStore.selectedId() !== null &&
+            !spaceStore.loading() &&
+            !spaceStore.error()) {
+            <button pButton
+                    type="button"
+                    [disabled]="loading() ||
+                      creatingTransaction() ||
+                      editingTransaction() !== null ||
+                      deletingId() !== null ||
+                      confirmationId() !== null
+                    "
+                    (click)="openCreateTransaction()">
+                Nuevo movimiento
+            </button>
+            }
+        </div>
     </header>
 
     @if (creatingTransaction() && spaceStore.selectedId(); as spaceId) {

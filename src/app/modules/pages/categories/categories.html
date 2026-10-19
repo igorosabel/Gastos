@@ -1,6 +1,6 @@
 <div class="categories">
     <header class="categories__heading">
-        <div>
+        <div class="categories__heading-title">
             <h1>Categorías</h1>
             <p>
                 Consulta las categorías de ingresos y gastos
@@ -8,30 +8,34 @@
             </p>
         </div>
 
-        @if (spaceStore.selectedId() !== null) {
-        <button pButton
-                type="button"
-                severity="secondary"
-                variant="outlined"
-                [disabled]="loading() || deletingId() !== null"
-                (click)="reload()">
-            <svg data-p-icon="refresh"
-                 [size]="16"
-                 aria-hidden="true"></svg>
-            <span>Actualizar</span>
-        </button>
-        }
+        <div class="categories__heading-actions">
+            @if (spaceStore.selectedId() !== null) {
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading() || deletingId() !== null"
+                    (click)="reload()">
+                <svg data-p-icon="refresh"
+                     [size]="16"
+                     aria-hidden="true"></svg>
+                <span>Actualizar</span>
+            </button>
+            }
 
-        @if (spaceStore.selectedId() !== null &&
-        !spaceStore.loading() &&
-        !spaceStore.error()) {
-        <button pButton
-                type="button"
-                [disabled]="loading() || creatingCategory() || deletingId() !== null"
-                (click)="openCreateCategory()">
-            Nueva categoría
-        </button>
-        }
+            @if (spaceStore.selectedId() !== null &&
+            !spaceStore.loading() &&
+            !spaceStore.error()) {
+            <button pButton
+                    type="button"
+                    [disabled]="loading() ||
+                                creatingCategory() ||
+                                deletingId() !== null"
+                    (click)="openCreateCategory()">
+                Nueva categoría
+            </button>
+            }
+        </div>
     </header>
 
     @if (creatingCategory() && spaceStore.selectedId(); as spaceId) {

@@ -23,11 +23,38 @@
         margin: 0;
         color: var(--p-text-muted-color);
     }
+}
+
+.transactions__heading-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.transactions__heading-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 
     button {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
+    }
+}
+
+.transactions__recurring-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    color: var(--p-primary-color);
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
     }
 }
 
@@ -245,6 +272,12 @@
     .transactions__heading {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .transactions__heading-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 0.5rem;
     }
 
     .transactions__content {

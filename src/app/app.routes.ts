@@ -42,6 +42,10 @@ const routes: Routes = [
         path: 'settings',
         loadComponent: () => import('@pages/settings/settings').then((m) => m.default),
       },
+      {
+        path: 'recurring',
+        loadComponent: () => import('@pages/recurring/recurring').then((m) => m.default),
+      },
     ],
   },
   {

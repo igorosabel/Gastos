@@ -10,6 +10,7 @@ import {
   type WritableSignal,
 } from '@angular/core';
 import { form, FormField, type FieldTree } from '@angular/forms/signals';
+import { RouterLink } from '@angular/router';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import type { ApiResponse } from '@interfaces/auth.interfaces';
@@ -33,7 +34,15 @@ import { firstValueFrom, forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
-  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction, EditTransaction, Refresh],
+  imports: [
+    ButtonDirective,
+    FormField,
+    SelectModule,
+    CreateTransaction,
+    EditTransaction,
+    Refresh,
+    RouterLink,
+  ],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })

@@ -1657,4 +1657,32 @@ describe('Transactions', (): void => {
     expect(component.page()).toBe(2);
     expect(component.transactions()[0]?.amount).toBe('125.00');
   });
+
+  it('ofrece acceso a recurrentes desde Movimientos', (): void => {
+    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+      '.transactions__recurring-link',
+    );
+
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute('href')).toBe('/recurring');
+    expect(link?.textContent).toContain('Ver recurrentes');
+  });
+
+  it('agrupa las acciones de la cabecera', (): void => {
+    const header: HTMLElement = fixture.nativeElement.querySelector('.transactions__heading');
+
+    expect(header.querySelector(':scope > .transactions__heading-title')).not.toBeNull();
+
+    const actions: HTMLElement | null = header.querySelector(
+      ':scope > .transactions__heading-actions',
+    );
+
+    expect(actions).not.toBeNull();
+
+    if (actions === null) {
+      throw new Error('No se ha encontrado el contenedor de acciones.');
+    }
+
+    expect(actions.querySelector('.transactions__recurring-link')).not.toBeNull();
+  });
 });

@@ -664,4 +664,12 @@ describe('Categories', (): void => {
     request.flush(categoryResponse(2, 'Hogar'));
     fixture.detectChanges();
   });
+
+  it('separa el título de las acciones de la cabecera', (): void => {
+    const header: HTMLElement = fixture.nativeElement.querySelector('.categories__heading');
+
+    expect(header.querySelector(':scope > .categories__heading-title')).not.toBeNull();
+
+    expect(header.querySelector(':scope > .categories__heading-actions')).not.toBeNull();
+  });
 });

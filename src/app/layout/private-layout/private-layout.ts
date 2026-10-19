@@ -18,7 +18,7 @@ import type CategoriesResponse from '@interfaces/categories/categories-response.
 import type Category from '@model/categories/category.model';
 import type Transaction from '@model/transactions/transaction.model';
 import CreateTransaction from '@modules/transactions/create-transaction/create-transaction';
-import { ChartBar, Cog, Home, List, Plus, SignOut, Tags } from '@primeicons/angular';
+import { ChartBar, Cog, Home, List, Plus, SignOut, Tags, Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import TransactionRefreshService from '@services/transaction-refresh.service';
 import { ButtonDirective } from 'primeng/button';
@@ -42,6 +42,7 @@ import type { Subscription } from 'rxjs';
     Cog,
     Plus,
     SignOut,
+    Refresh,
     CreateTransaction,
     DialogModule,
   ],

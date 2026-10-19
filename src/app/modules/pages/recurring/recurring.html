@@ -1,0 +1,153 @@
+<div class="recurring">
+    <header class="recurring__heading">
+        <div>
+            <h1>Movimientos recurrentes</h1>
+            <p>
+                Consulta los ingresos y gastos que se
+                repiten mensualmente.
+            </p>
+        </div>
+
+        @if (spaceStore.selectedId() !== null) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            <svg data-p-icon="refresh"
+                 [size]="16"
+                 aria-hidden="true"></svg>
+            <span>Actualizar</span>
+        </button>
+        }
+    </header>
+
+    <a routerLink="/transactions"
+       class="recurring__back">
+        Volver a movimientos
+    </a>
+
+    @if (spaceStore.loading()) {
+    <p class="recurring__muted"
+       role="status">
+        Cargando espacios...
+    </p>
+    } @else if (spaceStore.error()) {
+    <p class="recurring__error"
+       role="alert">
+        No se han podido cargar los espacios.
+    </p>
+    } @else if (spaceStore.selected(); as selectedSpace) {
+
+    @if (loading()) {
+    <p class="recurring__muted"
+       role="status">
+        Cargando movimientos recurrentes...
+    </p>
+    } @else if (error()) {
+    <div class="recurring__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else {
+
+    <section class="recurring__content"
+             aria-labelledby="recurring-list-title">
+
+        <div class="recurring__summary">
+            <div>
+                <h2 id="recurring-list-title">
+                    Plantillas de {{ selectedSpace.name }}
+                </h2>
+
+                <p class="recurring__muted">
+                    {{ activeCount() }} activas
+                    · {{ inactiveCount() }} inactivas
+                </p>
+            </div>
+        </div>
+
+        @if (recurring().length === 0) {
+        <p class="recurring__muted">
+            Este espacio todavía no tiene movimientos
+            recurrentes configurados.
+        </p>
+        } @else {
+        <ul class="recurring__list">
+            @for (item of recurring(); track item.id) {
+            <li class="recurring__item">
+                <div class="recurring__item-heading">
+                    <div class="recurring__details">
+                        <h3>{{ item.concept }}</h3>
+                        <span>
+                            {{ categoryName(item.category_id) }}
+                        </span>
+                    </div>
+
+                    <span class="recurring__status"
+                          [class.recurring__status--inactive]="!item.active">
+                        {{ item.active ? 'Activa' : 'Inactiva' }}
+                    </span>
+                </div>
+
+                <div class="recurring__amount"
+                     [class.recurring__amount--income]="item.type === 'income'"
+                     [class.recurring__amount--expense]="item.type === 'expense'">
+
+                    <span>
+                        {{ item.type === 'income'
+                               ? 'Ingreso mensual'
+                               : 'Gasto mensual' }}
+                    </span>
+
+                    <strong>
+                        {{ item.type === 'income' ? '+' : '−' }}
+                        {{ formatMoney(item.amount) }}
+                    </strong>
+                </div>
+
+                <dl class="recurring__schedule">
+                    <div>
+                        <dt>Día del mes</dt>
+                        <dd>{{ item.day_of_month }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Fecha de inicio</dt>
+                        <dd>{{ item.start_date }}</dd>
+                    </div>
+
+                    <div>
+                        <dt>Fecha de fin</dt>
+                        <dd>
+                            {{ item.end_date ?? 'Sin fecha de fin' }}
+                        </dd>
+                    </div>
+                </dl>
+            </li>
+            }
+        </ul>
+        }
+
+        <p class="recurring__muted recurring__note">
+            Estas son las plantillas configuradas.
+            Sus ocurrencias se consultarán y gestionarán
+            por separado.
+        </p>
+    </section>
+    }
+    } @else {
+    <p class="recurring__muted">
+        Selecciona un espacio para consultar
+        sus movimientos recurrentes.
+    </p>
+    }
+</div>

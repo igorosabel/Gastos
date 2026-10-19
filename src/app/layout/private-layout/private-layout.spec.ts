@@ -172,19 +172,19 @@ describe('PrivateLayout', (): void => {
   it('dispone de navegación lateral para escritorio', async (): Promise<void> => {
     await completeInitialLoad();
 
-    const navigation: HTMLElement | null = fixture.nativeElement.querySelector(
+    const navigation: HTMLElement = fixture.nativeElement.querySelector(
       '.private-layout__desktop-nav',
     );
 
-    expect(navigation).not.toBeNull();
+    const links: NodeListOf<HTMLAnchorElement> = navigation.querySelectorAll('a');
 
-    const links: NodeListOf<HTMLAnchorElement> = navigation!.querySelectorAll('a');
-
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(6);
 
     expect(
       Array.from(links, (link: HTMLAnchorElement): string => link.textContent?.trim() ?? ''),
-    ).toEqual(['Inicio', 'Movimientos', 'Informes', 'Categorías', 'Ajustes']);
+    ).toEqual(['Inicio', 'Movimientos', 'Recurrentes', 'Informes', 'Categorías', 'Ajustes']);
+
+    expect(links[2]?.getAttribute('href')).toBe('/recurring');
   });
 
   it('mantiene el selector de espacio en la cabecera', async (): Promise<void> => {
