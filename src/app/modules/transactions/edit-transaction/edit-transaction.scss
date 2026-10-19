@@ -60,6 +60,26 @@
     gap: 0.75rem;
 }
 
+/*
+ * Antes del primer envío, los campos conservan el
+ * aspecto normal aunque Signal Forms ya haya detectado
+ * restricciones pendientes.
+ */
+.transaction-form:not(.transaction-form--show-errors) {
+
+    .p-inputtext.ng-invalid,
+    .p-inputtext.p-invalid,
+    .p-inputtext[aria-invalid='true'] {
+        border-color: var(--p-inputtext-border-color);
+    }
+
+    p-select.ng-invalid,
+    p-select.p-invalid,
+    p-select[aria-invalid='true'] {
+        border-color: var(--p-select-border-color);
+    }
+}
+
 @media (max-width: 640px) {
     .transaction-form {
         padding: 1rem;

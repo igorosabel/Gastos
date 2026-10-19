@@ -1,6 +1,7 @@
 <form [formRoot]="transactionForm"
       class="transaction-form"
-      aria-label="Editar movimiento">
+      aria-label="Editar movimiento"
+      [class.transaction-form--show-errors]="showErrors()">
 
     <h3>Editar movimiento</h3>
 
@@ -17,7 +18,9 @@
     </div>
 
     <div class="transaction-form__field">
-        <label for="edit-transaction-category">Categoría</label>
+        <label for="edit-transaction-category">
+            Categoría <span aria-hidden="true">*</span>
+        </label>
 
         <p-select inputId="edit-transaction-category"
                   [options]="categoryOptions()"
@@ -25,10 +28,17 @@
                   optionValue="value"
                   placeholder="Selecciona una categoría"
                   [formField]="transactionForm.categoryId"
-                  [fluid]="true" />
+                  [fluid]="true">
 
-        @if (transactionForm.categoryId().touched() &&
-        transactionForm.categoryId().invalid()) {
+            <ng-template #item
+                         let-option>
+                <div [style.padding-left.rem]="option.depth * 1.25">
+                    {{ option.label }}
+                </div>
+            </ng-template>
+        </p-select>
+
+        @if (showErrors() && transactionForm.categoryId().invalid()) {
         <small class="transaction-form__error"
                role="alert">
             {{ transactionForm.categoryId().errors()[0]?.message }}
@@ -37,7 +47,9 @@
     </div>
 
     <div class="transaction-form__field">
-        <label for="edit-transaction-amount">Importe</label>
+        <label for="edit-transaction-amount">
+            Importe <span aria-hidden="true">*</span>
+        </label>
 
         <input #amountInput
                pInputText
@@ -51,8 +63,7 @@
             Introduce dos decimales separados por un punto.
         </small>
 
-        @if (transactionForm.amount().touched() &&
-        transactionForm.amount().invalid()) {
+        @if (showErrors() && transactionForm.amount().invalid()) {
         <small class="transaction-form__error"
                role="alert">
             {{ transactionForm.amount().errors()[0]?.message }}
@@ -69,8 +80,7 @@
                autocomplete="off"
                [formField]="transactionForm.concept" />
 
-        @if (transactionForm.concept().touched() &&
-        transactionForm.concept().invalid()) {
+        @if (showErrors() && transactionForm.concept().invalid()) {
         <small class="transaction-form__error"
                role="alert">
             {{ transactionForm.concept().errors()[0]?.message }}
@@ -79,14 +89,15 @@
     </div>
 
     <div class="transaction-form__field">
-        <label for="edit-transaction-date">Fecha</label>
+        <label for="edit-transaction-date">
+            Fecha <span aria-hidden="true">*</span>
+        </label>
 
         <input id="edit-transaction-date"
                type="date"
                [formField]="transactionForm.date" />
 
-        @if (transactionForm.date().touched() &&
-        transactionForm.date().invalid()) {
+        @if (showErrors() && transactionForm.date().invalid()) {
         <small class="transaction-form__error"
                role="alert">
             {{ transactionForm.date().errors()[0]?.message }}

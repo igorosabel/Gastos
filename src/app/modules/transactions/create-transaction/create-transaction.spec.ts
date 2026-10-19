@@ -165,7 +165,7 @@ describe('CreateTransaction', (): void => {
   });
 
   it('muestra solo categorías compatibles del espacio', (): void => {
-    expect(component.categoryOptions()).toEqual([{ label: 'Hogar', value: 20 }]);
+    expect(component.categoryOptions()).toEqual([{ label: 'Hogar', value: 20, depth: 0 }]);
   });
 
   it('limpia la categoría cuando cambia el tipo', (): void => {
@@ -178,7 +178,7 @@ describe('CreateTransaction', (): void => {
 
     expect(component.transactionModel().type).toBe('income');
     expect(component.transactionModel().categoryId).toBeNull();
-    expect(component.categoryOptions()).toEqual([{ label: 'Nómina', value: 21 }]);
+    expect(component.categoryOptions()).toEqual([{ label: 'Nómina', value: 21, depth: 0 }]);
   });
 
   it('cancela sin realizar una petición', (): void => {
@@ -191,7 +191,7 @@ describe('CreateTransaction', (): void => {
     httpTesting.expectNone(`${environment.apiUrl}/transactions`);
   });
 
-  it.each([['0.00'], ['95'], ['95.4'], ['95,40'], ['-10.00'], ['abc']])(
+  it.each([['0'], ['0.00'], ['-10.00'], ['95.400'], ['abc'], ['1.234,56']])(
     'rechaza el importe inválido %s',
     async (amount: string): Promise<void> => {
       fillValidForm();
@@ -203,7 +203,6 @@ describe('CreateTransaction', (): void => {
 
       fixture.detectChanges();
       submitForm();
-
       await fixture.whenStable();
 
       httpTesting.expectNone(`${environment.apiUrl}/transactions`);
@@ -390,5 +389,66 @@ describe('CreateTransaction', (): void => {
     await fixture.whenStable();
 
     expect(createdSpy).not.toHaveBeenCalled();
+  });
+
+  it('no muestra errores antes de intentar guardar', (): void => {
+    expect(component.showErrors()).toBe(false);
+
+    const errors: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll(
+      '.transaction-form__error',
+    );
+
+    expect(errors).toHaveLength(0);
+
+    const form: HTMLElement = fixture.nativeElement.querySelector('form');
+
+    expect(form.classList.contains('transaction-form--show-errors')).toBe(false);
+  });
+
+  it('muestra los errores obligatorios al intentar guardar', async (): Promise<void> => {
+    submitForm();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.showErrors()).toBe(true);
+
+    const content: string = fixture.nativeElement.textContent;
+
+    expect(content).toContain('Selecciona una categoría.');
+    expect(content).toContain('El importe es obligatorio.');
+
+    httpTesting.expectNone(`${environment.apiUrl}/transactions`);
+  });
+
+  it('envía un importe entero con dos decimales', async (): Promise<void> => {
+    fillValidForm();
+
+    component.transactionModel.update((model) => ({
+      ...model,
+      amount: '33',
+    }));
+
+    fixture.detectChanges();
+    submitForm();
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/transactions`);
+
+    expect(request.request.body.amount).toBe('33.00');
+
+    request.flush(
+      {
+        ...successResponse(),
+        transaction: {
+          ...successResponse().transaction!,
+          amount: '33.00',
+        },
+      },
+      {
+        status: 201,
+        statusText: 'Created',
+      },
+    );
+
+    await fixture.whenStable();
   });
 });

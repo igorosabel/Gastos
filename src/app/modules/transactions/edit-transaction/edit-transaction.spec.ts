@@ -177,7 +177,7 @@ describe('EditTransaction', (): void => {
   });
 
   it('filtra categorías por tipo y espacio', (): void => {
-    expect(component.categoryOptions()).toEqual([{ label: 'Hogar', value: 20 }]);
+    expect(component.categoryOptions()).toEqual([{ label: 'Hogar', value: 20, depth: 0 }]);
   });
 
   it('limpia la categoría al cambiar de tipo', (): void => {
@@ -185,7 +185,7 @@ describe('EditTransaction', (): void => {
 
     expect(component.transactionModel().type).toBe('income');
     expect(component.transactionModel().categoryId).toBeNull();
-    expect(component.categoryOptions()).toEqual([{ label: 'Nómina', value: 21 }]);
+    expect(component.categoryOptions()).toEqual([{ label: 'Nómina', value: 21, depth: 0 }]);
   });
 
   it('cancela sin enviar ninguna petición', (): void => {
@@ -199,7 +199,7 @@ describe('EditTransaction', (): void => {
     httpTesting.expectNone(`${environment.apiUrl}/transactions/update`);
   });
 
-  it.each([['0.00'], ['95'], ['95,40'], ['-5.00']])(
+  it.each([['0'], ['0.00'], ['-10.00'], ['95.400'], ['abc'], ['1.234,56']])(
     'rechaza el importe inválido %s',
     async (amount: string): Promise<void> => {
       fillValidForm();

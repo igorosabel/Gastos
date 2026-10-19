@@ -1,5 +1,6 @@
 import { required, validate, type SchemaPathTree } from '@angular/forms/signals';
 import type CreateTransactionFormModel from '@model/transactions/create-transaction-form.model';
+import normalizeTransactionAmount from '@model/transactions/normalize-transaction-amount';
 
 export default function createTransactionFormSchema(
   path: SchemaPathTree<CreateTransactionFormModel>,
@@ -16,17 +17,20 @@ export default function createTransactionFormSchema(
     const amount: string = value().trim();
 
     if (amount === '') {
+      // required() mostrará el error correspondiente.
       return undefined;
     }
 
-    if (!/^(?:0|[1-9]\d*)\.\d{2}$/.test(amount)) {
+    const normalized: string | null = normalizeTransactionAmount(amount);
+
+    if (normalized === null) {
       return {
         kind: 'invalidAmount',
-        message: 'Introduce un importe con dos decimales, por ejemplo 95.40.',
+        message: 'Introduce un importe válido, por ejemplo 33 o 33,50.',
       };
     }
 
-    if (!/[1-9]/.test(amount)) {
+    if (normalized === '0.00') {
       return {
         kind: 'zeroAmount',
         message: 'El importe debe ser mayor que cero.',

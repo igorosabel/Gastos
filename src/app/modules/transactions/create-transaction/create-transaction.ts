@@ -30,6 +30,8 @@ import createTransactionFormInitialValue from '@model/transactions/create-transa
 import createTransactionFormMapper from '@model/transactions/create-transaction-form.mapper';
 import type CreateTransactionFormModel from '@model/transactions/create-transaction-form.model';
 import createTransactionFormSchema from '@model/transactions/create-transaction-form.schema';
+import type TransactionCategoryOption from '@model/transactions/transaction-category-option.model';
+import transactionCategoryOptions from '@model/transactions/transaction-category-options.mapper';
 import type Transaction from '@model/transactions/transaction.model';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
@@ -58,6 +60,7 @@ export default class CreateTransaction {
 
   readonly transactionModel: WritableSignal<CreateTransactionFormModel> =
     signal<CreateTransactionFormModel>(createTransactionFormInitialValue());
+  readonly showErrors: WritableSignal<boolean> = signal<boolean>(false);
 
   readonly typeOptions: {
     label: string;
@@ -67,35 +70,9 @@ export default class CreateTransaction {
     { label: 'Ingreso', value: 'income' },
   ];
 
-  readonly categoryOptions: Signal<
-    {
-      label: string;
-      value: number;
-    }[]
-  > = computed(
-    (): {
-      label: string;
-      value: number;
-    }[] => {
-      const type: 'income' | 'expense' = this.transactionModel().type;
-
-      return this.categories()
-        .filter(
-          (category: Category): boolean =>
-            category.space_id === this.spaceId() && category.default_type === type,
-        )
-        .map(
-          (
-            category: Category,
-          ): {
-            label: string;
-            value: number;
-          } => ({
-            label: category.name,
-            value: category.id,
-          }),
-        );
-    },
+  readonly categoryOptions: Signal<TransactionCategoryOption[]> = computed(
+    (): TransactionCategoryOption[] =>
+      transactionCategoryOptions(this.categories(), this.spaceId(), this.transactionModel().type),
   );
 
   private readonly amountInput: Signal<ElementRef<HTMLInputElement> | undefined> =
@@ -106,6 +83,9 @@ export default class CreateTransaction {
     createTransactionFormSchema,
     {
       submission: {
+        onInvalid: (): void => {
+          this.showErrors.set(true);
+        },
         action: async (
           field: FieldTree<CreateTransactionFormModel>,
         ): Promise<TreeValidationResult> => {
