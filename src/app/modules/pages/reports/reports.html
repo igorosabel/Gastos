@@ -1,21 +1,149 @@
 <div class="reports">
-    <header>
-        <h1>Informes</h1>
-        <p>Consulta y analiza la evolución de tus finanzas.</p>
+    <header class="reports__heading">
+        <div>
+            <h1>Informes</h1>
+            <p>
+                Evolución mensual de ingresos, gastos
+                y resultado económico.
+            </p>
+        </div>
+
+        @if (spaceStore.selectedId() !== null) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            <svg data-p-icon="refresh"
+                 [size]="16"
+                 aria-hidden="true"></svg>
+            <span>Actualizar</span>
+        </button>
+        }
     </header>
 
-    <section class="reports__card">
-        <h2>Informes económicos</h2>
+    @if (spaceStore.loading()) {
+    <p class="reports__muted"
+       role="status">
+        Cargando espacios...
+    </p>
+    } @else if (spaceStore.error()) {
+    <p class="reports__error"
+       role="alert">
+        No se han podido cargar los espacios.
+    </p>
+    } @else if (spaceStore.selected(); as selectedSpace) {
 
-        <p>
-            Esta sección incorporará el desglose de ingresos
-            y gastos, la distribución por categorías y
-            la evolución mensual.
-        </p>
+    <section class="reports__period"
+             aria-labelledby="reports-period-title">
 
-        <p>
-            Primero completaremos el resumen de Inicio
-            utilizando los datos reales de ApiGastos.
-        </p>
+        <div>
+            <h2 id="reports-period-title">
+                Evolución de {{ selectedSpace.name }}
+            </h2>
+
+            <p class="reports__muted">
+                {{ periodLabel() }}
+            </p>
+        </div>
+
+        <nav class="reports__period-actions"
+             aria-label="Seleccionar periodo de informes">
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading()"
+                    (click)="previousPeriod()">
+                12 meses anteriores
+            </button>
+
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading() ||
+                                periodEnd() >= currentMonth"
+                    (click)="nextPeriod()">
+                12 meses siguientes
+            </button>
+        </nav>
     </section>
+
+    @if (loading()) {
+    <p class="reports__muted"
+       role="status">
+        Cargando evolución económica...
+    </p>
+    } @else if (error()) {
+    <div class="reports__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (orderedMonths().length === 0) {
+    <p class="reports__muted">
+        No hay datos disponibles para este periodo.
+    </p>
+    } @else {
+    <section class="reports__results"
+             aria-labelledby="reports-results-title">
+
+        <h2 id="reports-results-title">
+            Resumen por meses
+        </h2>
+
+        <p class="reports__muted">
+            Los importes corresponden a movimientos
+            reales de cada mes. No son acumulados.
+        </p>
+
+        <ul class="reports__months">
+            @for (month of orderedMonths(); track month.month) {
+            <li class="reports__month">
+
+                <h3>{{ monthLabel(month.month) }}</h3>
+
+                <dl class="reports__values">
+                    <div class="reports__value">
+                        <dt>Ingresos</dt>
+                        <dd class="reports__income">
+                            {{ formatMoney(month.income) }}
+                        </dd>
+                    </div>
+
+                    <div class="reports__value">
+                        <dt>Gastos</dt>
+                        <dd class="reports__expense">
+                            {{ formatMoney(month.expense) }}
+                        </dd>
+                    </div>
+
+                    <div class="reports__value
+                                reports__value--balance">
+                        <dt>Resultado</dt>
+                        <dd [class.reports__expense]="month.balance.startsWith('-')"
+                            [class.reports__income]="!month.balance.startsWith('-')">
+                            {{ formatMoney(month.balance) }}
+                        </dd>
+                    </div>
+                </dl>
+
+            </li>
+            }
+        </ul>
+    </section>
+    }
+    } @else {
+    <p class="reports__muted">
+        Selecciona un espacio para consultar sus informes.
+    </p>
+    }
 </div>

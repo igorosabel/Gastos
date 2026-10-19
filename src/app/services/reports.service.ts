@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import type EvolutionResponse from '@interfaces/reports/evolution-response.interface';
 import type MonthlyCategoriesResponse from '@interfaces/reports/monthly-categories-response.interface';
 import type MonthlyForecastResponse from '@interfaces/reports/monthly-forecast-response.interface';
 import type { Observable } from 'rxjs';
@@ -30,6 +31,20 @@ export default class ReportsService {
       params: {
         spaceId: String(spaceId),
         month,
+      },
+    });
+  }
+
+  /**
+   * Obtiene la evolución económica real de un intervalo
+   * de meses, incluidos ambos extremos.
+   */
+  getEvolution(spaceId: number, monthFrom: string, monthTo: string): Observable<EvolutionResponse> {
+    return this.http.get<EvolutionResponse>(`${this.apiUrl}/reports/evolution`, {
+      params: {
+        spaceId: String(spaceId),
+        monthFrom,
+        monthTo,
       },
     });
   }
