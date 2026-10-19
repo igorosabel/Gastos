@@ -1,12 +1,59 @@
 <div class="dashboard">
     <header class="dashboard__heading">
-        <h1>Inicio</h1>
-        <p>Resumen económico · {{ monthLabel }}</p>
+        <div>
+            <h1>Inicio</h1>
+            <p>Resumen económico · {{ monthLabel }}</p>
+        </div>
+
+        @if (spaceStore.selectedId() !== null) {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            <svg data-p-icon="refresh"
+                 [size]="16"
+                 aria-hidden="true"></svg>
+            <span>Actualizar</span>
+        </button>
+        }
     </header>
 
-    @if (spaceStore.selected(); as selectedSpace) {
+    @if (spaceStore.loading()) {
+    <p class="dashboard__muted"
+       role="status">
+        Cargando espacios...
+    </p>
+    } @else if (spaceStore.error()) {
+    <p class="dashboard__error"
+       role="alert">
+        No se han podido cargar los espacios.
+    </p>
+    } @else if (spaceStore.selected(); as selectedSpace) {
+
+    @if (loading()) {
+    <p class="dashboard__muted"
+       role="status">
+        Cargando resumen económico...
+    </p>
+    } @else if (error()) {
+    <div class="dashboard__error"
+         role="alert">
+        <p>{{ error() }}</p>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (forecast(); as report) {
+
     <section class="dashboard__summary"
              aria-labelledby="dashboard-summary-title">
+
         <h2 id="dashboard-summary-title"
             class="dashboard__sr-only">
             Resumen de {{ selectedSpace.name }}
@@ -15,48 +62,132 @@
         <div class="dashboard__metrics">
             <article class="dashboard__metric">
                 <h3>Ingresos</h3>
-                <strong>—</strong>
+                <strong class="dashboard__income">
+                    {{ formatMoney(report.actual.income) }}
+                </strong>
             </article>
 
             <article class="dashboard__metric">
                 <h3>Gastos</h3>
-                <strong>—</strong>
+                <strong class="dashboard__expense">
+                    {{ formatMoney(report.actual.expense) }}
+                </strong>
             </article>
 
             <article class="dashboard__metric">
                 <h3>Resultado</h3>
-                <strong>—</strong>
+                <strong>
+                    {{ formatMoney(report.actual.balance) }}
+                </strong>
             </article>
 
             <article class="dashboard__metric">
                 <h3>Previsión fin de mes</h3>
-                <strong>—</strong>
+                <strong>
+                    {{ formatMoney(report.projected.balance) }}
+                </strong>
             </article>
         </div>
 
-        <p class="dashboard__muted">
-            Los indicadores se conectarán a los informes
-            de ApiGastos en el siguiente bloque.
+        <p class="dashboard__muted dashboard__forecast-note">
+            La previsión incorpora las ocurrencias
+            recurrentes pendientes ya generadas.
         </p>
     </section>
 
     <div class="dashboard__details">
-        <section class="dashboard__card">
-            <h2>Gastos por categorías</h2>
+
+        <section class="dashboard__card"
+                 aria-labelledby="dashboard-categories-title">
+
+            <h2 id="dashboard-categories-title">
+                Gastos por categorías
+            </h2>
+
+            @if (expenseCategories().length === 0) {
             <p class="dashboard__muted">
-                El desglose del mes estará disponible
-                al conectar el resumen económico.
+                No hay gastos por categorías este mes.
+            </p>
+            } @else {
+            <ul class="dashboard__categories">
+                @for (
+                category of expenseCategories();
+                track category.category_id
+                ) {
+                <li class="dashboard__category">
+                    <div class="dashboard__category-heading">
+                        <span>{{ category.name }}</span>
+                        <strong>
+                            {{ formatMoney(category.amount) }}
+                        </strong>
+                    </div>
+
+                    <div class="dashboard__category-track"
+                         aria-hidden="true">
+                        <div class="dashboard__category-bar"
+                             [style.width.%]="percentageOf(
+                                     category.amount,
+                                     report.actual.expense
+                                 )"></div>
+                    </div>
+                </li>
+                }
+            </ul>
+            }
+
+            <p class="dashboard__muted dashboard__section-note">
+                Los importes corresponden a movimientos
+                asignados directamente a cada categoría.
             </p>
         </section>
 
-        <section class="dashboard__card">
-            <h2>Últimos movimientos</h2>
+        <section class="dashboard__card"
+                 aria-labelledby="dashboard-transactions-title">
+
+            <div class="dashboard__card-heading">
+                <h2 id="dashboard-transactions-title">
+                    Últimos movimientos
+                </h2>
+
+                <a routerLink="/transactions">
+                    Ver todos
+                </a>
+            </div>
+
+            @if (latestTransactions().length === 0) {
             <p class="dashboard__muted">
-                Aquí aparecerán los movimientos recientes
-                del espacio seleccionado.
+                Todavía no hay movimientos registrados.
             </p>
+            } @else {
+            <ul class="dashboard__transactions">
+                @for (
+                transaction of latestTransactions();
+                track transaction.id
+                ) {
+                <li class="dashboard__transaction">
+                    <div class="dashboard__transaction-detail">
+                        <strong>
+                            {{ transaction.concept ||
+                                   (transaction.type === 'income'
+                                       ? 'Ingreso'
+                                       : 'Gasto') }}
+                        </strong>
+                        <span>{{ transaction.date }}</span>
+                    </div>
+
+                    <strong class="dashboard__transaction-amount"
+                            [class.dashboard__income]="transaction.type === 'income'"
+                            [class.dashboard__expense]="transaction.type === 'expense'">
+                        {{ transaction.type === 'income' ? '+' : '−' }}
+                        {{ formatMoney(transaction.amount) }}
+                    </strong>
+                </li>
+                }
+            </ul>
+            }
         </section>
     </div>
+    }
     } @else {
     <p class="dashboard__muted">
         Selecciona un espacio para consultar
