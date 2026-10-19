@@ -7,6 +7,7 @@ import CreateSpace from '@modules/spaces/create-space/create-space';
 import LeaveSpace from '@modules/spaces/leave-space/leave-space';
 import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
 import SpaceMembers from '@modules/spaces/space-members/space-members';
+import { ArrowRight } from '@primeicons/angular';
 import { ButtonDirective } from 'primeng/button';
 
 @Component({
@@ -19,6 +20,7 @@ import { ButtonDirective } from 'primeng/button';
     LeaveSpace,
     SpaceInvitations,
     SpaceMembers,
+    ArrowRight,
   ],
   templateUrl: './settings.html',
   styleUrl: './settings.scss',

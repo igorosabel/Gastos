@@ -18,6 +18,7 @@ import type CategoryRow from '@model/categories/category-row.model';
 import type Category from '@model/categories/category.model';
 import CreateCategory from '@modules/categories/create-category/create-category';
 import EditCategory from '@modules/categories/edit-category/edit-category';
+import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import { ButtonDirective } from 'primeng/button';
 import type { Subscription } from 'rxjs';
@@ -25,7 +26,7 @@ import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-categories',
-  imports: [ButtonDirective, CreateCategory, EditCategory],
+  imports: [ButtonDirective, CreateCategory, EditCategory, Refresh],
   templateUrl: './categories.html',
   styleUrl: './categories.scss',
 })

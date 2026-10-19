@@ -14,48 +14,54 @@
             <a routerLink="/dashboard"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">
-                <i class="pi pi-home"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="home"
+                     [size]="20"
+                     aria-hidden="true"></svg>
                 <span>Inicio</span>
             </a>
 
             <a routerLink="/transactions"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">
-                <i class="pi pi-list"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="list"
+                     [size]="20"
+                     aria-hidden="true"></svg>
                 <span>Movimientos</span>
             </a>
 
             <a routerLink="/reports"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">
-                <i class="pi pi-chart-bar"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="chart-bar"
+                     [size]="20"
+                     aria-hidden="true"></svg>
                 <span>Informes</span>
             </a>
 
             <a routerLink="/categories"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">
-                <i class="pi pi-tags"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="tags"
+                     [size]="20"
+                     aria-hidden="true"></svg>
                 <span>Categorías</span>
             </a>
 
             <a routerLink="/settings"
                routerLinkActive="private-layout__nav-link--active"
                [routerLinkActiveOptions]="{ exact: true }">
-                <i class="pi pi-cog"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="cog"
+                     [size]="20"
+                     aria-hidden="true"></svg>
                 <span>Ajustes</span>
             </a>
         </nav>
 
         <a routerLink="/transactions"
            class="private-layout__desktop-add">
-            <i class="pi pi-plus"
-               aria-hidden="true"></i>
+            <svg data-p-icon="plus"
+                 [size]="20"
+                 aria-hidden="true"></svg>
             <span>Añadir movimiento</span>
         </a>
     </aside>
@@ -118,8 +124,9 @@
                             variant="outlined"
                             aria-label="Cerrar sesión"
                             (click)="logout()">
-                        <i class="pi pi-sign-out"
-                           aria-hidden="true"></i>
+                        <svg data-p-icon="sign-out"
+                             [size]="18"
+                             aria-hidden="true"></svg>
                         <span class="private-layout__logout-label">
                             Salir
                         </span>
@@ -140,16 +147,18 @@
         <a routerLink="/dashboard"
            routerLinkActive="private-layout__nav-link--active"
            [routerLinkActiveOptions]="{ exact: true }">
-            <i class="pi pi-home"
-               aria-hidden="true"></i>
+            <svg data-p-icon="home"
+                 [size]="20"
+                 aria-hidden="true"></svg>
             <span>Inicio</span>
         </a>
 
         <a routerLink="/transactions"
            routerLinkActive="private-layout__nav-link--active"
            [routerLinkActiveOptions]="{ exact: true }">
-            <i class="pi pi-list"
-               aria-hidden="true"></i>
+            <svg data-p-icon="list"
+                 [size]="20"
+                 aria-hidden="true"></svg>
             <span>Movimientos</span>
         </a>
 
@@ -157,8 +166,9 @@
            class="private-layout__mobile-add"
            aria-label="Añadir movimiento">
             <span class="private-layout__mobile-add-icon">
-                <i class="pi pi-plus"
-                   aria-hidden="true"></i>
+                <svg data-p-icon="plus"
+                     [size]="24"
+                     aria-hidden="true"></svg>
             </span>
             <span>Añadir</span>
         </a>
@@ -166,16 +176,18 @@
         <a routerLink="/reports"
            routerLinkActive="private-layout__nav-link--active"
            [routerLinkActiveOptions]="{ exact: true }">
-            <i class="pi pi-chart-bar"
-               aria-hidden="true"></i>
+            <svg data-p-icon="chart-bar"
+                 [size]="20"
+                 aria-hidden="true"></svg>
             <span>Informes</span>
         </a>
 
         <a routerLink="/settings"
            routerLinkActive="private-layout__nav-link--active"
            [routerLinkActiveOptions]="{ exact: true }">
-            <i class="pi pi-cog"
-               aria-hidden="true"></i>
+            <svg data-p-icon="cog"
+                 [size]="20"
+                 aria-hidden="true"></svg>
             <span>Ajustes</span>
         </a>
     </nav>

@@ -213,4 +213,22 @@ describe('PrivateLayout', (): void => {
     expect(action?.getAttribute('href')).toBe('/transactions');
     expect(action?.textContent).toContain('Añadir movimiento');
   });
+
+  it('renderiza los iconos SVG de navegación', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    const desktop: HTMLElement = fixture.nativeElement.querySelector(
+      '.private-layout__desktop-nav',
+    );
+
+    const mobile: HTMLElement = fixture.nativeElement.querySelector('.private-layout__bottom-nav');
+
+    expect(desktop.querySelector('svg[data-p-icon="home"]')).not.toBeNull();
+
+    expect(desktop.querySelector('svg[data-p-icon="chart-bar"]')).not.toBeNull();
+
+    expect(mobile.querySelector('svg[data-p-icon="home"]')).not.toBeNull();
+
+    expect(mobile.querySelector('svg[data-p-icon="plus"]')).not.toBeNull();
+  });
 });

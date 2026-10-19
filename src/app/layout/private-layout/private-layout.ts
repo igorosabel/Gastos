@@ -3,12 +3,27 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
+import { ChartBar, Cog, Home, List, Plus, SignOut, Tags } from '@primeicons/angular';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 
 @Component({
   selector: 'app-private-layout',
-  imports: [ButtonDirective, FormsModule, RouterLink, RouterLinkActive, RouterOutlet, SelectModule],
+  imports: [
+    ButtonDirective,
+    FormsModule,
+    RouterLink,
+    RouterLinkActive,
+    RouterOutlet,
+    SelectModule,
+    Home,
+    List,
+    ChartBar,
+    Tags,
+    Cog,
+    Plus,
+    SignOut,
+  ],
   templateUrl: './private-layout.html',
   styleUrl: './private-layout.scss',
 })

@@ -14,8 +14,9 @@
                 variant="outlined"
                 [disabled]="loading() || deletingId() !== null"
                 (click)="reload()">
-            <i class="pi pi-refresh"
-               aria-hidden="true"></i>
+            <svg data-p-icon="refresh"
+                 [size]="16"
+                 aria-hidden="true"></svg>
             <span>Actualizar</span>
         </button>
         }

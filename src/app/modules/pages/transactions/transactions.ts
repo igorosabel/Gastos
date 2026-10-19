@@ -23,6 +23,7 @@ import type TransactionFilters from '@model/transactions/transaction-filters.mod
 import type Transaction from '@model/transactions/transaction.model';
 import CreateTransaction from '@modules/transactions/create-transaction/create-transaction';
 import EditTransaction from '@modules/transactions/edit-transaction/edit-transaction';
+import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
@@ -31,7 +32,7 @@ import { firstValueFrom, forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-transactions',
-  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction, EditTransaction],
+  imports: [ButtonDirective, FormField, SelectModule, CreateTransaction, EditTransaction, Refresh],
   templateUrl: './transactions.html',
   styleUrl: './transactions.scss',
 })
