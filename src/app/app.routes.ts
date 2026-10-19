@@ -34,6 +34,14 @@ const routes: Routes = [
         path: 'transactions',
         loadComponent: () => import('@pages/transactions/transactions').then((m) => m.default),
       },
+      {
+        path: 'reports',
+        loadComponent: () => import('@pages/reports/reports').then((m) => m.default),
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('@pages/settings/settings').then((m) => m.default),
+      },
     ],
   },
   {

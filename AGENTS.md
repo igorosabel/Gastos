@@ -24,6 +24,7 @@ Antes de proponer cambios:
 4. Revisar las decisiones arquitectónicas existentes.
 5. No asumir que el frontend conserva estructuras
    de versiones anteriores.
+6. Consultar docs/design-responsive.md antes de modificar el layout, la navegación o la organización visual de las páginas.
 
 El contrato de la API está documentado en:
 https://github.com/igorosabel/ApiGastos/blob/main/docs/api/endpoints.md

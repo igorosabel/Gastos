@@ -1,93 +1,182 @@
 <div class="private-layout">
-    <header class="private-layout__header">
-        <div class="private-layout__header-inner">
-            <div class="private-layout__brand">
-                <span class="private-layout__logo">G</span>
+    <aside class="private-layout__sidebar"
+           aria-label="Navegación de escritorio">
 
-                <div>
+        <div class="private-layout__sidebar-brand">
+            <span class="private-layout__logo"
+                  aria-hidden="true">G</span>
+            <strong>Gastos</strong>
+        </div>
+
+        <nav class="private-layout__desktop-nav"
+             aria-label="Secciones de Gastos">
+
+            <a routerLink="/dashboard"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <i class="pi pi-home"
+                   aria-hidden="true"></i>
+                <span>Inicio</span>
+            </a>
+
+            <a routerLink="/transactions"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <i class="pi pi-list"
+                   aria-hidden="true"></i>
+                <span>Movimientos</span>
+            </a>
+
+            <a routerLink="/reports"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <i class="pi pi-chart-bar"
+                   aria-hidden="true"></i>
+                <span>Informes</span>
+            </a>
+
+            <a routerLink="/categories"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <i class="pi pi-tags"
+                   aria-hidden="true"></i>
+                <span>Categorías</span>
+            </a>
+
+            <a routerLink="/settings"
+               routerLinkActive="private-layout__nav-link--active"
+               [routerLinkActiveOptions]="{ exact: true }">
+                <i class="pi pi-cog"
+                   aria-hidden="true"></i>
+                <span>Ajustes</span>
+            </a>
+        </nav>
+
+        <a routerLink="/transactions"
+           class="private-layout__desktop-add">
+            <i class="pi pi-plus"
+               aria-hidden="true"></i>
+            <span>Añadir movimiento</span>
+        </a>
+    </aside>
+
+    <div class="private-layout__workspace">
+        <header class="private-layout__header">
+            <div class="private-layout__header-inner">
+
+                <div class="private-layout__mobile-brand">
+                    <span class="private-layout__logo"
+                          aria-hidden="true">G</span>
                     <strong>Gastos</strong>
-                    <span>Gestión de ingresos y gastos</span>
+                </div>
+
+                <div class="private-layout__context"
+                     aria-label="Espacio contable activo">
+
+                    @if (spaceStore.loading()) {
+                    <p role="status">Cargando espacios...</p>
+                    } @else if (spaceStore.error()) {
+                    <div class="private-layout__error"
+                         role="alert">
+                        <span>No se han podido cargar los espacios.</span>
+                        <button pButton
+                                type="button"
+                                severity="secondary"
+                                variant="outlined"
+                                (click)="reloadSpaces()">
+                            Reintentar
+                        </button>
+                    </div>
+                    } @else if (spaceStore.spaces().length === 0) {
+                    <p>No tienes espacios disponibles.</p>
+                    } @else {
+                    <div class="private-layout__selector">
+                        <label for="active-space">
+                            Espacio activo
+                        </label>
+
+                        <p-select inputId="active-space"
+                                  [options]="spaceStore.spaces()"
+                                  optionLabel="name"
+                                  optionValue="id"
+                                  [ngModel]="spaceStore.selectedId()"
+                                  (ngModelChange)="selectSpace($event)"
+                                  placeholder="Selecciona un espacio"
+                                  [fluid]="true" />
+                    </div>
+                    }
+                </div>
+
+                <div class="private-layout__actions">
+                    <span class="private-layout__user">
+                        {{ authStore.user()?.name }}
+                    </span>
+
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
+                            aria-label="Cerrar sesión"
+                            (click)="logout()">
+                        <i class="pi pi-sign-out"
+                           aria-hidden="true"></i>
+                        <span class="private-layout__logout-label">
+                            Salir
+                        </span>
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <nav class="private-layout__nav"
-                 aria-label="Navegación principal">
-                <a routerLink="/dashboard"
-                   routerLinkActive="private-layout__nav-link--active"
-                   [routerLinkActiveOptions]="{ exact: true }">
-                    Inicio
-                </a>
+        <main class="private-layout__main"
+              id="main-content">
+            <router-outlet />
+        </main>
+    </div>
 
-                <a routerLink="/categories"
-                   routerLinkActive="private-layout__nav-link--active"
-                   [routerLinkActiveOptions]="{ exact: true }">
-                    Categorías
-                </a>
+    <nav class="private-layout__bottom-nav"
+         aria-label="Navegación móvil">
 
-                <a routerLink="/transactions"
-                   routerLinkActive="private-layout__nav-link--active"
-                   [routerLinkActiveOptions]="{ exact: true }">
-                    Movimientos
-                </a>
-            </nav>
+        <a routerLink="/dashboard"
+           routerLinkActive="private-layout__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }">
+            <i class="pi pi-home"
+               aria-hidden="true"></i>
+            <span>Inicio</span>
+        </a>
 
-            <div class="private-layout__actions">
-                <span class="private-layout__user">
-                    {{ authStore.user()?.name }}
-                </span>
+        <a routerLink="/transactions"
+           routerLinkActive="private-layout__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }">
+            <i class="pi pi-list"
+               aria-hidden="true"></i>
+            <span>Movimientos</span>
+        </a>
 
-                <button pButton
-                        type="button"
-                        severity="secondary"
-                        variant="outlined"
-                        (click)="logout()">
-                    <i class="pi pi-sign-out"
-                       aria-hidden="true"></i>
-                    <span>Cerrar sesión</span>
-                </button>
-            </div>
-        </div>
-    </header>
+        <a routerLink="/transactions"
+           class="private-layout__mobile-add"
+           aria-label="Añadir movimiento">
+            <span class="private-layout__mobile-add-icon">
+                <i class="pi pi-plus"
+                   aria-hidden="true"></i>
+            </span>
+            <span>Añadir</span>
+        </a>
 
-    <section class="private-layout__context"
-             aria-label="Selección del espacio contable">
-        <div class="private-layout__context-inner">
-            @if (spaceStore.loading()) {
-            <p role="status">Cargando espacios...</p>
-            } @else if (spaceStore.error()) {
-            <div class="private-layout__error"
-                 role="alert">
-                <p>{{ spaceStore.error() }}</p>
+        <a routerLink="/reports"
+           routerLinkActive="private-layout__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }">
+            <i class="pi pi-chart-bar"
+               aria-hidden="true"></i>
+            <span>Informes</span>
+        </a>
 
-                <button pButton
-                        type="button"
-                        severity="secondary"
-                        (click)="reloadSpaces()">
-                    Reintentar
-                </button>
-            </div>
-            } @else if (spaceStore.spaces().length === 0) {
-            <p>No tienes espacios disponibles.</p>
-            } @else {
-            <div class="private-layout__selector">
-                <label for="active-space">
-                    Espacio activo
-                </label>
-
-                <p-select inputId="active-space"
-                          [options]="spaceStore.spaces()"
-                          optionLabel="name"
-                          optionValue="id"
-                          [ngModel]="spaceStore.selectedId()"
-                          (ngModelChange)="selectSpace($event)"
-                          placeholder="Selecciona un espacio"
-                          [fluid]="true" />
-            </div>
-            }
-        </div>
-    </section>
-
-    <main class="private-layout__main">
-        <router-outlet />
-    </main>
+        <a routerLink="/settings"
+           routerLinkActive="private-layout__nav-link--active"
+           [routerLinkActiveOptions]="{ exact: true }">
+            <i class="pi pi-cog"
+               aria-hidden="true"></i>
+            <span>Ajustes</span>
+        </a>
+    </nav>
 </div>

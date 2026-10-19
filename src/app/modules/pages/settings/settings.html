@@ -1,0 +1,123 @@
+<div class="settings">
+    <header class="settings__heading">
+        <h1>Ajustes</h1>
+        <p>
+            Gestiona tus espacios, categorías y las personas
+            con las que compartes gastos.
+        </p>
+    </header>
+
+    <section class="settings__card"
+             aria-labelledby="settings-categories-title">
+        <h2 id="settings-categories-title">Categorías</h2>
+
+        <p class="settings__muted">
+            Administra las categorías de ingresos y gastos
+            del espacio seleccionado.
+        </p>
+
+        <a routerLink="/categories"
+           class="settings__link">
+            Gestionar categorías
+            <i class="pi pi-arrow-right"
+               aria-hidden="true"></i>
+        </a>
+    </section>
+
+    <section class="settings__card"
+             id="spaces"
+             aria-labelledby="settings-spaces-title">
+        <h2 id="settings-spaces-title">Gestión de espacios</h2>
+
+        @if (spaceStore.selected(); as selectedSpace) {
+        <div class="settings__space-detail">
+            <h3>{{ selectedSpace.name }}</h3>
+
+            <p class="settings__muted">
+                @if (selectedSpace.type === 'personal') {
+                Espacio personal
+                } @else {
+                Espacio compartido
+                }
+
+                @if (selectedSpace.is_owner) {
+                · Eres propietario
+                }
+            </p>
+        </div>
+        }
+
+        @if (!spaceStore.loading() && !spaceStore.error()) {
+        <div class="settings__creation">
+            @if (creatingSpace()) {
+            <app-create-space (created)="onSpaceCreated($event)"
+                              (cancelled)="cancelCreateSpace()" />
+            } @else {
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    (click)="openCreateSpace()">
+                Crear espacio compartido
+            </button>
+            }
+        </div>
+        }
+
+        <app-leave-space [space]="spaceStore.selected()"
+                         (left)="onSpaceLeft($event)" />
+
+        @if (membershipMessage()) {
+        <p class="settings__success"
+           role="status">
+            {{ membershipMessage() }}
+        </p>
+        }
+    </section>
+
+    <section class="settings__card"
+             aria-labelledby="settings-invitations-title">
+        <h2 id="settings-invitations-title">
+            Unirse a un espacio compartido
+        </h2>
+
+        <p class="settings__muted">
+            Introduce el token que te haya facilitado la
+            persona que te ha invitado.
+        </p>
+
+        @if (acceptanceMessage()) {
+        <p class="settings__success"
+           role="status">
+            {{ acceptanceMessage() }}
+        </p>
+        }
+
+        @if (acceptingInvitation()) {
+        <app-accept-invitation (accepted)="onInvitationAccepted($event)"
+                               (cancelled)="cancelAcceptInvitation()" />
+        } @else {
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                (click)="openAcceptInvitation()">
+            Introducir invitación
+        </button>
+        }
+    </section>
+
+    @if (spaceStore.selected(); as selectedSpace) {
+    @if (selectedSpace.type === 'shared' && selectedSpace.is_owner) {
+    <section class="settings__card"
+             aria-label="Miembros del espacio">
+        <app-space-members [spaceId]="selectedSpace.id" />
+    </section>
+
+    <section class="settings__card"
+             aria-label="Invitaciones del espacio">
+        <app-space-invitations [spaceId]="selectedSpace.id" />
+    </section>
+    }
+    }
+</div>

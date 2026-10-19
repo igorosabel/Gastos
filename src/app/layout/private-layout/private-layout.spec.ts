@@ -147,4 +147,70 @@ describe('PrivateLayout', (): void => {
     expect(spaceStore.selectedId()).toBeNull();
     expect(navigateSpy).toHaveBeenCalledWith('/login');
   });
+
+  it('dispone de navegación móvil con cinco acciones', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    const navigation: HTMLElement | null = fixture.nativeElement.querySelector(
+      '.private-layout__bottom-nav',
+    );
+
+    expect(navigation).not.toBeNull();
+
+    const links: NodeListOf<HTMLAnchorElement> = navigation!.querySelectorAll('a');
+
+    expect(links).toHaveLength(5);
+
+    expect(
+      Array.from(links, (link: HTMLAnchorElement): string => link.textContent?.trim() ?? ''),
+    ).toEqual(['Inicio', 'Movimientos', 'Añadir', 'Informes', 'Ajustes']);
+
+    expect(links[2]?.getAttribute('href')).toBe('/transactions');
+  });
+
+  it('dispone de navegación lateral para escritorio', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    const navigation: HTMLElement | null = fixture.nativeElement.querySelector(
+      '.private-layout__desktop-nav',
+    );
+
+    expect(navigation).not.toBeNull();
+
+    const links: NodeListOf<HTMLAnchorElement> = navigation!.querySelectorAll('a');
+
+    expect(links).toHaveLength(5);
+
+    expect(
+      Array.from(links, (link: HTMLAnchorElement): string => link.textContent?.trim() ?? ''),
+    ).toEqual(['Inicio', 'Movimientos', 'Informes', 'Categorías', 'Ajustes']);
+  });
+
+  it('mantiene el selector de espacio en la cabecera', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    const selector: HTMLElement | null = fixture.nativeElement.querySelector(
+      '.private-layout__header #active-space',
+    );
+
+    expect(selector).not.toBeNull();
+    expect(spaceStore.selectedId()).toBe(2);
+
+    component.selectSpace(8);
+    fixture.detectChanges();
+
+    expect(spaceStore.selectedId()).toBe(8);
+  });
+
+  it('ofrece la acción de añadir también en escritorio', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    const action: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+      '.private-layout__desktop-add',
+    );
+
+    expect(action).not.toBeNull();
+    expect(action?.getAttribute('href')).toBe('/transactions');
+    expect(action?.textContent).toContain('Añadir movimiento');
+  });
 });

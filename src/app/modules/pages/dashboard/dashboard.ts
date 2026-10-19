@@ -1,111 +1,16 @@
-import { Component, inject, signal, type WritableSignal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import SpaceStore from '@app/spaces/space.store';
-import type Space from '@model/spaces/space.model';
-import AcceptInvitation from '@modules/spaces/accept-invitation/accept-invitation';
-import CreateSpace from '@modules/spaces/create-space/create-space';
-import LeaveSpace from '@modules/spaces/leave-space/leave-space';
-import SpaceInvitations from '@modules/spaces/space-invitations/space-invitations';
-import SpaceMembers from '@modules/spaces/space-members/space-members';
-import { ButtonDirective } from 'primeng/button';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [
-    ButtonDirective,
-    CreateSpace,
-    SpaceInvitations,
-    AcceptInvitation,
-    SpaceMembers,
-    LeaveSpace,
-  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export default class Dashboard {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
 
-  readonly creatingSpace: WritableSignal<boolean> = signal<boolean>(false);
-  readonly acceptingInvitation: WritableSignal<boolean> = signal<boolean>(false);
-  readonly acceptanceMessage: WritableSignal<string | null> = signal<string | null>(null);
-  readonly membershipMessage: WritableSignal<string | null> = signal<string | null>(null);
-
-  /**
-   * Muestra el formulario de creación.
-   */
-  openCreateSpace(): void {
-    this.creatingSpace.set(true);
-  }
-
-  /**
-   * Oculta el formulario sin crear nada.
-   */
-  cancelCreateSpace(): void {
-    this.creatingSpace.set(false);
-  }
-
-  /**
-   * Registra y selecciona el espacio recién creado.
-   */
-  onSpaceCreated(space: Space): void {
-    const added: boolean = this.spaceStore.addCreated(space);
-
-    this.creatingSpace.set(false);
-
-    if (!added) {
-      void this.spaceStore.load();
-    }
-  }
-
-  /**
-   * Abre el formulario para aceptar una invitación.
-   */
-  openAcceptInvitation(): void {
-    this.acceptanceMessage.set(null);
-    this.acceptingInvitation.set(true);
-  }
-
-  /**
-   * Cierra el formulario sin aceptar.
-   */
-  cancelAcceptInvitation(): void {
-    this.acceptingInvitation.set(false);
-  }
-
-  /**
-   * Incorpora un espacio compartido recién aceptado.
-   */
-  onInvitationAccepted(space: Space): void {
-    const added: boolean = this.spaceStore.addAccepted(space);
-
-    this.acceptingInvitation.set(false);
-
-    if (!added) {
-      this.acceptanceMessage.set(
-        'La invitación se ha aceptado. Actualiza el listado de espacios para verla.',
-      );
-
-      void this.spaceStore.load();
-      return;
-    }
-
-    this.acceptanceMessage.set(`Te has unido al espacio «${space.name}».`);
-  }
-
-  /**
-   * Retira del estado un espacio que se acaba de abandonar.
-   */
-  onSpaceLeft(spaceId: number): void {
-    const space: Space | undefined = this.spaceStore
-      .spaces()
-      .find((item: Space): boolean => item.id === spaceId);
-
-    const removed: boolean = this.spaceStore.removeAfterLeave(spaceId);
-
-    if (!removed) {
-      void this.spaceStore.load();
-      return;
-    }
-
-    this.membershipMessage.set(`Has abandonado el espacio «${space?.name ?? 'compartido'}».`);
-  }
+  readonly monthLabel: string = new Intl.DateTimeFormat('es-ES', {
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date());
 }

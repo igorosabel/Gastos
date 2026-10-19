@@ -1,0 +1,43 @@
+:host {
+    display: block;
+}
+
+.reports {
+    display: grid;
+    gap: 1.5rem;
+
+    header {
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        p {
+            margin: 0;
+            color: var(--p-text-muted-color);
+        }
+    }
+}
+
+.reports__card {
+    padding: 1.5rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.875rem;
+    background: var(--p-content-background);
+
+    h2 {
+        margin: 0 0 1rem;
+        font-size: 1.125rem;
+    }
+
+    p {
+        color: var(--p-text-muted-color);
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 640px) {
+    .reports__card {
+        padding: 1rem;
+    }
+}

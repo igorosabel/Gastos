@@ -1,115 +1,66 @@
 <div class="dashboard">
-    <div class="dashboard__heading">
+    <header class="dashboard__heading">
         <h1>Inicio</h1>
-        <p>Gestiona tus espacios y las personas con las que compartes gastos.</p>
-    </div>
-
-    <section class="dashboard__card"
-             aria-labelledby="spaces-title">
-        <h2 id="spaces-title">Gestión del espacio</h2>
-
-        @if (spaceStore.selected(); as selectedSpace) {
-        <div class="dashboard__space-detail">
-            <h3>{{ selectedSpace.name }}</h3>
-
-            <p>
-                @if (selectedSpace.type === 'personal') {
-                Espacio personal
-                } @else {
-                Espacio compartido
-                }
-
-                @if (selectedSpace.is_owner) {
-                · Eres propietario
-                }
-            </p>
-        </div>
-        }
-
-        @if (!spaceStore.loading() && !spaceStore.error()) {
-        <div class="dashboard__creation">
-            @if (creatingSpace()) {
-            <app-create-space (created)="onSpaceCreated($event)"
-                              (cancelled)="cancelCreateSpace()" />
-            } @else {
-            <button pButton
-                    type="button"
-                    severity="secondary"
-                    variant="outlined"
-                    (click)="openCreateSpace()">
-                Crear espacio compartido
-            </button>
-            }
-        </div>
-        }
-
-        <app-leave-space [space]="spaceStore.selected()"
-                         (left)="onSpaceLeft($event)" />
-
-        @if (membershipMessage()) {
-        <p class="dashboard__membership-success"
-           role="status">
-            {{ membershipMessage() }}
-        </p>
-        }
-    </section>
-
-    <section class="dashboard__card dashboard__invitation"
-             aria-labelledby="accept-invitation-title">
-        <h2 id="accept-invitation-title">
-            Unirse a un espacio compartido
-        </h2>
-
-        <p class="dashboard__muted">
-            Si otra persona te ha invitado a compartir un espacio,
-            puedes utilizar aquí el token que te ha facilitado.
-        </p>
-
-        @if (acceptanceMessage()) {
-        <p class="dashboard__acceptance-success"
-           role="status">
-            {{ acceptanceMessage() }}
-        </p>
-        }
-
-        @if (acceptingInvitation()) {
-        <app-accept-invitation (accepted)="onInvitationAccepted($event)"
-                               (cancelled)="cancelAcceptInvitation()" />
-        } @else {
-        <button pButton
-                type="button"
-                severity="secondary"
-                variant="outlined"
-                (click)="openAcceptInvitation()">
-            Introducir invitación
-        </button>
-        }
-    </section>
+        <p>Resumen económico · {{ monthLabel }}</p>
+    </header>
 
     @if (spaceStore.selected(); as selectedSpace) {
-    @if (selectedSpace.type === 'shared' && selectedSpace.is_owner) {
-    <section class="dashboard__card">
-        <app-space-members [spaceId]="selectedSpace.id" />
-    </section>
+    <section class="dashboard__summary"
+             aria-labelledby="dashboard-summary-title">
+        <h2 id="dashboard-summary-title"
+            class="dashboard__sr-only">
+            Resumen de {{ selectedSpace.name }}
+        </h2>
 
-    <section class="dashboard__card">
-        <app-space-invitations [spaceId]="selectedSpace.id" />
-    </section>
-    }
-    }
+        <div class="dashboard__metrics">
+            <article class="dashboard__metric">
+                <h3>Ingresos</h3>
+                <strong>—</strong>
+            </article>
 
-    <section class="dashboard__card"
-             aria-labelledby="summary-title">
-        <h2 id="summary-title">Resumen económico</h2>
+            <article class="dashboard__metric">
+                <h3>Gastos</h3>
+                <strong>—</strong>
+            </article>
+
+            <article class="dashboard__metric">
+                <h3>Resultado</h3>
+                <strong>—</strong>
+            </article>
+
+            <article class="dashboard__metric">
+                <h3>Previsión fin de mes</h3>
+                <strong>—</strong>
+            </article>
+        </div>
 
         <p class="dashboard__muted">
-            Aquí mostraremos los ingresos, los gastos y el balance
-            del espacio seleccionado.
-        </p>
-
-        <p class="dashboard__muted">
-            En los próximos bloques conectaremos los movimientos
-            y los informes de ApiGastos.
+            Los indicadores se conectarán a los informes
+            de ApiGastos en el siguiente bloque.
         </p>
     </section>
+
+    <div class="dashboard__details">
+        <section class="dashboard__card">
+            <h2>Gastos por categorías</h2>
+            <p class="dashboard__muted">
+                El desglose del mes estará disponible
+                al conectar el resumen económico.
+            </p>
+        </section>
+
+        <section class="dashboard__card">
+            <h2>Últimos movimientos</h2>
+            <p class="dashboard__muted">
+                Aquí aparecerán los movimientos recientes
+                del espacio seleccionado.
+            </p>
+        </section>
+    </div>
+    } @else {
+    <p class="dashboard__muted">
+        Selecciona un espacio para consultar
+        su resumen económico.
+    </p>
+    }
 </div>

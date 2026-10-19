@@ -59,4 +59,24 @@ describe('Rutas privadas', (): void => {
     expect(transactionsRoute?.loadComponent).toBeDefined();
     expect(transactionsRoute?.component).toBeUndefined();
   });
+
+  it('mantiene Ajustes como ruta privada diferida', (): void => {
+    const settingsRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'settings',
+    );
+
+    expect(settingsRoute).toBeDefined();
+    expect(settingsRoute?.loadComponent).toBeDefined();
+    expect(settingsRoute?.component).toBeUndefined();
+  });
+
+  it('mantiene Informes como ruta privada diferida', (): void => {
+    const reportsRoute: Route | undefined = privateRoute?.children?.find(
+      (route: Route): boolean => route.path === 'reports',
+    );
+
+    expect(reportsRoute).toBeDefined();
+    expect(reportsRoute?.loadComponent).toBeDefined();
+    expect(reportsRoute?.component).toBeUndefined();
+  });
 });
