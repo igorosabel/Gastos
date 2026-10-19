@@ -57,13 +57,19 @@
             </a>
         </nav>
 
-        <a routerLink="/transactions"
-           class="private-layout__desktop-add">
+        <button type="button"
+                class="private-layout__desktop-add"
+                [disabled]="spaceStore.loading() ||
+                            spaceStore.selectedId() === null ||
+                            quickOpen()"
+                (click)="openQuickTransaction()">
+
             <svg data-p-icon="plus"
                  [size]="20"
                  aria-hidden="true"></svg>
+
             <span>Añadir movimiento</span>
-        </a>
+        </button>
     </aside>
 
     <div class="private-layout__workspace">
@@ -135,6 +141,13 @@
             </div>
         </header>
 
+        @if (quickMessage()) {
+        <p class="private-layout__quick-message"
+           role="status">
+            {{ quickMessage() }}
+        </p>
+        }
+
         <main class="private-layout__main"
               id="main-content">
             <router-outlet />
@@ -162,16 +175,22 @@
             <span>Movimientos</span>
         </a>
 
-        <a routerLink="/transactions"
-           class="private-layout__mobile-add"
-           aria-label="Añadir movimiento">
+        <button type="button"
+                class="private-layout__mobile-add"
+                aria-label="Añadir movimiento"
+                [disabled]="spaceStore.loading() ||
+                            spaceStore.selectedId() === null ||
+                            quickOpen()"
+                (click)="openQuickTransaction()">
+
             <span class="private-layout__mobile-add-icon">
                 <svg data-p-icon="plus"
                      [size]="24"
                      aria-hidden="true"></svg>
             </span>
+
             <span>Añadir</span>
-        </a>
+        </button>
 
         <a routerLink="/reports"
            routerLinkActive="private-layout__nav-link--active"
@@ -191,4 +210,59 @@
             <span>Ajustes</span>
         </a>
     </nav>
+
+    <p-dialog header="Registro rápido"
+              [modal]="true"
+              [visible]="quickOpen()"
+              (visibleChange)="onQuickVisibilityChange($event)"
+              [style]="{
+                  width: '38rem',
+                  maxWidth: 'calc(100vw - 1rem)'
+              }"
+              [breakpoints]="{
+                  '600px': 'calc(100vw - 1rem)'
+              }"
+              [draggable]="false"
+              [resizable]="false"
+              [blockScroll]="true"
+              [dismissableMask]="false"
+              [closable]="!quickSubmitting()"
+              [closeOnEscape]="!quickSubmitting()">
+
+        @if (quickOpen()) {
+        @if (quickLoading()) {
+        <p role="status">
+            Cargando categorías...
+        </p>
+        } @else if (quickError()) {
+        <div role="alert">
+            <p>{{ quickError() }}</p>
+
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    (click)="retryQuickCategories()">
+                Reintentar
+            </button>
+        </div>
+        } @else if (quickCategories().length === 0) {
+        <div class="private-layout__quick-empty">
+            <p>
+                Este espacio todavía no tiene categorías.
+                Crea una categoría antes de registrar un movimiento.
+            </p>
+
+            <a routerLink="/categories"
+               (click)="closeQuickTransaction()">
+                Gestionar categorías
+            </a>
+        </div>
+        } @else if (spaceStore.selectedId(); as spaceId) {
+        <app-create-transaction [spaceId]="spaceId"
+                                [categories]="quickCategories()"
+                                (created)="onQuickTransactionCreated($event)"
+                                (cancelled)="closeQuickTransaction()" />
+        }
+        }
+    </p-dialog>
 </div>

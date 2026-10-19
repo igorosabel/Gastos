@@ -22,6 +22,7 @@ import ReportsService from '@services/reports.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
 import { forkJoin, type Subscription } from 'rxjs';
+import TransactionRefreshService from '@services/transaction-refresh.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,10 +32,11 @@ import { forkJoin, type Subscription } from 'rxjs';
 })
 export default class Dashboard {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
-
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly reportsService: ReportsService = inject(ReportsService);
   private readonly transactionsService: TransactionsService = inject(TransactionsService);
+  private readonly transactionRefresh: TransactionRefreshService =
+    inject(TransactionRefreshService);
 
   private readonly today: Date = new Date();
 
@@ -50,15 +52,10 @@ export default class Dashboard {
   readonly forecast: WritableSignal<MonthlyForecastResponse['report'] | null> = signal<
     MonthlyForecastResponse['report'] | null
   >(null);
-
   readonly categories: WritableSignal<MonthlyCategory[]> = signal<MonthlyCategory[]>([]);
-
   readonly latestTransactions: WritableSignal<Transaction[]> = signal<Transaction[]>([]);
-
   readonly loading: WritableSignal<boolean> = signal<boolean>(false);
-
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
-
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
 
   readonly expenseCategories: Signal<MonthlyCategory[]> = computed((): MonthlyCategory[] =>
@@ -75,6 +72,7 @@ export default class Dashboard {
       const userId: number | undefined = this.authStore.user()?.id;
 
       this.refreshVersion();
+      this.transactionRefresh.version();
 
       this.forecast.set(null);
       this.categories.set([]);

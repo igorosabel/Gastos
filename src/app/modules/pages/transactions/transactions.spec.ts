@@ -11,6 +11,7 @@ import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type TransactionsResponse from '@interfaces/transactions/transactions-response.interface';
 import type Transaction from '@model/transactions/transaction.model';
 import Transactions from '@pages/transactions/transactions';
+import TransactionRefreshService from '@services/transaction-refresh.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 describe('Transactions', (): void => {
@@ -1633,5 +1634,27 @@ describe('Transactions', (): void => {
 
     expect(component.appliedFilters().type).toBe('expense');
     expect(component.transactions()).toEqual([]);
+  });
+
+  it('actualiza la página actual tras una creación global', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2, '95.40', 1, 45, 3);
+
+    component.nextPage();
+    fixture.detectChanges();
+    completeLoad(2, '100.00', 2, 45, 3);
+
+    const refreshService: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    refreshService.notifyChanged();
+    fixture.detectChanges();
+
+    expect(component.page()).toBe(2);
+    expect(component.loading()).toBe(true);
+
+    completeLoad(2, '125.00', 2, 45, 3);
+
+    expect(component.page()).toBe(2);
+    expect(component.transactions()[0]?.amount).toBe('125.00');
   });
 });

@@ -25,6 +25,7 @@ import CreateTransaction from '@modules/transactions/create-transaction/create-t
 import EditTransaction from '@modules/transactions/edit-transaction/edit-transaction';
 import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
+import TransactionRefreshService from '@services/transaction-refresh.service';
 import TransactionsService from '@services/transactions.service';
 import { ButtonDirective } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
@@ -42,6 +43,8 @@ export default class Transactions {
   private readonly transactionsService: TransactionsService = inject(TransactionsService);
   private readonly categoriesService: CategoriesService = inject(CategoriesService);
   private readonly destroyRef: DestroyRef = inject(DestroyRef);
+  private readonly transactionRefresh: TransactionRefreshService =
+    inject(TransactionRefreshService);
 
   readonly transactions: WritableSignal<Transaction[]> = signal<Transaction[]>([]);
   readonly categories: WritableSignal<Category[]> = signal<Category[]>([]);
@@ -159,6 +162,7 @@ export default class Transactions {
       const filters: TransactionFilters = this.appliedFilters();
 
       this.refreshVersion();
+      this.transactionRefresh.version();
 
       this.confirmationId.set(null);
       this.deleteError.set(null);

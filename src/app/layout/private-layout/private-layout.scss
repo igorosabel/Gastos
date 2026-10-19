@@ -133,7 +133,8 @@
     background: var(--p-content-background);
     box-shadow: 0 -3px 14px rgb(0 0 0 / 0.06);
 
-    a {
+    a,
+    button {
         display: flex;
         min-width: 0;
         min-height: 3.5rem;
@@ -157,6 +158,18 @@
         >span:last-child {
             font-size: 0.625rem;
             line-height: 1.2;
+        }
+
+        button {
+            border: 0;
+            background: transparent;
+            font: inherit;
+            cursor: pointer;
+
+            &:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
         }
 
         &:focus-visible {
@@ -191,6 +204,35 @@
         display: block;
         width: 1.5rem;
         height: 1.5rem;
+    }
+}
+
+.private-layout__quick-message {
+    box-sizing: border-box;
+    width: calc(100% - 2rem);
+    max-width: 1376px;
+    margin: 1rem auto 0;
+    padding: 0.875rem 1rem;
+    border: 1px solid var(--p-primary-color);
+    border-radius: 0.75rem;
+    color: var(--p-primary-color);
+    font-weight: 600;
+}
+
+.private-layout__quick-empty {
+    display: grid;
+    gap: 1rem;
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+        line-height: 1.5;
+    }
+
+    a {
+        justify-self: start;
+        color: var(--p-primary-color);
+        font-weight: 600;
     }
 }
 
@@ -262,6 +304,16 @@
         color: var(--p-primary-contrast-color);
         font-weight: 700;
         text-decoration: none;
+        width: 100%;
+        box-sizing: border-box;
+        border: 0;
+        font: inherit;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
 
         &:focus-visible {
             outline: 2px solid var(--p-primary-color);
