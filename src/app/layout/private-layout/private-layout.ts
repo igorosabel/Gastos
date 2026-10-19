@@ -1,6 +1,7 @@
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   OnInit,
@@ -54,6 +55,7 @@ export default class PrivateLayout implements OnInit {
   private readonly categoriesService: CategoriesService = inject(CategoriesService);
   private readonly transactionRefresh: TransactionRefreshService =
     inject(TransactionRefreshService);
+  private readonly destroyRef: DestroyRef = inject(DestroyRef);
 
   readonly quickOpen: WritableSignal<boolean> = signal<boolean>(false);
   readonly quickLoading: WritableSignal<boolean> = signal<boolean>(false);
@@ -65,6 +67,7 @@ export default class PrivateLayout implements OnInit {
   private previousSpaceId: number | null = null;
   private previousToken: string | null = null;
   private previousUserId: number | null = null;
+  private quickMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   private readonly quickForm: Signal<CreateTransaction | undefined> = viewChild(CreateTransaction);
 
@@ -73,6 +76,10 @@ export default class PrivateLayout implements OnInit {
   );
 
   constructor() {
+    this.destroyRef.onDestroy((): void => {
+      this.cancelQuickMessageTimeout();
+    });
+
     // Cualquier cambio de espacio o sesión cierra el registro rápido.
     effect((): void => {
       const spaceId: number | null = this.spaceStore.selectedId();
@@ -89,7 +96,7 @@ export default class PrivateLayout implements OnInit {
         this.previousUserId = userId;
 
         this.quickOpen.set(false);
-        this.quickMessage.set(null);
+        this.clearQuickMessage();
       }
     });
 
@@ -173,7 +180,7 @@ export default class PrivateLayout implements OnInit {
    */
   logout(): void {
     this.quickOpen.set(false);
-    this.quickMessage.set(null);
+    this.clearQuickMessage();
     this.spaceStore.clear();
     this.authStore.clear();
 
@@ -194,7 +201,7 @@ export default class PrivateLayout implements OnInit {
       return;
     }
 
-    this.quickMessage.set(null);
+    this.clearQuickMessage();
     this.quickOpen.set(true);
   }
 
@@ -244,11 +251,43 @@ export default class PrivateLayout implements OnInit {
 
     this.quickOpen.set(false);
 
-    this.quickMessage.set(
+    this.showQuickMessage(
       `Se ha creado el movimiento «${transaction.concept || transaction.amount + ' €'}».`,
     );
 
     this.transactionRefresh.notifyChanged();
+  }
+
+  /**
+   * Cancela el temporizador de la confirmación anterior.
+   */
+  private cancelQuickMessageTimeout(): void {
+    if (this.quickMessageTimeout !== null) {
+      clearTimeout(this.quickMessageTimeout);
+      this.quickMessageTimeout = null;
+    }
+  }
+
+  /**
+   * Elimina la confirmación y cancela su temporizador.
+   */
+  private clearQuickMessage(): void {
+    this.cancelQuickMessageTimeout();
+    this.quickMessage.set(null);
+  }
+
+  /**
+   * Muestra una confirmación durante cuatro segundos.
+   */
+  private showQuickMessage(message: string): void {
+    this.clearQuickMessage();
+
+    this.quickMessage.set(message);
+
+    this.quickMessageTimeout = setTimeout((): void => {
+      this.quickMessageTimeout = null;
+      this.quickMessage.set(null);
+    }, 4000);
   }
 
   /**

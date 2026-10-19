@@ -468,4 +468,55 @@ describe('PrivateLayout', (): void => {
     expect(refreshService.version()).toBe(previousVersion);
     expect(component.quickMessage()).toBeNull();
   });
+
+  it('oculta la confirmación después de cuatro segundos', async (): Promise<void> => {
+    await completeInitialLoad();
+
+    component.openQuickTransaction();
+    fixture.detectChanges();
+
+    httpTesting.expectOne(`${environment.apiUrl}/categories?spaceId=2`).flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    });
+
+    fixture.detectChanges();
+
+    const transaction: Transaction = {
+      id: 31,
+      space_id: 2,
+      user_id: 1,
+      category_id: 20,
+      type: 'expense',
+      amount: '33.00',
+      concept: null,
+      date: '2026-10-19',
+    };
+
+    vi.useFakeTimers();
+
+    try {
+      component.onQuickTransactionCreated(transaction);
+      fixture.detectChanges();
+
+      expect(component.quickMessage()).toBe('Se ha creado el movimiento «33.00 €».');
+
+      // El mensaje sigue visible antes de los cuatro segundos.
+      vi.advanceTimersByTime(3999);
+
+      expect(component.quickMessage()).not.toBeNull();
+
+      // Al cumplirse los cuatro segundos desaparece.
+      vi.advanceTimersByTime(1);
+      fixture.detectChanges();
+
+      expect(component.quickMessage()).toBeNull();
+
+      expect(fixture.nativeElement.querySelector('.private-layout__quick-message')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
