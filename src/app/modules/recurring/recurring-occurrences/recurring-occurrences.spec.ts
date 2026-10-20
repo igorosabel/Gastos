@@ -11,12 +11,14 @@ import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
+import type ResolveRecurringOccurrenceResponse from '@interfaces/recurring/resolve-recurring-occurrence-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringOccurrence from '@model/recurring/recurring-occurrence.model';
 import { getCurrentMonth, shiftMonth } from '@model/reports/month-period';
 import RecurringOccurrences from '@modules/recurring/recurring-occurrences/recurring-occurrences';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import TransactionRefreshService from '@services/transaction-refresh.service';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 describe('RecurringOccurrences', (): void => {
   let fixture: ComponentFixture<RecurringOccurrences>;
@@ -76,6 +78,15 @@ describe('RecurringOccurrences', (): void => {
       total_pages: totalPages,
       error: null,
       message: null,
+    };
+  }
+
+  function resolvedOccurrence(action: 'confirm' | 'skip'): RecurringOccurrence {
+    return {
+      ...occurrence(2, period),
+      status: action === 'confirm' ? 'confirmed' : 'skipped',
+      transaction_id: action === 'confirm' ? 31 : null,
+      resolved_at: '2026-10-20 15:00:00',
     };
   }
 
@@ -554,5 +565,329 @@ describe('RecurringOccurrences', (): void => {
     fixture.detectChanges();
 
     expect(component.occurrences()).toEqual([]);
+  });
+
+  it('muestra acciones únicamente en ocurrencias pendientes', (): void => {
+    pendingRequest().flush(response(2, period, [occurrence(2, period)]));
+
+    fixture.detectChanges();
+
+    expect(
+      fixture.nativeElement.querySelector(
+        'button[aria-label="Confirmar ocurrencia: Electricidad"]',
+      ),
+    ).not.toBeNull();
+
+    expect(
+      fixture.nativeElement.querySelector('button[aria-label="Omitir ocurrencia: Electricidad"]'),
+    ).not.toBeNull();
+
+    component.setStatus('confirmed');
+    fixture.detectChanges();
+
+    pendingRequest().flush(response(2, period, [resolvedOccurrence('confirm')]));
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.occurrences__item-actions')).toBeNull();
+  });
+
+  it('no resuelve sin confirmación explícita', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'confirm');
+
+    fixture.detectChanges();
+
+    expect(component.pendingResolution()?.action).toBe('confirm');
+    expect(component.resolvingId()).toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Se creará un movimiento contable real.');
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences/resolve`);
+
+    component.cancelResolution();
+    fixture.detectChanges();
+
+    expect(component.pendingResolution()).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences/resolve`);
+  });
+
+  it('confirma la ocurrencia y notifica el cambio contable', (): void => {
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    const previousVersion: number = transactionRefresh.version();
+
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'confirm');
+    component.confirmResolution();
+    fixture.detectChanges();
+
+    expect(component.resolvingId()).toBe(80);
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    expect(request.request.body).toEqual({
+      spaceId: 2,
+      occurrenceId: 80,
+      action: 'confirm',
+    });
+
+    request.flush({
+      success: true,
+      occurrence: resolvedOccurrence('confirm'),
+      error: null,
+      message: null,
+    } satisfies ResolveRecurringOccurrenceResponse);
+
+    fixture.detectChanges();
+
+    expect(component.resolvingId()).toBeNull();
+    expect(component.resolutionError()).toBeNull();
+
+    expect(transactionRefresh.version()).toBe(previousVersion + 1);
+
+    expect(component.page()).toBe(1);
+    expect(component.statusFilter()).toBe('all');
+
+    pendingRequest().flush(response(2, period, [resolvedOccurrence('confirm')]));
+
+    fixture.detectChanges();
+
+    expect(component.occurrences()[0]?.status).toBe('confirmed');
+    expect(component.occurrences()[0]?.transaction_id).toBe(31);
+
+    expect(component.resolutionMessage()).toBe('Se ha confirmado «Electricidad» correctamente.');
+  });
+
+  it('omite una ocurrencia sin generar cambios contables', (): void => {
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    const previousVersion: number = transactionRefresh.version();
+
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'skip');
+    component.confirmResolution();
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    expect(request.request.body.action).toBe('skip');
+
+    request.flush({
+      success: true,
+      occurrence: resolvedOccurrence('skip'),
+      error: null,
+      message: null,
+    } satisfies ResolveRecurringOccurrenceResponse);
+
+    fixture.detectChanges();
+
+    pendingRequest().flush(response(2, period, [resolvedOccurrence('skip')]));
+
+    fixture.detectChanges();
+
+    expect(component.occurrences()[0]?.status).toBe('skipped');
+    expect(component.occurrences()[0]?.transaction_id).toBeNull();
+
+    expect(transactionRefresh.version()).toBe(previousVersion);
+
+    expect(component.resolutionMessage()).toBe('Se ha omitido «Electricidad» correctamente.');
+  });
+
+  it('impide resolver dos veces mientras hay una petición pendiente', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    const item: RecurringOccurrence = occurrence(2, period);
+
+    component.requestResolution(item, 'confirm');
+    component.confirmResolution();
+
+    component.requestResolution(item, 'confirm');
+    component.confirmResolution();
+
+    expect(component.resolvingId()).toBe(80);
+
+    const requests: TestRequest[] = httpTesting.match(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    expect(requests).toHaveLength(1);
+
+    requests[0]!.flush({
+      success: true,
+      occurrence: resolvedOccurrence('confirm'),
+      error: null,
+      message: null,
+    } satisfies ResolveRecurringOccurrenceResponse);
+
+    fixture.detectChanges();
+
+    pendingRequest().flush(response(2, period, [resolvedOccurrence('confirm')]));
+
+    fixture.detectChanges();
+
+    component.requestResolution(resolvedOccurrence('confirm'), 'confirm');
+
+    expect(component.pendingResolution()).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences/resolve`);
+  });
+
+  it('actualiza el listado cuando la ocurrencia ya estaba resuelta', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'confirm');
+    component.confirmResolution();
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/occurrences/resolve`).flush(
+      {
+        success: false,
+        error: 'occurrence_conflict',
+        message: 'La ocurrencia ya fue resuelta',
+      },
+      {
+        status: 409,
+        statusText: 'Conflict',
+      },
+    );
+
+    fixture.detectChanges();
+
+    expect(component.resolvingId()).toBeNull();
+    expect(component.resolutionError()).toContain('ya ha sido resuelta');
+
+    pendingRequest().flush(response(2, period, [resolvedOccurrence('skip')]));
+
+    fixture.detectChanges();
+
+    expect(component.occurrences()[0]?.status).toBe('skipped');
+    expect(component.occurrences()[0]?.transaction_id).toBeNull();
+  });
+
+  it('rechaza una confirmación sin movimiento contable', (): void => {
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    const previousVersion: number = transactionRefresh.version();
+
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'confirm');
+    component.confirmResolution();
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/occurrences/resolve`).flush({
+      success: true,
+      occurrence: {
+        ...resolvedOccurrence('confirm'),
+        transaction_id: null,
+      },
+      error: null,
+      message: null,
+    } satisfies ResolveRecurringOccurrenceResponse);
+
+    fixture.detectChanges();
+
+    expect(component.resolutionError()).toContain('No se ha podido verificar la resolución');
+    expect(component.resolutionMessage()).toBeNull();
+
+    expect(transactionRefresh.version()).toBe(previousVersion);
+
+    pendingRequest().flush(response(2, period));
+  });
+
+  it('descarta una resolución al cambiar de espacio', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'confirm');
+    component.confirmResolution();
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    spaceStore.select(8);
+    fixture.componentRef.setInput('spaceId', 8);
+    fixture.detectChanges();
+
+    expect(request.cancelled).toBe(true);
+    expect(component.resolvingId()).toBeNull();
+    expect(component.pendingResolution()).toBeNull();
+    expect(component.resolutionMessage()).toBeNull();
+
+    const next: TestRequest = pendingRequest();
+
+    expect(next.request.params.get('spaceId')).toBe('8');
+
+    next.flush(response(8, period, []));
+  });
+
+  it('cancela la resolución al terminar la sesión', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestResolution(occurrence(2, period), 'skip');
+    component.confirmResolution();
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(request.cancelled).toBe(true);
+    expect(component.resolvingId()).toBeNull();
+    expect(component.occurrences()).toEqual([]);
+  });
+
+  it('oculta el mensaje de resolución a los cuatro segundos', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    vi.useFakeTimers();
+
+    try {
+      component.requestResolution(occurrence(2, period), 'skip');
+      component.confirmResolution();
+
+      httpTesting.expectOne(`${environment.apiUrl}/recurring/occurrences/resolve`).flush({
+        success: true,
+        occurrence: resolvedOccurrence('skip'),
+        error: null,
+        message: null,
+      } satisfies ResolveRecurringOccurrenceResponse);
+
+      fixture.detectChanges();
+
+      pendingRequest().flush(response(2, period, [resolvedOccurrence('skip')]));
+
+      fixture.detectChanges();
+
+      expect(component.resolutionMessage()).not.toBeNull();
+
+      vi.advanceTimersByTime(3999);
+      expect(component.resolutionMessage()).not.toBeNull();
+
+      vi.advanceTimersByTime(1);
+      fixture.detectChanges();
+
+      expect(component.resolutionMessage()).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

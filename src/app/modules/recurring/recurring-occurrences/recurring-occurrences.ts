@@ -14,11 +14,14 @@ import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
+import type ResolveRecurringOccurrenceRequest from '@interfaces/recurring/resolve-recurring-occurrence-request.interface';
+import type ResolveRecurringOccurrenceResponse from '@interfaces/recurring/resolve-recurring-occurrence-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringOccurrence from '@model/recurring/recurring-occurrence.model';
 import { formatMoney } from '@model/reports/money';
 import { getCurrentMonth, monthLabel, shiftMonth } from '@model/reports/month-period';
 import RecurringService from '@services/recurring.service';
+import TransactionRefreshService from '@services/transaction-refresh.service';
 import { ButtonDirective } from 'primeng/button';
 import type { Subscription } from 'rxjs';
 
@@ -32,6 +35,8 @@ export default class RecurringOccurrences {
   private readonly spaceStore: SpaceStore = inject(SpaceStore);
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly recurringService: RecurringService = inject(RecurringService);
+  private readonly transactionRefresh: TransactionRefreshService =
+    inject(TransactionRefreshService);
 
   readonly spaceId: InputSignal<number> = input.required<number>();
   readonly categories: InputSignal<Category[]> = input.required<Category[]>();
@@ -67,6 +72,17 @@ export default class RecurringOccurrences {
 
   private generationSubscription: Subscription | null = null;
 
+  readonly pendingResolution: WritableSignal<{
+    occurrence: RecurringOccurrence;
+    action: ResolveRecurringOccurrenceRequest['action'];
+  } | null> = signal(null);
+  readonly resolvingId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly resolutionError: WritableSignal<string | null> = signal<string | null>(null);
+  readonly resolutionMessage: WritableSignal<string | null> = signal<string | null>(null);
+
+  private resolutionSubscription: Subscription | null = null;
+  private resolutionMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+
   constructor() {
     effect((onCleanup): void => {
       const spaceId: number = this.spaceId();
@@ -92,6 +108,14 @@ export default class RecurringOccurrences {
         this.confirmingGeneration.set(false);
         this.generationResult.set(null);
         this.generationError.set(null);
+
+        this.resolutionSubscription?.unsubscribe();
+        this.resolutionSubscription = null;
+
+        this.resolvingId.set(null);
+        this.pendingResolution.set(null);
+        this.resolutionError.set(null);
+        this.clearResolutionMessage();
       });
     });
 
@@ -179,7 +203,12 @@ export default class RecurringOccurrences {
   }
 
   previousMonth(): void {
-    if (this.generating() || this.confirmingGeneration()) {
+    if (
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
+    ) {
       return;
     }
 
@@ -188,7 +217,12 @@ export default class RecurringOccurrences {
   }
 
   nextMonth(): void {
-    if (this.generating() || this.confirmingGeneration()) {
+    if (
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
+    ) {
       return;
     }
 
@@ -197,7 +231,13 @@ export default class RecurringOccurrences {
   }
 
   setStatus(status: 'all' | 'pending' | 'confirmed' | 'skipped'): void {
-    if (this.statusFilter() === status || this.generating() || this.confirmingGeneration()) {
+    if (
+      this.statusFilter() === status ||
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
+    ) {
       return;
     }
 
@@ -206,7 +246,14 @@ export default class RecurringOccurrences {
   }
 
   previousPage(): void {
-    if (this.loading() || this.page() <= 1 || this.generating() || this.confirmingGeneration()) {
+    if (
+      this.loading() ||
+      this.page() <= 1 ||
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
+    ) {
       return;
     }
 
@@ -217,8 +264,9 @@ export default class RecurringOccurrences {
     if (
       this.loading() ||
       this.page() >= this.totalPages() ||
-      this.generating() ||
-      this.confirmingGeneration()
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
     ) {
       return;
     }
@@ -232,7 +280,9 @@ export default class RecurringOccurrences {
       this.spaceStore.selectedId() !== this.spaceId() ||
       this.authStore.token() === null ||
       this.generating() ||
-      this.confirmingGeneration()
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
     ) {
       return;
     }
@@ -246,7 +296,9 @@ export default class RecurringOccurrences {
       this.error() !== null ||
       this.generating() ||
       this.confirmingGeneration() ||
-      !this.hasCurrentContext()
+      !this.hasCurrentContext() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null
     ) {
       return;
     }
@@ -274,6 +326,8 @@ export default class RecurringOccurrences {
       this.loading() ||
       this.error() !== null ||
       !this.hasCurrentContext() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null ||
       token === null ||
       userId === undefined
     ) {
@@ -327,6 +381,243 @@ export default class RecurringOccurrences {
           this.reloadAfterGeneration();
         },
       });
+  }
+
+  requestResolution(
+    item: RecurringOccurrence,
+    action: ResolveRecurringOccurrenceRequest['action'],
+  ): void {
+    const current: RecurringOccurrence | undefined = this.occurrences().find(
+      (occurrence: RecurringOccurrence): boolean => occurrence.id === item.id,
+    );
+
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null ||
+      this.pendingResolution() !== null ||
+      !this.hasCurrentContext() ||
+      current === undefined ||
+      current.status !== 'pending' ||
+      current.space_id !== this.spaceId() ||
+      current.period !== this.period()
+    ) {
+      return;
+    }
+
+    this.resolutionError.set(null);
+    this.clearResolutionMessage();
+
+    this.pendingResolution.set({
+      occurrence: current,
+      action,
+    });
+  }
+
+  cancelResolution(): void {
+    if (this.resolvingId() !== null) {
+      return;
+    }
+
+    this.pendingResolution.set(null);
+  }
+
+  confirmResolution(): void {
+    const pending = this.pendingResolution();
+    const token: string | null = this.authStore.token();
+    const userId: number | undefined = this.authStore.user()?.id;
+
+    if (
+      pending === null ||
+      token === null ||
+      userId === undefined ||
+      !this.hasCurrentContext() ||
+      this.loading() ||
+      this.error() !== null ||
+      this.generating() ||
+      this.confirmingGeneration() ||
+      this.resolvingId() !== null
+    ) {
+      return;
+    }
+
+    const item: RecurringOccurrence | undefined = this.occurrences().find(
+      (occurrence: RecurringOccurrence): boolean => occurrence.id === pending.occurrence.id,
+    );
+
+    if (
+      item === undefined ||
+      item.status !== 'pending' ||
+      item.space_id !== this.spaceId() ||
+      item.period !== this.period()
+    ) {
+      return;
+    }
+
+    const spaceId: number = this.spaceId();
+    const period: string = this.period();
+    const action: ResolveRecurringOccurrenceRequest['action'] = pending.action;
+
+    this.pendingResolution.set(null);
+    this.resolvingId.set(item.id);
+    this.resolutionError.set(null);
+    this.clearResolutionMessage();
+
+    this.resolutionSubscription = this.recurringService
+      .resolveOccurrence({
+        spaceId,
+        occurrenceId: item.id,
+        action,
+      })
+      .subscribe({
+        next: (response: ResolveRecurringOccurrenceResponse): void => {
+          if (!this.isResolutionContext(spaceId, token, userId, period, item.id)) {
+            return;
+          }
+
+          this.resolvingId.set(null);
+          this.resolutionSubscription = null;
+
+          if (!this.isValidResolutionResponse(response, item, action)) {
+            this.resolutionError.set(
+              'No se ha podido verificar la resolución. ' +
+                'Comprueba el estado de la ocurrencia antes de reintentar.',
+            );
+
+            this.reloadAfterResolution();
+            return;
+          }
+
+          if (action === 'confirm') {
+            this.transactionRefresh.notifyChanged();
+          }
+
+          this.showResolutionMessage(
+            action === 'confirm'
+              ? `Se ha confirmado «${item.concept}» correctamente.`
+              : `Se ha omitido «${item.concept}» correctamente.`,
+          );
+
+          this.reloadAfterResolution();
+        },
+        error: (error: unknown): void => {
+          if (!this.isResolutionContext(spaceId, token, userId, period, item.id)) {
+            return;
+          }
+
+          this.resolvingId.set(null);
+          this.resolutionSubscription = null;
+          this.resolutionError.set(this.getResolutionError(error));
+
+          // El servidor puede haber completado la operación
+          // aunque el cliente haya recibido un error.
+          this.reloadAfterResolution();
+        },
+      });
+  }
+
+  private isResolutionContext(
+    spaceId: number,
+    token: string,
+    userId: number,
+    period: string,
+    occurrenceId: number,
+  ): boolean {
+    return (
+      this.spaceId() === spaceId &&
+      this.spaceStore.selectedId() === spaceId &&
+      this.authStore.token() === token &&
+      this.authStore.user()?.id === userId &&
+      this.period() === period &&
+      this.resolvingId() === occurrenceId
+    );
+  }
+
+  private isValidResolutionResponse(
+    response: ResolveRecurringOccurrenceResponse,
+    original: RecurringOccurrence,
+    action: ResolveRecurringOccurrenceRequest['action'],
+  ): boolean {
+    if (
+      !response.success ||
+      response.occurrence === null ||
+      response.occurrence.id !== original.id ||
+      response.occurrence.space_id !== original.space_id ||
+      response.occurrence.recurring_id !== original.recurring_id ||
+      response.occurrence.period !== original.period ||
+      response.occurrence.scheduled_date !== original.scheduled_date ||
+      response.occurrence.status !== (action === 'confirm' ? 'confirmed' : 'skipped')
+    ) {
+      return false;
+    }
+
+    if (action === 'confirm') {
+      return (
+        response.occurrence.transaction_id !== null &&
+        Number.isSafeInteger(response.occurrence.transaction_id) &&
+        response.occurrence.transaction_id > 0
+      );
+    }
+
+    return response.occurrence.transaction_id === null;
+  }
+
+  private reloadAfterResolution(): void {
+    this.page.set(1);
+    this.statusFilter.set('all');
+
+    this.refreshVersion.update((version: number): number => version + 1);
+  }
+
+  private getResolutionError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 400:
+          return 'La solicitud de resolución no es válida.';
+
+        case 401:
+          return 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+        case 403:
+          return 'No tienes permiso para resolver esta ocurrencia.';
+
+        case 404:
+          return 'La ocurrencia ya no está disponible.';
+
+        case 409:
+          return (
+            'Esta ocurrencia ya ha sido resuelta. ' +
+            'Se actualizará el listado con su estado actual.'
+          );
+      }
+    }
+
+    return (
+      'No se ha podido completar la operación. ' +
+      'Es posible que el servidor la haya procesado. ' +
+      'Comprueba el listado antes de volver a intentarlo.'
+    );
+  }
+
+  private clearResolutionMessage(): void {
+    if (this.resolutionMessageTimeout !== null) {
+      clearTimeout(this.resolutionMessageTimeout);
+      this.resolutionMessageTimeout = null;
+    }
+
+    this.resolutionMessage.set(null);
+  }
+
+  private showResolutionMessage(message: string): void {
+    this.clearResolutionMessage();
+    this.resolutionMessage.set(message);
+
+    this.resolutionMessageTimeout = setTimeout((): void => {
+      this.resolutionMessageTimeout = null;
+      this.resolutionMessage.set(null);
+    }, 4000);
   }
 
   private hasCurrentContext(): boolean {

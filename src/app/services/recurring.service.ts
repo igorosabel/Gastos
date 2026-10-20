@@ -8,6 +8,8 @@ import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-
 import type RecurringOccurrencesRequest from '@interfaces/recurring/recurring-occurrences-request.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
+import type ResolveRecurringOccurrenceRequest from '@interfaces/recurring/resolve-recurring-occurrence-request.interface';
+import type ResolveRecurringOccurrenceResponse from '@interfaces/recurring/resolve-recurring-occurrence-response.interface';
 import type SetRecurringStatusRequest from '@interfaces/recurring/set-recurring-status-request.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type UpdateRecurringRequest from '@interfaces/recurring/update-recurring-request.interface';
@@ -87,6 +89,21 @@ export default class RecurringService {
   generateSpace(data: GenerateRecurringSpaceRequest): Observable<GenerateRecurringSpaceResponse> {
     return this.http.post<GenerateRecurringSpaceResponse>(
       `${this.apiUrl}/recurring/generate-space`,
+      data,
+    );
+  }
+
+  /**
+   * Confirma u omite una ocurrencia pendiente.
+   *
+   * Confirmar crea un movimiento contable real.
+   * Omitir no crea ningún movimiento.
+   */
+  resolveOccurrence(
+    data: ResolveRecurringOccurrenceRequest,
+  ): Observable<ResolveRecurringOccurrenceResponse> {
+    return this.http.post<ResolveRecurringOccurrenceResponse>(
+      `${this.apiUrl}/recurring/occurrences/resolve`,
       data,
     );
   }

@@ -21,6 +21,8 @@ import type RecurringModel from '@model/recurring/recurring.model';
 import { getCurrentMonth } from '@model/reports/month-period';
 import Recurring from '@pages/recurring/recurring';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type ResolveRecurringOccurrenceResponse from '@interfaces/recurring/resolve-recurring-occurrence-response.interface';
+import type RecurringOccurrence from '@model/recurring/recurring-occurrence.model';
 
 describe('Recurring', (): void => {
   let fixture: ComponentFixture<Recurring>;
@@ -1138,6 +1140,124 @@ describe('Recurring', (): void => {
         page: 1,
         page_size: 20,
         total_pages: 0,
+        error: null,
+        message: null,
+      } satisfies RecurringOccurrencesResponse);
+
+    fixture.detectChanges();
+
+    expect(component.occurrencesBusy()).toBe(false);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    expect(component.showingOccurrences()).toBe(false);
+  });
+
+  it('impide cerrar las ocurrencias durante su resolución', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    const period: string = `${getCurrentMonth()}-01`;
+
+    const pending: RecurringOccurrence = {
+      id: 80,
+      space_id: 2,
+      recurring_id: 50,
+      period,
+      scheduled_date: `${period.slice(0, 7)}-20`,
+      status: 'pending',
+      category_id: 200,
+      type: 'expense',
+      concept: 'Electricidad',
+      amount: '95.40',
+      transaction_id: null,
+      resolved_at: null,
+    };
+
+    httpTesting
+      .expectOne(
+        (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+      )
+      .flush({
+        success: true,
+        occurrences: [pending],
+        total: 1,
+        page: 1,
+        page_size: 20,
+        total_pages: 1,
+        error: null,
+        message: null,
+      } satisfies RecurringOccurrencesResponse);
+
+    fixture.detectChanges();
+
+    const resolveButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label="Confirmar ocurrencia: Electricidad"]',
+    );
+
+    if (resolveButton === null) {
+      throw new Error('No se ha encontrado la acción de confirmar.');
+    }
+
+    resolveButton.click();
+    fixture.detectChanges();
+
+    const confirmButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '.occurrences__resolution-actions button:last-child',
+    );
+
+    if (confirmButton === null) {
+      throw new Error('No se ha encontrado la confirmación.');
+    }
+
+    confirmButton.click();
+    fixture.detectChanges();
+
+    expect(component.occurrencesBusy()).toBe(true);
+
+    component.toggleOccurrences();
+    expect(component.showingOccurrences()).toBe(true);
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences/resolve`,
+    );
+
+    request.flush({
+      success: true,
+      occurrence: {
+        ...pending,
+        status: 'confirmed',
+        transaction_id: 31,
+        resolved_at: '2026-10-20 15:00:00',
+      },
+      error: null,
+      message: null,
+    } satisfies ResolveRecurringOccurrenceResponse);
+
+    fixture.detectChanges();
+
+    httpTesting
+      .expectOne(
+        (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+      )
+      .flush({
+        success: true,
+        occurrences: [
+          {
+            ...pending,
+            status: 'confirmed',
+            transaction_id: 31,
+            resolved_at: '2026-10-20 15:00:00',
+          },
+        ],
+        total: 1,
+        page: 1,
+        page_size: 20,
+        total_pages: 1,
         error: null,
         message: null,
       } satisfies RecurringOccurrencesResponse);

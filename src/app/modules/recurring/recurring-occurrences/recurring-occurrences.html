@@ -163,6 +163,87 @@
         }
     </div>
 
+    @if (pendingResolution(); as pending) {
+    <div class="occurrences__resolution-confirmation"
+         role="group"
+         aria-label="Confirmar resolución de ocurrencia">
+
+        <h3>
+            {{ pending.action === 'confirm'
+                ? 'Confirmar movimiento recurrente'
+                : 'Omitir movimiento recurrente' }}
+        </h3>
+
+        <p>
+            <strong>{{ pending.occurrence.concept }}</strong>
+        </p>
+
+        <p>
+            Fecha: {{ pending.occurrence.scheduled_date }}
+        </p>
+
+        <p>
+            Importe:
+            {{ pending.occurrence.type === 'income' ? '+' : '−' }}
+            {{ formatMoney(pending.occurrence.amount) }}
+        </p>
+
+        <p class="occurrences__muted">
+            @if (pending.action === 'confirm') {
+            Se creará un movimiento contable real.
+            Esta confirmación no puede deshacerse desde
+            el sistema de recurrentes.
+            } @else {
+            La mensualidad quedará omitida y no se
+            creará ningún movimiento contable.
+            Esta decisión es definitiva.
+            }
+        </p>
+
+        <div class="occurrences__resolution-actions">
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    (click)="cancelResolution()">
+                Cancelar
+            </button>
+
+            <button pButton
+                    type="button"
+                    [severity]="pending.action === 'confirm'
+                        ? 'primary'
+                        : 'secondary'"
+                    (click)="confirmResolution()">
+                {{ pending.action === 'confirm'
+                    ? 'Confirmar movimiento'
+                    : 'Omitir definitivamente' }}
+            </button>
+        </div>
+    </div>
+    }
+
+    @if (resolvingId() !== null) {
+    <p class="occurrences__muted"
+       role="status">
+        Resolviendo ocurrencia...
+    </p>
+    }
+
+    @if (resolutionMessage()) {
+    <p class="occurrences__resolution-success"
+       role="status">
+        {{ resolutionMessage() }}
+    </p>
+    }
+
+    @if (resolutionError()) {
+    <p class="occurrences__resolution-error"
+       role="alert">
+        {{ resolutionError() }}
+    </p>
+    }
+
     @if (loading()) {
     <p class="occurrences__muted"
        role="status">
@@ -229,6 +310,34 @@
             <p class="occurrences__muted">
                 Movimiento contable #{{ item.transaction_id }}
             </p>
+            }
+
+            @if (item.status === 'pending') {
+            <div class="occurrences__item-actions">
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        [attr.aria-label]="'Omitir ocurrencia: ' + item.concept"
+                        [disabled]="generating() ||
+                                    confirmingGeneration() ||
+                                    resolvingId() !== null ||
+                                    pendingResolution() !== null"
+                        (click)="requestResolution(item, 'skip')">
+                    Omitir
+                </button>
+
+                <button pButton
+                        type="button"
+                        [attr.aria-label]="'Confirmar ocurrencia: ' + item.concept"
+                        [disabled]="generating() ||
+                                    confirmingGeneration() ||
+                                    resolvingId() !== null ||
+                                    pendingResolution() !== null"
+                        (click)="requestResolution(item, 'confirm')">
+                    Confirmar
+                </button>
+            </div>
             }
         </li>
         }

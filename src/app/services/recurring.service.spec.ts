@@ -6,8 +6,10 @@ import type CreateRecurringResponse from '@interfaces/recurring/create-recurring
 import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
+import type ResolveRecurringOccurrenceResponse from '@interfaces/recurring/resolve-recurring-occurrence-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type UpdateRecurringResponse from '@interfaces/recurring/update-recurring-response.interface';
+import type RecurringOccurrence from '@model/recurring/recurring-occurrence.model';
 import RecurringService from '@services/recurring.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -343,4 +345,65 @@ describe('RecurringService', (): void => {
 
     expect(result).toEqual(response);
   });
+
+  it.each([
+    ['confirm', 'confirmed', 31],
+    ['skip', 'skipped', null],
+  ] as const)(
+    'resuelve una ocurrencia mediante %s',
+    (
+      action: 'confirm' | 'skip',
+      status: 'confirmed' | 'skipped',
+      transactionId: number | null,
+    ): void => {
+      const occurrence: RecurringOccurrence = {
+        id: 80,
+        space_id: 12,
+        recurring_id: 50,
+        period: '2026-10-01',
+        scheduled_date: '2026-10-20',
+        status,
+        category_id: 7,
+        type: 'expense',
+        concept: 'Electricidad',
+        amount: '95.40',
+        transaction_id: transactionId,
+        resolved_at: '2026-10-20 15:00:00',
+      };
+
+      const response: ResolveRecurringOccurrenceResponse = {
+        success: true,
+        occurrence,
+        error: null,
+        message: null,
+      };
+
+      let result: ResolveRecurringOccurrenceResponse | null = null;
+
+      service
+        .resolveOccurrence({
+          spaceId: 12,
+          occurrenceId: 80,
+          action,
+        })
+        .subscribe({
+          next: (value: ResolveRecurringOccurrenceResponse): void => {
+            result = value;
+          },
+        });
+
+      const request = httpTesting.expectOne(`${environment.apiUrl}/recurring/occurrences/resolve`);
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({
+        spaceId: 12,
+        occurrenceId: 80,
+        action,
+      });
+
+      request.flush(response);
+
+      expect(result).toEqual(response);
+    },
+  );
 });

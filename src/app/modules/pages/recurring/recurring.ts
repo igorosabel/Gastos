@@ -81,9 +81,11 @@ export default class Recurring {
   private readonly occurrencesView: Signal<RecurringOccurrences | undefined> =
     viewChild(RecurringOccurrences);
 
-  readonly occurrencesBusy: Signal<boolean> = computed(
-    (): boolean => this.occurrencesView()?.generating() ?? false,
-  );
+  readonly occurrencesBusy: Signal<boolean> = computed((): boolean => {
+    const view: RecurringOccurrences | undefined = this.occurrencesView();
+
+    return view !== undefined && (view.generating() || view.resolvingId() !== null);
+  });
 
   constructor() {
     this.destroyRef.onDestroy((): void => {
