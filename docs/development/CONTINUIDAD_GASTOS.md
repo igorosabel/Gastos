@@ -1,8 +1,8 @@
 # Gastos — Documento de continuidad del desarrollo frontend
 
 **Actualizado:** 20 de octubre de 2026
-**Estado:** bloques 1 a 31 completados y validados; pendiente comenzar el bloque 32.
-**Frontend (rama `main`, commit verificado):** [`145d8a109ec728e7d5410a0495cad67005fd966f`](https://github.com/igorosabel/Gastos/commit/145d8a109ec728e7d5410a0495cad67005fd966f) — `fix(recurring): Correcciones estéticas para móvil`.
+**Estado:** bloques 1 a 36 completados, probados y publicados; siguiente bloque (37) pendiente de concretar. Preparado para actualizar la continuidad sin introducir cambios de código.
+**Frontend (rama `main`, commit verificado):** [`e4a9dc5046e173a7914d2b34cc8ee8d1224a1aff`](https://github.com/igorosabel/Gastos/commit/e4a9dc5046e173a7914d2b34cc8ee8d1224a1aff) — `feat(design): Centralización de estilos de fecha` (bloque 36).
 **Backend de referencia:** **ApiGastos v1.0.0**, publicado el 16 de octubre de 2026.
 
 > **Propósito:** documento de traspaso para retomar el desarrollo en otra conversación de ChatGPT. Es una fotografía del estado del proyecto en la fecha indicada, **no** sustituye al código, `AGENTS.md` ni a los contratos del backend. Al reanudar, volver a consultar el último commit y los archivos reales: el repositorio puede haber cambiado.
@@ -32,7 +32,7 @@ Este documento se creó **después de publicar la release v1.0.0**, por lo que n
 - Angular **22.2.x**, componentes standalone, signals, `computed`, `input`, `output`, `inject` y plantillas `@if`, `@for`, `@switch`.
 - PrimeNG **22.1.x**, tema **Aura** personalizado en `src/app/gastos-preset.ts`, `@primeuix/themes` 3.x, traducción española mediante `primelocale`, iconografía PrimeIcons.
 - TypeScript **6.0.x**, configuración estricta y aliases TS.
-- **Signal Forms** (`@angular/forms/signals`) como sistema principal de formularios. `ngModel` únicamente para controles aislados (actualmente, selector del espacio activo); **no** Reactive Forms.
+- **Signal Forms** (`@angular/forms/signals`) como sistema principal de formularios. `ngModel` únicamente para controles aislados (por ejemplo, selector aislado del espacio activo); **no** Reactive Forms.
 - RxJS 7.8.x, tests **Vitest**, Angular ESLint, formato con Prettier.
 - `package.json` fija `npm@12.2.0` y el workflow de despliegue utiliza **Node 24**.
 - Estilos SCSS, interfaz adaptable a móvil y escritorio. El modo oscuro usa `.gastos-app-dark` como selector de PrimeNG.
@@ -67,7 +67,7 @@ Existe `.github/workflows/deploy-angular.yml`: se ejecuta en `push` a `main` o m
 Consultar y obedecer **el `AGENTS.md` vigente** antes de proponer código. Resumen operativo:
 
 1. **Un bloque pequeño y verificable cada vez**. Antes de cambiar algo: leer código actual, arquitectura documentada y contrato de la API; explicar cambios y pruebas; esperar resultados del usuario y su commit para avanzar.
-2. Cada componente Angular dispone de `nombre.ts`, `nombre.html` y `nombre.scss` **separados**; no templates ni estilos inline. Usar `ChangeDetectionStrategy.OnPush` según las convenciones actuales, pero no es necesario indicarlo explicitamente ya que es el por defecto de Angular 22.
+2. Cada componente Angular dispone de `nombre.ts`, `nombre.html` y `nombre.scss` **separados**; no templates ni estilos inline. Usar `ChangeDetectionStrategy.OnPush` según las convenciones actuales.
 3. Componentes y servicios con responsabilidades separadas; `@Service()` de Angular 22, registrado automáticamente en raíz para servicios de aplicación; `inject()`, sin proveedores globales redundantes.
 4. **Imports TypeScript mediante el alias más específico** (`@app`, `@auth`, `@guard`, `@interfaces`, `@interceptors`, `@model`, `@modules`, `@pages`, `@services`, `@env`, etc.), nunca `./` ni `../`. Las rutas de plantilla/estilo en `@Component` sí son referencias relativas a recursos.
 5. Archivo con **una sola exportación**: `export default`; con varias exportaciones: todas nombradas. Tipar explícitamente constantes, variables, propiedades, parámetros y retornos; evitar `any`.
@@ -85,227 +85,213 @@ Consultar y obedecer **el `AGENTS.md` vigente** antes de proponer código. Resum
 
 ## 4. Estructura actual importante del frontend
 
+Estructura funcional comprobada en la rama `main` hasta el commit `e4a9dc5` (es una selección de rutas, no un listado exhaustivo):
+
 ```text
 Gastos/
 ├── AGENTS.md
+├── docs/
+│   ├── design-responsive.md
+│   └── development/CONTINUIDAD_GASTOS.md
 ├── .github/workflows/deploy-angular.yml
 ├── package.json / angular.json / tsconfig.json
 └── src/
-    ├── environments/
-    │   ├── environment.ts
-    │   └── license.example.ts
+    ├── environments/              # URL de ApiGastos y licencia privada de despliegue
     ├── styles.scss
+    ├── styles/
+    │   └── _native-date-control.scss  # Mixin nativo para fecha, bloque 36
     └── app/
         ├── app.config.ts / app.routes.ts / core.ts
-        ├── gastos-preset.ts
+        ├── gastos-preset.ts       # Preset de PrimeNG y modo oscuro
         ├── auth/auth.store.ts
         ├── guard/auth.guards.ts
         ├── interceptors/auth.interceptor.ts
-        ├── services/auth.service.ts
-        ├── services/spaces.service.ts
         ├── spaces/space.store.ts
-        ├── interfaces/
+        ├── services/
+        │   ├── auth.service.ts / spaces.service.ts
+        │   ├── categories.service.ts / transactions.service.ts
+        │   ├── recurring.service.ts / reports.service.ts
+        │   └── transaction-refresh.service.ts
+        ├── interfaces/           # Contratos REST por dominio
         │   ├── auth.interfaces.ts
-        │   ├── session.interfaces.ts
-        │   └── spaces/                 # Contratos HTTP de espacios
-        ├── model/
-        │   ├── auth/                   # Formularios login y registro
-        │   └── spaces/                 # Space, SpaceMember, SpaceInvitation y formularios
+        │   └── spaces/ categories/ transactions/ recurring/ reports/
+        ├── model/                # Modelos y mappers de formulario por dominio
+        │   └── auth/ spaces/ categories/ transactions/ recurring/ reports/
+        ├── layout/private-layout/
+        │   └── private-layout.ts / .html / .scss
         └── modules/
-            ├── auth/
-            │   ├── _auth.scss
-            │   ├── login/
-            │   └── register/
-            ├── pages/dashboard/
-            └── spaces/
-                ├── create-space/
-                ├── create-invitation/
-                ├── space-invitations/
-                ├── accept-invitation/
-                └── space-members/
+            ├── auth/login/ y auth/register/
+            ├── pages/
+            │   ├── dashboard/    # Inicio económico, resumen real y previsión
+            │   ├── categories/   # Jerarquía y CRUD
+            │   ├── transactions/ # Consulta, filtros, paginación y CRUD
+            │   ├── reports/      # Evolución mensual y desglose por categorías
+            │   ├── recurring/    # Plantillas y acceso a ocurrencias
+            │   └── settings/     # Administración de espacios y miembros
+            ├── transactions/create-transaction/ y edit-transaction/
+            ├── recurring/
+            │   ├── create-recurring/
+            │   ├── edit-recurring/
+            │   └── recurring-occurrences/
+            ├── reports/monthly-categories/
+            └── spaces/          # Formularios, invitaciones, miembros y abandono
 ```
 
-Los archivos principales tienen pruebas `*.spec.ts` junto a los servicios, stores, componentes y mappers cuando procede.
+**Rutas:** `/login`, `/register` y área privada con `PrivateLayout` y carga diferida de `/dashboard`, `/categories`, `/transactions`, `/reports`, `/recurring` y `/settings`. La ruta raíz redirige a `/dashboard`. La navegación es inferior y fija en móvil y lateral en escritorio, con selector de espacio en la cabecera y acceso rápido a crear movimiento desde el layout.
 
-**Atención a la estructura:** en el commit `0e968d8` se trasladaron los contratos de espacios a **`src/app/interfaces/spaces/`**. No volver a proponerlos directamente bajo `src/app/interfaces/` como en los primeros bloques.
+### Estado de los módulos
 
-### Autenticación y navegación actual
+- **Autenticación:** JWT Bearer, login, registro, guards e interceptor; el cierre de sesión es local. `AuthStore` persiste la sesión en `sessionStorage` (`gastos.auth.v1`) por pestaña; no hay refresh de JWT ni endpoint de logout.
+- **Espacios y miembros:** espacio personal y espacios compartidos; creación, selección, invitaciones, revocación, aceptación, listado de miembros, abandono y expulsión, respetando permisos de ApiGastos.
+- **`SpaceStore`:** signals para espacios, selección, carga y errores. Al cargar el listado mantiene una selección válida en la misma instancia; de lo contrario, prioriza el espacio personal. La selección **todavía no se persiste** tras una recarga completa o un nuevo inicio de sesión. Se invalida estado antiguo ante cambios de usuario, espacio o sesión.
+- **Categorías:** consulta jerárquica, creación, edición y eliminación por espacio; formularios Signal Forms y permisos comprobados en el backend.
+- **Movimientos:** ingresos/gastos, filtros y paginación, creación/edición/eliminación, control de importes como cadenas decimales, gestión de conflictos con recurrentes. Alta rápida global desde la navegación y confirmación temporal de cuatro segundos.
+- **Recurrentes:** CRUD funcional de plantillas (sin eliminación), activación/desactivación, consulta de ocurrencias mensuales, filtros, paginación, generación explícita por espacio, confirmación u omisión definitiva. El circuito genera movimientos reales solamente al confirmar una ocurrencia pendiente.
+- **Inicio:** dashboard financiero real del mes con ingresos, gastos, resultado, previsión, categorías y últimos movimientos. **Ya no es un dashboard provisional de administración**.
+- **Informes:** evolución real de doce meses y análisis por categorías; datos procedentes de ApiGastos, diferenciando contabilidad real de previsión en el dashboard.
+- **Invalidación económica:** `TransactionRefreshService` notifica a las vistas económicas tras cambios relevantes. El bloque 35 cubre generación con nuevos pendientes, confirmación y omisión; en respuestas inciertas se vuelve a consultar sin reintentar escrituras automáticamente.
+- **Estilos responsive:** `docs/design-responsive.md` es la referencia. Los controles nativos de fecha usan el mixin `src/styles/_native-date-control.scss` (bloque 36), ya probado en Safari/iOS y Chrome/Windows; no volver a introducir estilos divergentes en los tres componentes.
 
-- Rutas: `/login`, `/register` (protegidas con `guestGuard`) y `/dashboard` (con `authGuard`, _lazy loading_); la raíz redirige al dashboard.
-- `AuthStore` valida sesiones JWT con `expires_at` (segundos Unix), expone el usuario e implementa cierre local. Persistencia de la sesión: **`sessionStorage` por pestaña**, clave `gastos.auth.v1`.
-- `auth.interceptor.ts` añade `Authorization: Bearer` **solo** a llamadas al dominio/configuración de ApiGastos y no añade JWT a `/auth/login` ni `/auth/register`. Un 401 de una petición autenticada limpia la sesión correspondiente y navega al login.
-- No hay endpoints backend de renovación (`refresh`) ni de `logout`: el cierre de sesión es local.
-- Login y registro disponen de validaciones Signal Forms, gestión de errores, navegación y foco en el primer campo. El registro crea también el espacio personal en el backend.
-- La interfaz actual es un **dashboard provisional** con cabecera, selector de espacio y tarjetas de creación/unión/invitaciones/miembros; **no** existe todavía un panel económico real ni una navegación definitiva con páginas de categorías, movimientos, etc.
-
-### `SpaceStore` y selección
-
-- `SpaceStore` mantiene la lista disponible y el espacio seleccionado mediante signals, con estado de carga y errores.
-- Carga `GET /spaces`, prioriza el espacio personal al entrar y conserva una selección válida en recargas de listado dentro de la misma instancia.
-- La **selección del espacio no se persiste** entre recargas completas del navegador: al recargar se vuelve inicialmente al personal. La **membresía sí es persistente en el backend**.
-- Métodos relevantes: `load()`, `select(spaceId)`, `addCreated(space)`, `addAccepted(space)`, `clear()`, `removeAfterLeave(spaceId)`.
-- Protege contra respuestas antiguas mediante versiones de carga y comprobación de sesión; un `spaceId` no autorizado no puede seleccionarse localmente.
+Los tests `*.spec.ts` acompañan a stores, servicios, componentes y mappers cuando corresponde. Las pruebas manuales de responsive en iPhone/Safari y Windows/Chrome se han validado por el usuario en los hitos indicados.
 
 ## 5. Bloques de desarrollo realizados y validados
 
-Todos los bloques siguientes fueron **probados por el usuario** (`npm run lint`, `npm run test`, `npm run build` y comprobaciones funcionales según el bloque). No implica que esas suites se hayan reejecutado durante la redacción de este documento.
+Los **36 bloques** fueron completados, probados y confirmados por el usuario (lint, tests, build y verificaciones funcionales según el caso), y tienen commits publicados. La redacción de este documento no constituye una nueva ejecución de esas pruebas.
 
-| Bloque                                              | Estado   | Alcance                                                                                                                                                                                                                                                                                                                                                    | Commit de referencia            |
-| --------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| 1. Base e integración inicial                       | Completo | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0                                                                                                                                                                                                                                            | `ea000e0` (ajustes de core)     |
-| 2. Autenticación y rutas                            | Completo | `AuthStore` JWT, guards, interceptor y dashboard protegido                                                                                                                                                                                                                                                                                                 | `73919b1`                       |
-| 3. Login y registro                                 | Completo | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales                                                                                                                                                                                                                           | `be0859b`, `a0799d4`            |
-| 4. Selección de espacios                            | Completo | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive                                                                                                                                                                                                                                                                               | `290a0c7`                       |
-| 5. Creación de espacios compartidos                 | Completo | `POST /spaces`, formulario Signal Forms, selección inmediata                                                                                                                                                                                                                                                                                               | `9882d1b`                       |
-| 6. Crear y consultar invitaciones                   | Completo | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper                                                                                                                                                                                                                                                  | `1548553`                       |
-| 7. Revocar invitaciones                             | Completo | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías                                                                                                                                                                                                                                              | `3f87250`                       |
-| 8. Aceptar invitaciones                             | Completo | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store                                                                                                                                                                                                                                                           | `876b7ea`                       |
-| 9. Listar miembros                                  | Completo | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio                                                                                                                                                                                                                                        | **`f9b902a`**                   |
-| 10. Abandono voluntario de espacios                 | Completo | `POST /spaces/members/leave`, confirmación, baja lógica de membresía, actualización de `SpaceStore`, selección alternativa y protección contra respuestas tardías                                                                                                                                                                                          | `7f85d27`                       |
-| 11. Expulsión de miembros                           | Completo | `POST /spaces/members/remove`, confirmación por miembro, protección del propietario, actualización del listado y controles de sesión, concurrencia y permisos                                                                                                                                                                                              | `ef06f07`                       |
-| 12. Layout privado y navegación                     | Completo | Layout privado compartido con cabecera, selector de espacios y cierre de sesión; ruta padre protegida, dashboard lazy, carga centralizada de SpaceStore y pruebas de navegación                                                                                                                                                                            | `1ca74fa`                       |
-| 13. Consulta de categorías por espacio              | Completo | Modelos y contratos de categorías; servicio GET /categories; página con listado jerárquico, ordenación, estados de carga, vacío y error; cambio seguro de espacio; navegación y pruebas.                                                                                                                                                                   | `f1c93a7`                       |
-| 14. Creación de categorías                          | Completo | Servicio POST /categories; formulario Signal Forms para categorías principales y subordinadas; validación de nombre y tipo; selector de categoría padre con indentación jerárquica; actualización del listado y pruebas.                                                                                                                                   | `71afd2a`                       |
-| 15. Edición de categorías                           | Completo | `POST /categories/update`, formulario Signal Forms con nombre y categoría padre, conservación del tipo y orden, prevención de ciclos, comprobación de contexto, actualización del listado y pruebas                                                                                                                                                        | `343aed6`                       |
-| 16. Eliminación de categorías                       | Completo | Servicio POST /categories/delete; confirmación explícita, cancelación, protección contra operaciones duplicadas, gestión de dependencias y errores HTTP, aislamiento entre espacios y sesiones, actualización del listado y pruebas.                                                                                                                       | `233bdc8`                       |
-| 17. Consulta de movimientos económicos              | Completo | Modelos y contratos de movimientos; servicio `GET /transactions`; página privada con listado de ingresos y gastos, categoría, concepto, fecha e importe decimal como `string`; consulta conjunta de categorías, aislamiento por espacio y sesión, estados de carga y error, navegación y pruebas.                                                          | `1c6efbe`                       |
-| 18. Paginación de movimientos                       | Completo | Paginación real mediante `GET /transactions` con parámetro `page`; controles anterior y siguiente, numeración y total de páginas; actualización de página actual; prevención de navegación inválida; cancelación de solicitudes obsoletas, reinicio al cambiar de espacio o sesión y pruebas.                                                              | `5e33116`                       |
-| 19. Filtros de movimientos                          | Completo | Filtros de fechas, tipo y categoría mediante Signal Forms; integración con GET /transactions, parámetros opcionales, aplicación y limpieza explícitas, combinación con paginación, reinicio por cambio de espacio o sesión, validaciones y pruebas.                                                                                                        | `a0109a8`                       |
-| 20. Creación de movimientos económicos              | Completo | Contratos y servicio POST /transactions; formulario Signal Forms para ingresos y gastos, selección de categoría compatible, validaciones de importe decimal, concepto y fecha, protección de sesión y espacio, integración con filtros y paginación, actualización del listado y pruebas.                                                                  | `c59a1c9`                       |
-| 21. Edición de movimientos económicos               | Completo | Contratos y servicio `POST /transactions/update`; formulario Signal Forms reutilizando validaciones de creación; edición de tipo, categoría, importe, concepto y fecha; tratamiento de conflictos con recurrentes, conservación de filtros y página, aislamiento por espacio y sesión y pruebas.                                                           | `cc6b0e9`                       |
-| 22. Eliminación de movimientos económicos           | Completo | Servicio `POST /transactions/delete`; confirmación explícita, cancelación, protección frente a peticiones duplicadas, errores HTTP y conflictos con recurrentes; actualización de listado, conservación de filtros, ajuste de paginación, aislamiento por espacio y sesión y pruebas.                                                                      | `58bb624`                       |
-| 23. Recuperación del diseño responsive y navegación | Completo | Diseño mobile-first documentado; navegación inferior fija en móvil y menú lateral en escritorio; selector de espacio en cabecera; traslado de la administración a Ajustes; estructura del dashboard económico; entrada de Informes; integración de iconos SVG de PrimeIcons, pruebas funcionales y responsive.                                             | `e45cde1` y `ba972c9`           |
-| 24. Dashboard económico mensual                     | Completo | Informes mensuales reales mediante ApiGastos; cuatro indicadores económicos, desglose por categorías y últimos cinco movimientos; presentación monetaria decimal exacta con bigint para porcentajes; actualización manual, estados vacíos, gestión de errores, aislamiento de espacio y sesión, diseño responsive y pruebas.                               | `9463478`                       |
-| 25. Registro rápido de movimientos                  | Completo | Modal global desde la navegación móvil y lateral; reutilización de CreateTransaction, carga de categorías por espacio, selector jerárquico, normalización de importes, validaciones tras el envío, notificación y actualización de datos, confirmación con cierre automático a los cuatro segundos, protección de sesión, tests y verificación responsive. | `488c51e`, `d164e0b`, `4cdb559` |
-| 26. Informes de evolución mensual                   | Completo | Consulta `GET /reports/evolution`; visualización de ingresos, gastos y resultado de periodos de doce meses; navegación histórica, importes decimales exactos, actualización tras registrar movimientos, protección de espacio y sesión, estados de carga y error, diseño mobile-first y pruebas.                                                           | `afac3fc`                       |
-| 27. Análisis mensual por categorías                 | Completo | Segunda vista de Informes para analizar ingresos y gastos de un mes; selector de mes y tipo, importes y número de movimientos por categoría, barras proporcionales exactas, navegación entre periodos, actualización de datos, aislamiento de espacio y sesión, diseño responsive y pruebas.                                                               | `5c7b3f3`                       |
-| 28. Consulta de movimientos recurrentes             | Completo | Modelo y servicio `GET /recurring`; consulta de plantillas activas e inactivas con sus categorías, importes, periodicidad y vigencia; navegación responsive desde Movimientos y menú lateral; actualización, gestión de errores y aislamiento por espacio y sesión. Mejoras de distribución de las cabeceras y pruebas.                                    | `08ba053`                       |
-| 29. Creación de plantillas recurrentes              | Completo | Creación mediante Signal Forms; categorías jerárquicas, importes decimales normalizados, validación de concepto, día del mes y fechas; actualización del listado y confirmación temporal. Ajustes responsive de Movimientos y Miembros, con correcciones específicas para fechas nativas en Safari/iOS y pruebas funcionales.                              | `6ffb21d` a `c7d2c8b`           |
-| 30. Activación y desactivación de recurrentes       | Completo | Cambio de estado mediante `POST /recurring/status`; botones de activar y desactivar, protección frente a operaciones simultáneas, cancelación ante cambios de espacio o sesión, errores HTTP, recarga del listado y confirmaciones de cuatro segundos. Pruebas unitarias, funcionales y responsive.                                                        | `122987a`                       |
-| 31. Edición de plantillas recurrentes               | Completo | Edición mediante `POST /recurring/update`, reutilización de validaciones y mappers, carga de valores actuales, categorías jerárquicas, importes y fechas, control de operaciones simultáneas, actualización y confirmación temporal; corrección responsive de fechas en los formularios de creación y edición, verificada en Safari/iOS.                   | `880c21b`, `145d8a1`            |
-| 32. Consulta de ocurrencias mensuales               | Completo | Integración de `GET /recurring/occurrences`; consulta bajo demanda, selección de mes, filtros por estado, paginación, presentación de instantáneas económicas, gestión de carga y errores, protección por espacio y sesión, cancelación de peticiones, diseño mobile-first y pruebas.                                                                      | `ba71b90`                       |
-| 33. Generación de mensualidades recurrentes         | Completo | Integración de `POST /recurring/generate-space`; confirmación previa, generación por mes y espacio, contadores de nuevas, existentes y no aplicables, recarga de ocurrencias, errores parciales y reintentos manuales, protección contra operaciones simultáneas, aislamiento por espacio y sesión, diseño responsive y pruebas.                           | `44b9661`                       |
-| 34. Confirmación y omisión de ocurrencias           | Completo | Integración de `POST /recurring/occurrences/resolve`; confirmación y omisión con validación previa, prevención de envíos duplicados, control de errores HTTP 409, aislamiento por espacio y sesión, actualización del listado, notificación de movimientos confirmados, mensajes temporales y pruebas unitarias, de integración y responsive.              | `d5c447b`                       |
-| 35. Sincronización económica de recurrentes         | Completo | Actualización de las vistas económicas tras generar, confirmar u omitir ocurrencias; tratamiento preventivo de resultados parciales o inciertos; reutilización de `TransactionRefreshService`; sincronización de previsiones, movimientos e informes sin cálculos monetarios en Angular; pruebas de regresión.                                             | `b38a15b`                       |
+| Bloque | Estado | Alcance | Commit de referencia |
+| --- | --- | --- | --- |
+| 1. Base e integración inicial | Completo | Base Angular/PrimeNG, configuración de API, convención de servicios y arquitectura alineada con ApiGastos 1.0.0. | `ea000e0` (ajustes de core) |
+| 2. Autenticación y rutas | Completo | `AuthStore` JWT, guards, interceptor y dashboard protegido. | `73919b1` |
+| 3. Login y registro | Completo | Signal Forms, separación modelo/esquema/valor inicial/mapper, estilos compartidos, foco inicial, pruebas y registro/login reales. | `be0859b`, `a0799d4` |
+| 4. Selección de espacios | Completo | `GET /spaces`, `SpacesService`, `SpaceStore`, selector y cabecera responsive. | `290a0c7` |
+| 5. Creación de espacios compartidos | Completo | `POST /spaces`, formulario Signal Forms, selección inmediata. | `9882d1b` |
+| 6. Crear y consultar invitaciones | Completo | `POST /spaces/invitations`, `GET /spaces/invitations`, token de un solo acceso visual; pruebas del mapper. | `1548553` |
+| 7. Revocar invitaciones | Completo | `POST /spaces/invitations/revoke`, confirmación, actualización del listado y prevención de respuestas tardías. | `3f87250` |
+| 8. Aceptar invitaciones | Completo | `POST /spaces/invitations/accept`, formulario de token, incorporación del nuevo espacio al store. | `876b7ea` |
+| 9. Listar miembros | Completo | `GET /spaces/members`, nombres, fecha de incorporación, rol, actualización, permisos y pruebas de cambio de espacio. | `f9b902a` |
+| 10. Abandono voluntario de espacios | Completo | `POST /spaces/members/leave`, confirmación, baja lógica de membresía, actualización de `SpaceStore`, selección alternativa y protección contra respuestas tardías. | `7f85d27` |
+| 11. Expulsión de miembros | Completo | `POST /spaces/members/remove`, confirmación por miembro, protección del propietario, actualización del listado y controles de sesión, concurrencia y permisos. | `ef06f07` |
+| 12. Layout privado y navegación | Completo | Layout privado compartido, rutas funcionales lazy y guard, carga centralizada de espacios y navegación inicial; pruebas. | `1ca74fa` |
+| 13. Consulta de categorías por espacio | Completo | GET /categories, árbol jerárquico, ordenación, estados de carga/error y aislamiento de espacio y sesión. | `f1c93a7` |
+| 14. Creación de categorías | Completo | POST /categories; Signal Forms para categorías principales y subordinadas, tipo, nombre, selector jerárquico y pruebas. | `71afd2a` |
+| 15. Edición de categorías | Completo | POST /categories/update; validación de jerarquía, prevención de ciclos, conservación de tipo y orden, aislamiento y pruebas. | `343aed6` |
+| 16. Eliminación de categorías | Completo | POST /categories/delete; confirmación, gestión de dependencias, duplicados, errores y recarga. | `233bdc8` |
+| 17. Consulta de movimientos económicos | Completo | GET /transactions, categorías, fechas e importes como cadenas; estados de carga/error y contexto seguro. | `1c6efbe` |
+| 18. Paginación de movimientos | Completo | Paginación real por API, totales, navegación y cancelación de peticiones obsoletas. | `5e33116` |
+| 19. Filtros de movimientos | Completo | Filtros Signal Forms de fecha, tipo y categoría, aplicar/limpiar, paginación, validaciones. | `a0109a8` |
+| 20. Creación de movimientos económicos | Completo | POST /transactions; Signal Forms, importe, concepto, fecha y categoría compatible, recarga y pruebas. | `c59a1c9` |
+| 21. Edición de movimientos económicos | Completo | POST /transactions/update; validaciones reutilizadas, conflictos con recurrentes, filtros y estado preservados. | `cc6b0e9` |
+| 22. Eliminación de movimientos económicos | Completo | POST /transactions/delete; confirmación, conflictos, peticiones duplicadas y paginación actualizada. | `58bb624` |
+| 23. Diseño responsive y navegación | Completo | Menú lateral de escritorio, barra inferior de móvil, cabecera por espacio, Ajustes, estructura del dashboard e iconos SVG. | `e45cde1; ba972c9` |
+| 24. Dashboard económico mensual | Completo | Resumen real, cuatro indicadores, categorías y últimos cinco movimientos, precisión decimal, recarga y diseño responsive. | `9463478` |
+| 25. Registro rápido de movimientos | Completo | Modal global, CreateTransaction reutilizado, categorías jerárquicas, importes, validación, notificación y confirmación de cuatro segundos. | `488c51e; d164e0b; 4cdb559` |
+| 26. Informes de evolución mensual | Completo | GET /reports/evolution; vista de doce meses de ingresos, gastos y resultado, navegación y sincronización económica. | `afac3fc` |
+| 27. Informes por categorías | Completo | Desglose mensual por tipo/categoría, importes, recuentos, proporciones exactas y filtros por mes. | `5c7b3f3` |
+| 28. Consulta de recurrentes | Completo | GET /recurring; plantillas activas/inactivas, categorías, periodicidad, vigencia y navegación. | `08ba053` |
+| 29. Creación de recurrentes | Completo | Signal Forms, fechas, día del mes, categorías jerárquicas, importes y validaciones; correcciones responsive en Movimientos y Miembros, Safari/iOS. | `6ffb21d a c7d2c8b` |
+| 30. Activación y desactivación de recurrentes | Completo | POST /recurring/status; botones de estado, bloqueos de concurrencia, contexto, recarga y confirmaciones. | `122987a` |
+| 31. Edición de recurrentes | Completo | POST /recurring/update; formulario precargado, esquema y mappers reutilizados; fechas móviles y aislamiento por contexto. | `880c21b; 145d8a1` |
+| 32. Consulta de ocurrencias mensuales | Completo | GET /recurring/occurrences bajo demanda; mes, estado, paginación, instantáneas de importes y consulta cancelable. | `ba71b90` |
+| 33. Generación de mensualidades | Completo | POST /recurring/generate-space; confirmación, contadores, resultados parciales, reintentos manuales y protección de concurrencia. | `44b9661` |
+| 34. Confirmación y omisión de ocurrencias | Completo | POST /recurring/occurrences/resolve; confirmación explícita, 409, resultado irreversible, relación con transacción y pruebas. | `d5c447b` |
+| 35. Sincronización económica de recurrentes | Completo | Invalidación mediante TransactionRefreshService al generar, confirmar u omitir; control de resultados inciertos y pruebas de previsión. | `b38a15b` |
+| 36. Centralización de estilos de fecha | Completo | Mixin SCSS compartido para los controles nativos de Movimientos y formularios de recurrentes, conservando apariencia PrimeNG y correcciones Safari/iOS; tests y revisión visual. | `e4a9dc5` |
 
-**Pruebas funcionales relevantes ya realizadas:** el usuario confirmó que dos cuentas independientes A (propietario) y B (invitado) pudieron crear una invitación, comprobar el rechazo de un destinatario incorrecto, aceptarla desde B, verificar la membresía persistida y el rol, y validar el listado de miembros desde A. La lista administrativa solo aparece a propietarios de espacios compartidos. El usuario confirmó asimismo la creación y revocación de invitaciones.
+**Validaciones funcionales destacadas:** gestión real de espacios y membresías con dos cuentas A/B; permisos de propietarios y miembros; creación, edición y eliminación de movimientos; ciclo de vida de recurrentes y comprobaciones en dispositivos móviles reales. Las pruebas contables de confirmación de ocurrencias se realizan preferentemente en espacios de prueba.
 
 ## 6. Contrato REST relevante (ApiGastos v1.0.0)
 
-**Base:** `https://apigastos.osumi.es`, sin prefijo global `/api`; endpoints privados con `Authorization: Bearer <jwt>`.
+**Base configurada:** `https://apigastos.osumi.es` (en `src/environments/environment.ts`), sin prefijo global `/api`. Las rutas privadas requieren JWT Bearer; el backend decide siempre los permisos.
 
-### Autenticación
+La guía principal, contrastada con la implementación, es [`ApiGastos/docs/api/endpoints.md`](https://github.com/igorosabel/ApiGastos/blob/main/docs/api/endpoints.md) en `main`, con **33 endpoints**. La guía fue añadida después de la etiqueta v1.0.0, aunque documenta el contrato de esa versión.
 
-| Método | Ruta             | Uso                             |
-| ------ | ---------------- | ------------------------------- |
-| POST   | `/auth/register` | Crear cuenta y espacio personal |
-| POST   | `/auth/login`    | Autenticación JWT               |
-| GET    | `/auth/me`       | Usuario actual                  |
+| Dominio | Endpoints / métodos | Estado de integración en Gastos |
+| --- | --- | --- |
+| Autenticación | `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | Registro, login, sesión e identidad integrados. |
+| Espacios | `GET /spaces`, `POST /spaces` | Listar/seleccionar y crear. |
+| Invitaciones | `POST /spaces/invitations`, `GET /spaces/invitations`, `POST /spaces/invitations/revoke`, `POST /spaces/invitations/accept` | Crear/listar/revocar/aceptar. |
+| Miembros | `GET /spaces/members`, `POST /spaces/members/leave`, `POST /spaces/members/remove` | Listar, abandonar, expulsar según permisos. |
+| Categorías | `GET /categories`, `POST /categories`, `POST /categories/update`, `POST /categories/delete` | CRUD, jerarquía y dependencias. |
+| Movimientos | `GET /transactions`, `POST /transactions`, `POST /transactions/update`, `POST /transactions/delete` | CRUD, filtros y paginación. |
+| Plantillas recurrentes | `GET /recurring`, `POST /recurring`, `POST /recurring/update`, `POST /recurring/status` | Consulta, creación, edición y activación/desactivación. |
+| Ocurrencias | `GET /recurring/occurrences`, `POST /recurring/generate-space`, `POST /recurring/occurrences/resolve` | Consulta, generación por espacio, confirmación y omisión. |
+| Ocurrencia individual | `POST /recurring/generate` | Disponible en backend; **no forma parte del flujo principal actual del frontend**. |
+| Informes | `GET /reports/monthly`, `GET /reports/monthly/categories`, `GET /reports/evolution`, `GET /reports/monthly/forecast`, `GET /reports/evolution/forecast` | Dashboard consume previsión mensual y categorías; Informes consume evolución real y categorías; otros endpoints disponibles en backend. |
 
-### Espacios, invitaciones y membresías
+### Reglas de negocio y decisiones importantes
 
-| Método | Ruta                         | Datos / uso                                                    |
-| ------ | ---------------------------- | -------------------------------------------------------------- |
-| GET    | `/spaces`                    | Espacios activos a los que pertenece el usuario                |
-| POST   | `/spaces`                    | `{ "name": "Familia" }`; crea uno compartido                   |
-| POST   | `/spaces/invitations`        | `{ "spaceId": 8, "email": "..." }`; propietario                |
-| GET    | `/spaces/invitations`        | Query `spaceId`; propietario                                   |
-| POST   | `/spaces/invitations/revoke` | `{ "invitationId": 15 }`; propietario                          |
-| POST   | `/spaces/invitations/accept` | `{ "token": "<64 hex>" }`; destinatario autenticado            |
-| GET    | `/spaces/members`            | Query `spaceId`; **solo propietario**; miembros activos        |
-| POST   | `/spaces/members/leave`      | `{ "spaceId": 8 }`; **próximo bloque**, miembro no propietario |
-| POST   | `/spaces/members/remove`     | `{ "spaceId": 8, "userId": 2 }`; bloque posterior, propietario |
+- Un espacio contiene `id`, `name`, `type` (`personal`/`shared`), `owner_id` e `is_owner`. Los datos económicos y el acceso son siempre por espacio y membresía activa.
+- Las invitaciones caducan a los siete días; el token de 64 caracteres hexadecimales solo se devuelve al crearlo. La API no manda correo automáticamente; el correo del destinatario debe coincidir con el del usuario que acepta. El listado no devuelve el token.
+- `GET /spaces/members` no proporciona email; incluye identificador, nombre, fecha de unión y propietario. La API impide que un propietario abandone su espacio o sea expulsado.
+- Los importes monetarios se reciben como **cadenas decimales** (`string`). No utilizar `float` para sumas de negocio. Las fechas `DATE` son fechas de calendario sin conversión automática de huso horario.
+- La generación de mensualidades recurrentes es **explícita**, no programada. `POST /recurring/generate-space` considera plantillas inicialmente activas, es idempotente por plantilla/periodo pero **no atómico** para todo el lote. Un error puede dejar creaciones parciales; no reintentar automáticamente.
+- `created`, `existing`, `skipped`, `total` en generación cuentan plantillas procesadas; el `skipped` de ese resultado **no** es lo mismo que el estado `skipped` de una ocurrencia omitida.
+- `POST /recurring/occurrences/resolve` permite `confirm` o `skip` solo para pendientes. `confirm` crea **un movimiento contable real** y vincula `transaction_id`; `skip` no crea movimiento. Resolver una ya resuelta devuelve HTTP 409. No existen operaciones de deshacer por este contrato.
+- Las plantillas inactivas conservan las ocurrencias existentes. Reactivarlas no regenera automáticamente periodos omitidos; la política A de ApiGastos permite solicitar generación explícita de periodos válidos de una pausa si aún no tienen ocurrencia.
+- La previsión mensual **no crea ocurrencias**: `actual` agrega movimientos reales y `pending` solo ocurrencias pendientes ya generadas; `projected = actual + pending`. Confirmar u omitir elimina su contribución a `pending`, sin doble contabilización; generar puede aumentar la previsión.
+- La aplicación notifica los cambios económicos para que otras pantallas vuelvan a consultar a ApiGastos. La notificación no inventa ni modifica cifras monetarias en el cliente.
 
-Reglas y observaciones:
+**Fuentes de contrato adicional:** [`ApiGastos/docs/api/recurring.md`](https://github.com/igorosabel/ApiGastos/blob/main/docs/api/recurring.md) (idempotencia, vigencia y política A de reactivación) y [`ApiGastos/docs/api/reports.md`](https://github.com/igorosabel/ApiGastos/blob/main/docs/api/reports.md) (contabilidad real, pendientes y previsiones).
 
-- Un espacio tiene `id`, `name`, `type` (`personal` o `shared`), `owner_id`, `is_owner`.
-- Una invitación nueva contiene token de **64 hexadecimales** y caduca a los **7 días**. La API **no envía emails automáticamente**. El token solo se devuelve al crear; el listado no lo devuelve. No registrar ni compartir tokens en repositorios o capturas.
-- Una aceptación válida comprueba la **igualdad del correo de la cuenta autenticada con el destinatario**; token utilizado, expirado o revocado no puede aceptarse de nuevo. Puede reactivar una membresía histórica dada de baja.
-- `GET /spaces/members` devuelve `id` **del usuario**, `name`, `joined_at`, `is_owner`; **no devuelve email**. Solo incluye miembros activos.
-- El propietario **no puede abandonar** su espacio compartido ni ser expulsado, y un miembro no propietario **no puede expulsar a otros**.
-- El backend desactiva membresías (`left_at`), preservando sus registros; no elimina físicamente la información histórica.
-- No confiar únicamente en que el frontend oculte controles: la API debe validar todas las autorizaciones.
+## 7. Punto exacto para reanudar: **después del bloque 36**
 
-### Ámbitos REST todavía sin integración frontend
+**Estado comprobado:** bloques 1 a 36 completados y publicados. Último commit en `main`: [`e4a9dc5`](https://github.com/igorosabel/Gastos/commit/e4a9dc5046e173a7914d2b34cc8ee8d1224a1aff). El usuario ha confirmado que las pruebas del bloque 36 pasan y que los controles de fecha se ven bien. **No hay actualmente un bloque 37 implementado ni validado.**
 
-Verificar los DTO y las respuestas reales antes de implementar:
+### Próxima decisión
 
-- **Categorías:** `/categories` (GET, POST), `/categories/update` (POST), `/categories/delete` (POST); árboles jerárquicos aislados por espacio.
-- **Movimientos reales:** `/transactions` (GET, POST), `/transactions/update` (POST), `/transactions/delete` (POST). Ingresos/gastos, fechas contables y filtros/paginación.
-- **Recurrentes:** `/recurring` (GET, POST), `/recurring/update`, `/recurring/status`, `/recurring/generate`, `/recurring/occurrences` (GET), `/recurring/occurrences/resolve`, `/recurring/generate-space` (POST). Consultar `docs/api/recurring.md` antes de diseñar la UI.
-- **Informes:** `/reports/monthly`, `/reports/monthly/categories`, `/reports/evolution`, `/reports/monthly/forecast`, `/reports/evolution/forecast` (GET). Contratos detallados en `docs/api/reports.md`.
+El usuario ha planteado evitar el **zoom automático en móvil al enfocar campos**: en iPhone/Safari, al tocar un campo la página aumenta de tamaño y, después de enviar el formulario, el zoom a veces permanece. Como la interfaz se diseñó para el tamaño de móvil, el usuario prefiere no permitir zoom. Este requisito debe estudiarse antes de implementarse (véase apartado 11), con atención especial a accesibilidad y a las particularidades de iOS.
 
-**Fechas e importes:** las fechas contables (`DATE`) no tienen zona horaria; no aplicar conversiones UTC automáticas. Los informes devuelven importes como cadenas decimales. La generación de ocurrencias recurrentes es **explícita**, no programada automáticamente; las previsiones incluyen solo ocurrencias pendientes **ya generadas**. Distinguir datos reales y previsiones y prevenir doble contabilización.
+También está pendiente **persistir el último espacio seleccionado por usuario** entre aperturas y nuevos inicios de sesión. Requiere elegir conscientemente entre persistencia de backend y almacenamiento local, validar el aislamiento entre cuentas y comprobar espacios inaccesibles.
 
-## 7. Punto exacto para reanudar: **bloque 32**
+**Plan propuesto para reanudar:** decidir con el usuario cuál de las mejoras se convierte en el bloque 37. El zoom molesto al enfocar puede abordarse como intervención UX pequeña, pero no se debe dar por hecho que `user-scalable=no` es una solución segura o uniforme. No mezclar esa mejora con persistencia de preferencias. Preparar un único bloque con código concreto, pruebas y validación en Safari/iOS y Chrome/Windows; esperar la conformidad y commit antes del siguiente.
 
-### Layout privado y navegación
+**No volver a plantear como pendientes**: navegación responsive (23), dashboard financiero (24), informes reales (26–27), circuito completo de recurrentes (28–35) ni estilos SCSS comunes de fecha (36).
 
-**Estado:** siguiente bloque de desarrollo, pendiente de validación.
+## 8. Hoja de ruta posterior (provisional; no son bloques comprometidos)
 
-Los bloques 1 a 31 están completados. La gestión básica de espacios personales y compartidos incluye creación, selección, invitaciones, aceptación, revocación, consulta de miembros, abandono voluntario y expulsión.
+1. **Experiencia de zoom en móvil:** investigar la causa del autozoom al enfocar controles y una solución fiable que mantenga el diseño. Comparar el tamaño de fuente efectivo de inputs (Safari suele hacer autozoom con tamaños pequeños), `viewport`, PrimeNG y accesibilidad. Comprobar si basta con evitar el autozoom de foco sin desactivar el zoom voluntario. Si se opta por limitar zoom globalmente, valorar consecuencias y soporte real en iOS.
+2. **Persistencia del espacio seleccionado:** decidir almacenamiento local por usuario frente a preferencia de cuenta en ApiGastos; comportamiento de selección inicial, sesión, cambio de usuario, pérdida de membresía y recargas. Cualquier cambio de backend va en un bloque separado con su propio `AGENTS.md` y contrato.
+3. **Pulido antes de primera versión funcional:** pruebas de extremo a extremo entre módulos (movimientos, previsiones, categorías, recurrentes, invitaciones), estados vacíos/error, responsive en iPhone y escritorio, revisión de accesibilidad y modo claro/oscuro.
+4. **Documentación de usuario y mantenimiento:** actualizar `README.md` del frontend, actualmente todavía generado por Angular CLI 19 con referencias obsoletas a Karma; reflejar Angular 22, Vitest, variables/configuración y despliegue sin exponer secretos.
+5. **Posibles extensiones futuras (solo tras decisión):** aprovechar `GET /reports/evolution/forecast`, generar una ocurrencia individual, notificaciones en tiempo real de cambios entre sesiones, automatización programada de recurrentes o gestión de preferencias de cuenta.
 
-**Objetivo del bloque 12:** extraer del dashboard la cabecera, el selector de espacios, el cierre de sesión y la carga inicial del listado para crear un layout privado compartido por las futuras páginas funcionales.
-
-**Plan previsto:**
-
-1. Crear `PrivateLayout` con TypeScript, HTML y SCSS independientes.
-2. Introducir una ruta privada padre protegida por `authGuard`, con el dashboard como ruta hija lazy.
-3. Mover la carga inicial de `SpaceStore` desde `Dashboard` al layout.
-4. Mantener en el dashboard las funcionalidades actuales de gestión de espacios.
-5. Añadir pruebas del layout, rutas, selección y logout.
-6. Verificar que todas las operaciones anteriores siguen funcionando, especialmente con cambios de espacio y en móvil.
-
-**Siguiente objetivo:** comenzar el módulo de categorías usando `GET /categories` y la navegación compartida, consultando previamente `ApiGastos/docs/api/endpoints.md`.
-
-No modificar ApiGastos ni Osumi Framework para este refactor.
-
-**Importante:** el bloque 12 todavía no está validado. Antes de avanzar, ejecutar lint, tests, build y pruebas funcionales. Esperar confirmación y commit del usuario.
-
-## 8. Hoja de ruta posterior (provisional, no bloques comprometidos)
-
-Una vez completada la gestión básica de miembros, continuar por unidades verificables. El orden se podrá ajustar con el usuario:
-
-1. **Estructura de navegación definitiva:** extraer la cabecera y el selector del dashboard cuando haya varias rutas reales, diseñar navegación responsive y estados globales por espacio. No extraer prematuramente una abstracción sin uso real.
-2. **Categorías por espacio:** consulta/árbol jerárquico; después crear/editar/eliminar con reglas de API, esquemas Signal Forms y estados de error. Probar cambios de espacio y jerarquías.
-3. **Movimientos de ingresos y gastos:** listado, filtros, paginación; alta/edición/eliminación controlada; categorías, fechas y precisión monetaria. Probar aislamiento entre espacios.
-4. **Recurrentes y ocurrencias:** configuración de plantillas, activación/pausa, generación explícita de mensualidades, confirmación/omisión y casos de idempotencia. Priorizar lectura de `ApiGastos/docs/api/recurring.md` y su política A de reactivación.
-5. **Informes y dashboard económico real:** resumen mensual, desglose por categorías, evolución, previsión; controlar cadena decimal y separación entre movimientos reales y pendientes. Contratos en `ApiGastos/docs/api/reports.md`.
-6. **Pulido general:** UX móvil/escritorio, accesibilidad, estados de carga/error, navegación, consistencia entre tema claro/oscuro, pruebas de regresión y publicación del frontend.
-
-**Fuera del alcance actual salvo decisión expresa:** refresco JWT, generación automática programada de recurrentes, gestión avanzada de perfiles, transferencia de propiedad de espacios, eliminación completa de cuentas, migraciones de base de datos o cambios del framework.
+**Fuera del alcance sin acuerdo explícito:** refresh JWT inexistente en API, cambios no publicados en ApiGastos, transferencias de propiedad de espacios, eliminación completa de cuentas y modificaciones de Osumi Framework.
 
 ## 9. Limitaciones, precauciones y puntos a revisar
 
-- El `README.md` del **frontend** es aún el _scaffold_ de Angular CLI 19 y menciona Karma; para las versiones y comandos reales usar **`package.json`**, `angular.json` y `AGENTS.md`. Más adelante conviene actualizar el README.
-- El archivo [`ApiGastos/docs/api/endpoints.md`](https://github.com/igorosabel/ApiGastos/blob/main/docs/api/endpoints.md) existe en la rama `main` y documenta los 33 endpoints REST de **ApiGastos v1.0.0**. Se añadió después de publicar esa release y, por tanto, no figura en la etiqueta `v1.0.0`. El enlace de `Gastos/AGENTS.md` ya está corregido. Esta guía es la referencia principal para integrar el frontend y cualquier discrepancia debe contrastarse con el código real del backend.
-- `dashboard/dashboard.scss` utiliza `--p-surface-900` para las tarjetas, decisión pensada para el tema oscuro actual. Antes de soportar plenamente el cambio a tema claro/oscuro, revisar tokens semánticos y probar ambos modos.
-- El dashboard es funcional para gestionar espacios, pero **no es aún** el panel financiero final.
-- La selección de espacio **no** se guarda al recargar; no confundir esa decisión con la persistencia de membresías en la base de datos.
-- No existen notificaciones en tiempo real para expulsiones o salidas efectuadas desde otra sesión; prever recarga/revalidación cuando se introduzcan cambios de membresías.
-- Ningún token de invitación se devuelve al listar invitaciones; no prometer recuperarlo después de ocultarlo.
-- Los tests exitosos se han confirmado **en el equipo del desarrollador**. No asumir que nuevas modificaciones estén verificadas hasta que vuelva a ejecutar los tres comandos y las pruebas funcionales.
-- La versión exacta del backend puede evolucionar tras v1.0.0; no introducir extensiones sin un contrato publicado y una discusión separada con el usuario.
+- **Fuente de verdad:** código publicado, `AGENTS.md`, contratos de ApiGastos y decisiones documentadas. La tabla de bloques es histórica; verificar siempre `HEAD` y archivos reales.
+- **README desactualizado:** aún indica Angular CLI 19 y Karma; usar `package.json`, `angular.json` y `AGENTS.md` para versiones y comandos actuales.
+- **Zoom en móvil:** pendiente; la petición es evitar un zoom automático persistente al enfocar controles, pero el bloqueo general puede perjudicar accesibilidad, ampliación voluntaria y comportamiento entre versiones de Safari. Evaluar primero el origen del problema y comprobar en iOS real.
+- **Selección de espacio:** continúa sin persistirse entre sesiones/recargas completas; las membresías sí persisten en ApiGastos. No registrar IDs de espacio sin validarlos tras `GET /spaces` y contra el usuario actual.
+- **Informes y ocurrencias:** nunca confundir importes reales y previstos, ni contar una ocurrencia confirmada además de su transacción real. No generar ocurrencias al consultar informes. No cambiar reglas temporales del backend desde Angular.
+- **Concurrencia:** reintentos de `generate-space` son manuales y el lote puede ser parcialmente persistido. Cancelar una petición HTTP del navegador no implica detener la ejecución del backend. Mantener pruebas de doble envío, HTTP 409 y cambios de espacio o sesión.
+- **Temas:** seguir revisando contraste y tokens semánticos de PrimeNG en claro/oscuro, especialmente componentes con colores de superficie fijos.
+- **Sesiones múltiples:** no hay notificaciones push/tiempo real para la revocación de membresías u otros cambios hechos desde otra sesión; hay mecanismos de recarga y comprobación de permisos en backend.
+- **Invitaciones y secretos:** no publicar JWT, tokens de invitación, licencia PrimeNG ni datos privados en código, logs o capturas. El token de invitación no puede recuperarse al listar invitaciones.
+- **Pruebas:** los bloques 1–36 fueron validados por el usuario en su entorno. Al proponer un bloque nuevo no afirmar que su lint, tests, build o verificación real ya han pasado.
+- **Versionado independiente:** ApiGastos se referencia en v1.0.0 y puede evolucionar; comprobar la versión real y las rutas/documentación antes de proponer un contrato nuevo.
 
 ## 10. Procedimiento recomendado para iniciar otra conversación
 
-1. Facilitar este archivo o indicar su ruta en el repositorio (`docs/development/CONTINUIDAD_GASTOS.md`).
-2. Pedir al asistente **leer primero `AGENTS.md`**, comprobar el `HEAD` y la estructura actual de `igorosabel/Gastos`, y contrastar el contrato con **ApiGastos v1.0.0** y su código real.
-3. Confirmar que el último bloque validado es el 11 **(expulsión de miembros)**, commit `ef06f07`, y que el siguiente propuesto es el 12 **(layout privado y navegación)**, salvo que existan commits posteriores.
-4. Implementar **solo el bloque siguiente**, proponiendo los archivos, código, pruebas y plan funcional entre dos usuarios (A propietario, B miembro).
-5. Esperar los resultados de `npm run lint`, `npm run test`, `npm run build`, pruebas funcionales y commit/push del usuario antes de avanzar.
-6. Actualizar este documento tras cada hito importante: fecha, `HEAD`, decisiones nuevas, último bloque validado, siguiente bloque y riesgos o problemas abiertos.
+1. Compartir esta versión o indicar `docs/development/CONTINUIDAD_GASTOS.md` en el repositorio.
+2. Leer **primero** `AGENTS.md` del frontend, comprobar último `HEAD`, los archivos actuales y `docs/design-responsive.md` si hay cambios visuales. No asumir que los árboles de directorios de este documento siguen idénticos.
+3. Confirmar que **los bloques 1–36 están completos y validados**, último commit verificado `e4a9dc5` (centralización de estilos de fecha), y **el siguiente bloque está por decidir**. Verificar si existen commits posteriores.
+4. Revisar el apartado 11; la incidencia de zoom de Safari/iOS y la persistencia del espacio son las mejoras funcionales pendientes. Elegir una sola por bloque y verificar su alcance antes de proponer código.
+5. Si el bloque necesita un cambio del backend, consultar su propio `AGENTS.md`, repositorio, contratos y documentación; discutir primero la frontera entre frontend, ApiGastos y Osumi Framework. No mezclar desarrollo de Angular y OFW.
+6. Proponer cambios incrementales con archivos exactos, tests unitarios/regresión y pruebas funcionales (especialmente Safari/iOS y Chrome/Windows). Esperar `npm run lint`, `npm run test`, `npm run build`, validación manual y commit/push del usuario.
+7. Al empezar el siguiente bloque, proporcionar la fila con **Bloque, Estado, Alcance y Commit de referencia** del bloque recién cerrado. Mantener cabecera, punto de continuación, hoja de ruta, límites y mejoras pendientes al día.
 
-### Texto breve que se puede pegar en una nueva conversación
+### Texto breve para pegar en una nueva conversación
 
-> Estamos desarrollando **Gastos** (`https://github.com/igorosabel/Gastos`), frontend Angular 22/PrimeNG 22 con Signal Forms, contra **ApiGastos v1.0.0** (`https://github.com/igorosabel/ApiGastos`). Lee el documento `docs/development/CONTINUIDAD_GASTOS.md`, el `AGENTS.md` vigente y el código actual del repositorio antes de proponer cambios. El último bloque confirmado fue el **9, listado de miembros** (commit `f9b902a`); continuaremos con el **bloque 10, abandono voluntario de espacios compartidos**. Trabajamos de forma incremental, con tests, pruebas funcionales de dos usuarios y commit validado antes de avanzar. Revisa siempre el `HEAD`: el documento puede haber quedado desactualizado. El último bloque confirmado fue el 11, **expulsión de miembros** (commit `ef06f07`); continuaremos con el **bloque 12**, **layout privado y navegación**.
+> Estamos desarrollando **Gastos**, frontend Angular 22/PrimeNG 22 con Signal Forms (`https://github.com/igorosabel/Gastos`) contra **ApiGastos v1.0.0** (`https://github.com/igorosabel/ApiGastos`). Primero lee `AGENTS.md`, `docs/development/CONTINUIDAD_GASTOS.md` y el código real, y comprueba el último commit. Los **bloques 1–36 están completados y validados**; el último commit verificado es `e4a9dc5`, centralización de estilos de fecha. El siguiente bloque aún está por decidir: está pendiente evitar el zoom automático molesto al enfocar campos en iPhone/Safari y recordar por usuario el espacio seleccionado. Debemos mantener accesibilidad, arquitectura, contratos y límites backend; desarrollar en bloques pequeños con tests, validación móvil/escritorio y commit antes de continuar.
 
 ## 11. Mejoras pendientes
 
-| Mejora                                        | Estado    | Alcance                                                                                                                                                                                                                                                                                                             |
-| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Persistencia del espacio seleccionado         | Pendiente | Recordar por usuario el último espacio contable utilizado y restaurarlo tras cerrar y volver a abrir Gastos, incluso después de un nuevo inicio de sesión. Evaluar persistencia en backend, posibles cambios de contrato y comportamiento cuando el espacio ya no esté disponible.                                  |
-| Centralización de estilos comunes para fechas | Pendiente | Extraer a un recurso SCSS compartido los estilos de los campos nativos `input[type="date"]`, actualmente repetidos en filtros de Movimientos y formularios de creación y edición de recurrentes. Conservar el diseño PrimeNG y las correcciones de anchura y alineación verificadas en Safari/iOS y Chrome/Windows. |
+| Mejora | Estado | Alcance / decisiones pendientes |
+| --- | --- | --- |
+| Evitar zoom automático persistente en móvil | **Pendiente (petición del usuario)** | En Safari/iOS, pulsar determinados campos provoca zoom de enfoque y, tras enviar, la pantalla puede permanecer ampliada. El usuario preferiría impedir el zoom en toda la aplicación porque el diseño móvil ya es legible. Revisar la configuración `viewport`, los tamaños de fuente reales de inputs y componentes PrimeNG y el soporte de iOS. Priorizar corregir el autozoom no deseado sin bloquear la ampliación voluntaria si es viable; antes de usar `user-scalable=no` o `maximum-scale=1`, valorar accesibilidad y límites de los navegadores. Validar en iPhone/Safari y Chrome/Windows, en formularios, selectores y tras enviarlos. No está implementado. |
+| Persistencia del espacio seleccionado | **Pendiente (decisión de arquitectura)** | Recordar por usuario el último espacio contable utilizado y restaurarlo tras cerrar/reabrir Gastos, incluso después de un nuevo inicio de sesión. Comparar preferencia de backend con almacenamiento por usuario en navegador, posibles cambios REST y comportamiento al perder acceso al espacio. No persistir ni restaurar un `spaceId` sin contrastarlo con `GET /spaces`. |
+| Centralización de estilos comunes para fechas | **Completa (bloque 36)** | Mixin `src/styles/_native-date-control.scss` reutilizado en filtros de Movimientos y formularios de creación/edición de recurrentes; mismo diseño PrimeNG y correcciones de WebKit validados en Safari/iOS y Chrome/Windows. Commit `e4a9dc5`. Se conserva aquí para documentar el cierre de la mejora anteriormente pendiente. |
 
 ---
 
