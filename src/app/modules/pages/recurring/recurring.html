@@ -16,7 +16,8 @@
                     variant="outlined"
                     [disabled]="loading() ||
                                 creatingRecurring() ||
-                                statusPendingId() !== null
+                                statusPendingId() !== null ||
+                                editingRecurring() !== null
                     "
                     (click)="reload()">
                 <svg data-p-icon="refresh"
@@ -35,7 +36,8 @@
                                 creatingRecurring() ||
                                 error() !== null ||
                                 categories().length === 0 ||
-                                statusPendingId() !== null
+                                statusPendingId() !== null ||
+                                editingRecurring() !== null
                     "
                     (click)="openCreateRecurring()">
                 Nuevo recurrente
@@ -68,6 +70,13 @@
                           [categories]="categories()"
                           (created)="onRecurringCreated($event)"
                           (cancelled)="cancelCreateRecurring()" />
+    }
+
+    @if (editingRecurring(); as editing) {
+    <app-edit-recurring [recurring]="editing"
+                        [categories]="categories()"
+                        (saved)="onRecurringSaved($event)"
+                        (cancelled)="cancelEditRecurring()" />
     }
 
     @if (spaceStore.loading()) {
@@ -188,13 +197,29 @@
                             type="button"
                             severity="secondary"
                             variant="outlined"
+                            [attr.aria-label]="'Editar recurrente: ' + item.concept"
+                            [disabled]="loading() ||
+                                        creatingRecurring() ||
+                                        editingRecurring() !== null ||
+                                        statusPendingId() !== null
+                            "
+                            (click)="openEditRecurring(item)">
+                        Editar
+                    </button>
+
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
                             [attr.aria-label]="
                                 (item.active ? 'Desactivar' : 'Activar') +
                                 ' recurrente: ' + item.concept
                             "
                             [disabled]="loading() ||
                                         creatingRecurring() ||
-                                        statusPendingId() !== null"
+                                        statusPendingId() !== null ||
+                                        editingRecurring() !== null
+                            "
                             (click)="setRecurringStatus(item)">
                         @if (statusPendingId() === item.id) {
                         Actualizando...

@@ -5,6 +5,7 @@ import { environment } from '@env/environment';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
+import type UpdateRecurringResponse from '@interfaces/recurring/update-recurring-response.interface';
 import RecurringService from '@services/recurring.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -190,4 +191,55 @@ describe('RecurringService', (): void => {
       expect(result).toEqual(response);
     },
   );
+
+  it('actualiza una plantilla sin enviar el campo active', (): void => {
+    const response: UpdateRecurringResponse = {
+      success: true,
+      recurring: {
+        id: 50,
+        space_id: 12,
+        category_id: 7,
+        type: 'expense',
+        amount: '105.00',
+        concept: 'Electricidad nueva',
+        day_of_month: 20,
+        start_date: '2026-10-01',
+        end_date: null,
+        active: false,
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: UpdateRecurringResponse | null = null;
+
+    service
+      .updateRecurring({
+        spaceId: 12,
+        recurringId: 50,
+        categoryId: 7,
+        type: 'expense',
+        amount: '105.00',
+        concept: 'Electricidad nueva',
+        dayOfMonth: 20,
+        startDate: '2026-10-01',
+        endDate: null,
+      })
+      .subscribe({
+        next: (value: UpdateRecurringResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/recurring/update`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body.recurringId).toBe(50);
+    expect(request.request.body.amount).toBe('105.00');
+    expect(request.request.body).not.toHaveProperty('active');
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
+  });
 });

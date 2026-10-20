@@ -19,6 +19,7 @@ import type Category from '@model/categories/category.model';
 import type RecurringModel from '@model/recurring/recurring.model';
 import { formatMoney } from '@model/reports/money';
 import CreateRecurring from '@modules/recurring/create-recurring/create-recurring';
+import EditRecurring from '@modules/recurring/edit-recurring/edit-recurring';
 import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import RecurringService from '@services/recurring.service';
@@ -27,7 +28,7 @@ import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-recurring',
-  imports: [RouterLink, ButtonDirective, Refresh, CreateRecurring],
+  imports: [RouterLink, ButtonDirective, Refresh, CreateRecurring, EditRecurring],
   templateUrl: './recurring.html',
   styleUrl: './recurring.scss',
 })
@@ -47,6 +48,9 @@ export default class Recurring {
   readonly actionMessage: WritableSignal<string | null> = signal<string | null>(null);
   readonly statusPendingId: WritableSignal<number | null> = signal<number | null>(null);
   readonly statusError: WritableSignal<string | null> = signal<string | null>(null);
+  readonly editingRecurring: WritableSignal<RecurringModel | null> = signal<RecurringModel | null>(
+    null,
+  );
 
   private statusSubscription: Subscription | null = null;
   private actionMessageTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -92,6 +96,7 @@ export default class Recurring {
       this.statusError.set(null);
 
       this.creatingRecurring.set(false);
+      this.editingRecurring.set(null);
       this.clearActionMessage();
     });
 
@@ -182,7 +187,8 @@ export default class Recurring {
       this.authStore.token() === null ||
       this.loading() ||
       this.creatingRecurring() ||
-      this.statusPendingId() !== null
+      this.statusPendingId() !== null ||
+      this.editingRecurring() !== null
     ) {
       return;
     }
@@ -197,7 +203,8 @@ export default class Recurring {
       this.error() !== null ||
       this.creatingRecurring() ||
       this.categories().length === 0 ||
-      this.statusPendingId() !== null
+      this.statusPendingId() !== null ||
+      this.editingRecurring() !== null
     ) {
       return;
     }
@@ -238,6 +245,7 @@ export default class Recurring {
       this.loading() ||
       this.error() !== null ||
       this.creatingRecurring() ||
+      this.editingRecurring() !== null ||
       this.statusPendingId() !== null ||
       current === undefined ||
       current.space_id !== spaceId ||
@@ -299,6 +307,58 @@ export default class Recurring {
           this.statusError.set(this.getStatusError(error));
         },
       });
+  }
+
+  openEditRecurring(item: RecurringModel): void {
+    const spaceId: number | null = this.spaceStore.selectedId();
+
+    const current: RecurringModel | undefined = this.recurring().find(
+      (recurring: RecurringModel): boolean => recurring.id === item.id,
+    );
+
+    if (
+      spaceId === null ||
+      this.authStore.token() === null ||
+      this.authStore.user()?.id === undefined ||
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingRecurring() ||
+      this.editingRecurring() !== null ||
+      this.statusPendingId() !== null ||
+      current === undefined ||
+      current.space_id !== spaceId ||
+      this.categories().length === 0
+    ) {
+      return;
+    }
+
+    this.statusError.set(null);
+    this.clearActionMessage();
+    this.editingRecurring.set(current);
+  }
+
+  cancelEditRecurring(): void {
+    this.editingRecurring.set(null);
+  }
+
+  onRecurringSaved(item: RecurringModel): void {
+    const editing: RecurringModel | null = this.editingRecurring();
+
+    if (
+      editing === null ||
+      item.id !== editing.id ||
+      item.space_id !== editing.space_id ||
+      item.space_id !== this.spaceStore.selectedId() ||
+      item.active !== editing.active
+    ) {
+      return;
+    }
+
+    this.editingRecurring.set(null);
+
+    this.showActionMessage(`Se ha actualizado el recurrente «${item.concept}».`);
+
+    this.refreshVersion.update((version: number): number => version + 1);
   }
 
   private getStatusError(error: unknown): string {

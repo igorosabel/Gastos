@@ -823,4 +823,150 @@ describe('Recurring', (): void => {
     expect(deactivate?.textContent?.trim()).toBe('Desactivar');
     expect(activate?.textContent?.trim()).toBe('Activar');
   });
+
+  it('abre la edición con los datos de la plantilla', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: RecurringModel = getRecurringItem(50);
+
+    component.openEditRecurring(item);
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()).toEqual(item);
+    expect(component.creatingRecurring()).toBe(false);
+
+    const editor: HTMLElement | null = fixture.nativeElement.querySelector('app-edit-recurring');
+
+    expect(editor).not.toBeNull();
+    expect(editor?.textContent).toContain('Editar movimiento recurrente');
+  });
+
+  it('permite cancelar la edición sin guardar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditRecurring(getRecurringItem(50));
+    fixture.detectChanges();
+
+    component.cancelEditRecurring();
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()).toBeNull();
+    expect(component.recurring()).toHaveLength(2);
+
+    expect(fixture.nativeElement.querySelector('app-edit-recurring')).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/update`);
+  });
+
+  it('recarga el listado después de editar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: RecurringModel = getRecurringItem(50);
+
+    component.openEditRecurring(item);
+    fixture.detectChanges();
+
+    const updated: RecurringModel = {
+      ...item,
+      amount: '105.00',
+      concept: 'Electricidad nueva',
+    };
+
+    component.onRecurringSaved(updated);
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()).toBeNull();
+    expect(component.loading()).toBe(true);
+
+    const items: RecurringModel[] = recurringResponse(2).recurring.map(
+      (recurring: RecurringModel): RecurringModel =>
+        recurring.id === updated.id ? updated : recurring,
+    );
+
+    completeLoad(2, items);
+
+    expect(getRecurringItem(50).amount).toBe('105.00');
+    expect(getRecurringItem(50).concept).toBe('Electricidad nueva');
+    expect(getRecurringItem(50).active).toBe(true);
+
+    expect(component.actionMessage()).toBe('Se ha actualizado el recurrente «Electricidad nueva».');
+  });
+
+  it('impide crear o cambiar estados durante una edición', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: RecurringModel = getRecurringItem(50);
+
+    component.openEditRecurring(item);
+
+    component.openCreateRecurring();
+    component.setRecurringStatus(item);
+    component.reload();
+
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()?.id).toBe(50);
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.loading()).toBe(false);
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/status`);
+  });
+
+  it('cierra la edición al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditRecurring(getRecurringItem(50));
+    fixture.detectChanges();
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()).toBeNull();
+    expect(component.actionMessage()).toBeNull();
+
+    completeLoad(8);
+
+    expect(component.recurring()[0]?.space_id).toBe(8);
+  });
+
+  it('cierra la edición al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openEditRecurring(getRecurringItem(50));
+    fixture.detectChanges();
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.editingRecurring()).toBeNull();
+    expect(component.recurring()).toEqual([]);
+    expect(component.actionMessage()).toBeNull();
+  });
+
+  it('muestra un botón de edición por plantilla', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const editElectricity: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label="Editar recurrente: Electricidad"]',
+    );
+
+    const editSalary: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label="Editar recurrente: Nómina"]',
+    );
+
+    expect(editElectricity).not.toBeNull();
+    expect(editSalary).not.toBeNull();
+
+    expect(editElectricity?.textContent?.trim()).toBe('Editar');
+    expect(editSalary?.textContent?.trim()).toBe('Editar');
+  });
 });

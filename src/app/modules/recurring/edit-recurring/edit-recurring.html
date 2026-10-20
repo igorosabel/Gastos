@@ -1,0 +1,178 @@
+<form [formRoot]="recurringForm"
+      class="recurring-form"
+      [class.recurring-form--show-errors]="showErrors()"
+      aria-label="Editar movimiento recurrente">
+
+    <h3>Editar movimiento recurrente</h3>
+
+    <div class="recurring-form__field">
+        <label for="edit-recurring-type">Tipo</label>
+
+        <p-select inputId="edit-recurring-type"
+                  [options]="typeOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="recurringForm.type"
+                  (onChange)="changeType($event.value)"
+                  [fluid]="true" />
+    </div>
+
+    <div class="recurring-form__field">
+        <label for="edit-recurring-category">
+            Categoría <span aria-hidden="true">*</span>
+        </label>
+
+        <p-select inputId="edit-recurring-category"
+                  [options]="categoryOptions()"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Selecciona una categoría"
+                  [formField]="recurringForm.categoryId"
+                  [fluid]="true">
+
+            <ng-template #item
+                         let-option>
+                <div [style.padding-left.rem]="option.depth * 1.25">
+                    {{ option.label }}
+                </div>
+            </ng-template>
+        </p-select>
+
+        @if (showErrors() && recurringForm.categoryId().invalid()) {
+        <small class="recurring-form__error"
+               role="alert">
+            {{ recurringForm.categoryId().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="recurring-form__field">
+        <label for="edit-recurring-amount">
+            Importe <span aria-hidden="true">*</span>
+        </label>
+
+        <input pInputText
+               id="edit-recurring-amount"
+               type="text"
+               inputmode="decimal"
+               autocomplete="off"
+               [formField]="recurringForm.amount" />
+
+        <small class="recurring-form__help">
+            Puedes escribir 33, 33,5 o 33,50.
+        </small>
+
+        @if (showErrors() && recurringForm.amount().invalid()) {
+        <small class="recurring-form__error"
+               role="alert">
+            {{ recurringForm.amount().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="recurring-form__field">
+        <label for="edit-recurring-concept">
+            Concepto <span aria-hidden="true">*</span>
+        </label>
+
+        <input #conceptInput
+               pInputText
+               id="edit-recurring-concept"
+               type="text"
+               autocomplete="off"
+               [formField]="recurringForm.concept" />
+
+        @if (showErrors() && recurringForm.concept().invalid()) {
+        <small class="recurring-form__error"
+               role="alert">
+            {{ recurringForm.concept().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="recurring-form__field">
+        <label for="edit-recurring-day">
+            Día del mes <span aria-hidden="true">*</span>
+        </label>
+
+        <p-select inputId="edit-recurring-day"
+                  [options]="dayOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [formField]="recurringForm.dayOfMonth"
+                  [fluid]="true" />
+
+        @if (showErrors() && recurringForm.dayOfMonth().invalid()) {
+        <small class="recurring-form__error"
+               role="alert">
+            {{ recurringForm.dayOfMonth().errors()[0]?.message }}
+        </small>
+        }
+    </div>
+
+    <div class="recurring-form__dates">
+        <div class="recurring-form__field">
+            <label for="edit-recurring-start">
+                Fecha de inicio <span aria-hidden="true">*</span>
+            </label>
+
+            <input id="edit-recurring-start"
+                   type="date"
+                   [formField]="recurringForm.startDate" />
+
+            @if (showErrors() && recurringForm.startDate().invalid()) {
+            <small class="recurring-form__error"
+                   role="alert">
+                {{ recurringForm.startDate().errors()[0]?.message }}
+            </small>
+            }
+        </div>
+
+        <div class="recurring-form__field">
+            <label for="edit-recurring-end">
+                Fecha de fin
+            </label>
+
+            <input id="edit-recurring-end"
+                   type="date"
+                   [formField]="recurringForm.endDate" />
+
+            <small class="recurring-form__help">
+                Déjala vacía para no establecer una fecha final.
+            </small>
+
+            @if (showErrors() && recurringForm.endDate().invalid()) {
+            <small class="recurring-form__error"
+                   role="alert">
+                {{ recurringForm.endDate().errors()[0]?.message }}
+            </small>
+            }
+        </div>
+    </div>
+
+    @if (recurringForm().errors().length > 0) {
+    <p class="recurring-form__error"
+       role="alert">
+        {{ recurringForm().errors()[0]?.message }}
+    </p>
+    }
+
+    <div class="recurring-form__actions">
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="recurringForm().submitting()"
+                (click)="cancel()">
+            Cancelar
+        </button>
+
+        <button pButton
+                type="submit"
+                [disabled]="recurringForm().submitting()">
+            {{ recurringForm().submitting()
+                ? 'Guardando...'
+                : 'Guardar cambios' }}
+        </button>
+    </div>
+</form>

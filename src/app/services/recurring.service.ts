@@ -6,6 +6,8 @@ import type CreateRecurringResponse from '@interfaces/recurring/create-recurring
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusRequest from '@interfaces/recurring/set-recurring-status-request.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
+import type UpdateRecurringRequest from '@interfaces/recurring/update-recurring-request.interface';
+import type UpdateRecurringResponse from '@interfaces/recurring/update-recurring-response.interface';
 import type { Observable } from 'rxjs';
 
 @Service()
@@ -39,5 +41,13 @@ export default class RecurringService {
    */
   setRecurringStatus(data: SetRecurringStatusRequest): Observable<SetRecurringStatusResponse> {
     return this.http.post<SetRecurringStatusResponse>(`${this.apiUrl}/recurring/status`, data);
+  }
+
+  /**
+   * Actualiza una plantilla recurrente.
+   * Las ocurrencias históricas permanecen intactas.
+   */
+  updateRecurring(data: UpdateRecurringRequest): Observable<UpdateRecurringResponse> {
+    return this.http.post<UpdateRecurringResponse>(`${this.apiUrl}/recurring/update`, data);
   }
 }
