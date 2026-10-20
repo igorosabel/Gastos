@@ -1,6 +1,6 @@
 <div class="recurring">
     <header class="recurring__heading">
-        <div>
+        <div class="recurring__heading-title">
             <h1>Movimientos recurrentes</h1>
             <p>
                 Consulta los ingresos y gastos que se
@@ -8,25 +8,55 @@
             </p>
         </div>
 
-        @if (spaceStore.selectedId() !== null) {
-        <button pButton
-                type="button"
-                severity="secondary"
-                variant="outlined"
-                [disabled]="loading()"
-                (click)="reload()">
-            <svg data-p-icon="refresh"
-                 [size]="16"
-                 aria-hidden="true"></svg>
-            <span>Actualizar</span>
-        </button>
-        }
+        <div class="recurring__heading-actions">
+            @if (spaceStore.selectedId() !== null) {
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [disabled]="loading() || creatingRecurring()"
+                    (click)="reload()">
+                <svg data-p-icon="refresh"
+                     [size]="16"
+                     aria-hidden="true"></svg>
+                <span>Actualizar</span>
+            </button>
+            }
+
+            @if (spaceStore.selectedId() !== null &&
+            !spaceStore.loading() &&
+            !spaceStore.error()) {
+            <button pButton
+                    type="button"
+                    [disabled]="loading() ||
+                                creatingRecurring() ||
+                                error() !== null ||
+                                categories().length === 0"
+                    (click)="openCreateRecurring()">
+                Nuevo recurrente
+            </button>
+            }
+        </div>
     </header>
 
     <a routerLink="/transactions"
        class="recurring__back">
         Volver a movimientos
     </a>
+
+    @if (creationMessage()) {
+    <p class="recurring__success"
+       role="status">
+        {{ creationMessage() }}
+    </p>
+    }
+
+    @if (creatingRecurring() && spaceStore.selectedId(); as spaceId) {
+    <app-create-recurring [spaceId]="spaceId"
+                          [categories]="categories()"
+                          (created)="onRecurringCreated($event)"
+                          (cancelled)="cancelCreateRecurring()" />
+    }
 
     @if (spaceStore.loading()) {
     <p class="recurring__muted"
@@ -74,6 +104,14 @@
                 </p>
             </div>
         </div>
+
+        @if (categories().length === 0) {
+        <p class="recurring__muted">
+            Para crear un recurrente necesitas una categoría.
+            Puedes crearla desde
+            <a routerLink="/categories">Categorías</a>.
+        </p>
+        }
 
         @if (recurring().length === 0) {
         <p class="recurring__muted">

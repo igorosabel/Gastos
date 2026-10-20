@@ -1685,4 +1685,26 @@ describe('Transactions', (): void => {
 
     expect(actions.querySelector('.transactions__recurring-link')).not.toBeNull();
   });
+
+  it('incluye etiquetas compactas y accesibles en las acciones', (): void => {
+    const recurring: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
+      '.transactions__recurring-link',
+    );
+
+    expect(recurring?.getAttribute('aria-label')).toBe('Ver recurrentes');
+
+    expect(recurring?.querySelector('.transactions__label-mobile')?.textContent?.trim()).toBe(
+      'Recurrentes',
+    );
+
+    const newButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '.transactions__heading-actions button[aria-label="Nuevo movimiento"]',
+    );
+
+    expect(newButton).not.toBeNull();
+
+    expect(newButton?.querySelector('.transactions__label-mobile')?.textContent?.trim()).toBe(
+      'Nuevo',
+    );
+  });
 });

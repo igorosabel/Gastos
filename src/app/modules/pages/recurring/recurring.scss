@@ -24,12 +24,31 @@
         margin: 0;
         color: var(--p-text-muted-color);
     }
+}
+
+.recurring__heading-title {
+    flex: 1;
+    min-width: 0;
+}
+
+.recurring__heading-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.75rem;
 
     button {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
     }
+}
+
+.recurring__success {
+    margin: 0;
+    color: var(--p-primary-color);
+    font-weight: 600;
 }
 
 .recurring__back {
@@ -212,5 +231,11 @@
 
     .recurring__item {
         padding: 1rem;
+    }
+
+    .recurring__heading-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 0.5rem;
     }
 }

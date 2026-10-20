@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   signal,
@@ -16,6 +17,7 @@ import type RecurringResponse from '@interfaces/recurring/recurring-response.int
 import type Category from '@model/categories/category.model';
 import type RecurringModel from '@model/recurring/recurring.model';
 import { formatMoney } from '@model/reports/money';
+import CreateRecurring from '@modules/recurring/create-recurring/create-recurring';
 import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import RecurringService from '@services/recurring.service';
@@ -24,26 +26,25 @@ import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-recurring',
-  imports: [RouterLink, ButtonDirective, Refresh],
+  imports: [RouterLink, ButtonDirective, Refresh, CreateRecurring],
   templateUrl: './recurring.html',
   styleUrl: './recurring.scss',
 })
 export default class Recurring {
   readonly spaceStore: SpaceStore = inject(SpaceStore);
-
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly recurringService: RecurringService = inject(RecurringService);
   private readonly categoriesService: CategoriesService = inject(CategoriesService);
+  private readonly destroyRef: DestroyRef = inject(DestroyRef);
 
   readonly recurring: WritableSignal<RecurringModel[]> = signal<RecurringModel[]>([]);
-
   readonly categories: WritableSignal<Category[]> = signal<Category[]>([]);
-
   readonly loading: WritableSignal<boolean> = signal<boolean>(false);
-
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
-
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
+  readonly creatingRecurring: WritableSignal<boolean> = signal<boolean>(false);
+  readonly creationMessage: WritableSignal<string | null> = signal<string | null>(null);
+  private creationMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   readonly activeCount: Signal<number> = computed(
     (): number => this.recurring().filter((item: RecurringModel): boolean => item.active).length,
@@ -54,8 +55,36 @@ export default class Recurring {
   );
 
   readonly formatMoney: (amount: string) => string = formatMoney;
+  private previousSpaceId: number | null = null;
+  private previousToken: string | null = null;
+  private previousUserId: number | null = null;
 
   constructor() {
+    this.destroyRef.onDestroy((): void => {
+      this.cancelCreationMessageTimeout();
+    });
+
+    effect((): void => {
+      const spaceId: number | null = this.spaceStore.selectedId();
+      const token: string | null = this.authStore.token();
+      const userId: number | null = this.authStore.user()?.id ?? null;
+
+      if (
+        spaceId === this.previousSpaceId &&
+        token === this.previousToken &&
+        userId === this.previousUserId
+      ) {
+        return;
+      }
+
+      this.previousSpaceId = spaceId;
+      this.previousToken = token;
+      this.previousUserId = userId;
+
+      this.creatingRecurring.set(false);
+      this.clearCreationMessage();
+    });
+
     effect((onCleanup): void => {
       const spaceId: number | null = this.spaceStore.selectedId();
       const token: string | null = this.authStore.token();
@@ -141,12 +170,67 @@ export default class Recurring {
     if (
       this.spaceStore.selectedId() === null ||
       this.authStore.token() === null ||
-      this.loading()
+      this.loading() ||
+      this.creatingRecurring()
     ) {
       return;
     }
 
     this.refreshVersion.update((version: number): number => version + 1);
+  }
+
+  openCreateRecurring(): void {
+    if (
+      this.spaceStore.selectedId() === null ||
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingRecurring() ||
+      this.categories().length === 0
+    ) {
+      return;
+    }
+
+    this.clearCreationMessage();
+    this.creatingRecurring.set(true);
+  }
+
+  cancelCreateRecurring(): void {
+    this.creatingRecurring.set(false);
+  }
+
+  onRecurringCreated(item: RecurringModel): void {
+    if (!this.creatingRecurring() || item.space_id !== this.spaceStore.selectedId()) {
+      return;
+    }
+
+    this.creatingRecurring.set(false);
+
+    this.showCreationMessage(`Se ha creado el recurrente «${item.concept}».`);
+
+    this.refreshVersion.update((version: number): number => version + 1);
+  }
+
+  private cancelCreationMessageTimeout(): void {
+    if (this.creationMessageTimeout !== null) {
+      clearTimeout(this.creationMessageTimeout);
+      this.creationMessageTimeout = null;
+    }
+  }
+
+  private clearCreationMessage(): void {
+    this.cancelCreationMessageTimeout();
+    this.creationMessage.set(null);
+  }
+
+  private showCreationMessage(message: string): void {
+    this.clearCreationMessage();
+
+    this.creationMessage.set(message);
+
+    this.creationMessageTimeout = setTimeout((): void => {
+      this.creationMessageTimeout = null;
+      this.creationMessage.set(null);
+    }, 4000);
   }
 
   /**

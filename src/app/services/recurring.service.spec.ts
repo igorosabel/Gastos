@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
+import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import RecurringService from '@services/recurring.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -75,5 +76,67 @@ describe('RecurringService', (): void => {
       error: null,
       message: null,
     } satisfies RecurringResponse);
+  });
+
+  it('crea una plantilla mensual activa mediante POST', (): void => {
+    const response: CreateRecurringResponse = {
+      success: true,
+      recurring: {
+        id: 50,
+        space_id: 12,
+        category_id: 7,
+        type: 'expense',
+        amount: '33.00',
+        concept: 'Electricidad',
+        day_of_month: 20,
+        start_date: '2026-10-01',
+        end_date: null,
+        active: true,
+      },
+      error: null,
+      message: null,
+    };
+
+    let result: CreateRecurringResponse | null = null;
+
+    service
+      .createRecurring({
+        spaceId: 12,
+        categoryId: 7,
+        type: 'expense',
+        amount: '33.00',
+        concept: 'Electricidad',
+        dayOfMonth: 20,
+        startDate: '2026-10-01',
+        endDate: null,
+      })
+      .subscribe({
+        next: (value: CreateRecurringResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/recurring`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      categoryId: 7,
+      type: 'expense',
+      amount: '33.00',
+      concept: 'Electricidad',
+      dayOfMonth: 20,
+      startDate: '2026-10-01',
+      endDate: null,
+    });
+
+    expect(request.request.body).not.toHaveProperty('active');
+
+    request.flush(response, {
+      status: 201,
+      statusText: 'Created',
+    });
+
+    expect(result).toEqual(response);
   });
 });

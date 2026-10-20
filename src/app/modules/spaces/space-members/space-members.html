@@ -1,5 +1,5 @@
-
-<section class="members" aria-labelledby="members-title">
+<section class="members"
+         aria-labelledby="members-title">
     <div class="members__heading">
         <div>
             <h2 id="members-title">Miembros</h2>
@@ -17,11 +17,13 @@
     </div>
 
     @if (loading()) {
-    <p class="members__muted" role="status">
+    <p class="members__muted"
+       role="status">
         Cargando miembros...
     </p>
     } @else if (error()) {
-    <div class="members__error" role="alert">
+    <div class="members__error"
+         role="alert">
         <p>{{ error() }}</p>
 
         <button pButton
@@ -42,7 +44,9 @@
             <div class="members__row">
                 <div class="members__details">
                     <strong>{{ member.name }}</strong>
-                    <span>Se unió: {{ member.joined_at }}</span>
+                    <time [attr.datetime]="member.joined_at.slice(0, 10)">
+                        {{ member.joined_at.slice(0, 10) }}
+                    </time>
                 </div>
 
                 <div class="members__controls">
@@ -51,7 +55,7 @@
                     </span>
 
                     @if (!member.is_owner &&
-                         confirmationId() !== member.id) {
+                    confirmationId() !== member.id) {
                     <button pButton
                             type="button"
                             severity="danger"
@@ -81,7 +85,8 @@
                 </p>
 
                 @if (removeError()) {
-                <p class="members__remove-error" role="alert">
+                <p class="members__remove-error"
+                   role="alert">
                     {{ removeError() }}
                 </p>
                 }

@@ -167,6 +167,7 @@
     border: 1px solid var(--p-content-border-color);
     border-radius: 0.75rem;
     background: var(--p-content-background);
+    min-width: 0;
 
     h2 {
         margin: 0;
@@ -178,6 +179,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+    min-width: 0;
 }
 
 .transactions__filter-field {
@@ -193,7 +195,10 @@
 
     input {
         box-sizing: border-box;
+        display: block;
         width: 100%;
+        min-width: 0;
+        max-width: 100%;
         min-height: 2.5rem;
         padding: 0.5rem 0.75rem;
         border: 1px solid var(--p-inputtext-border-color);
@@ -264,6 +269,14 @@
     gap: 0.75rem;
 }
 
+.transactions__label-desktop {
+    display: inline;
+}
+
+.transactions__label-mobile {
+    display: none;
+}
+
 @media (max-width: 640px) {
     .transactions__confirmation-actions button {
         flex: 1;
@@ -276,8 +289,29 @@
 
     .transactions__heading-actions {
         width: 100%;
-        justify-content: flex-start;
-        gap: 0.5rem;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 0.375rem;
+
+        >a,
+        >button {
+            flex-shrink: 0;
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        >button {
+            justify-content: center;
+            padding-inline: 0.75rem;
+        }
+    }
+
+    .transactions__label-desktop {
+        display: none;
+    }
+
+    .transactions__label-mobile {
+        display: inline;
     }
 
     .transactions__content {

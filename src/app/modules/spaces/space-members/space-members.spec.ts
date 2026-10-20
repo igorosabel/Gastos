@@ -360,4 +360,22 @@ describe('SpaceMembers', () => {
     // No debe recargar el listado utilizando la sesión anterior.
     expect(service.getMembers).toHaveBeenCalledTimes(2);
   });
+
+  it('muestra solo la fecha de incorporación', async (): Promise<void> => {
+    await loadGuest();
+    fixture.detectChanges();
+
+    const dates: NodeListOf<HTMLTimeElement> =
+      fixture.nativeElement.querySelectorAll('.members__details time');
+
+    expect(dates).toHaveLength(2);
+
+    expect(dates[1]?.textContent?.trim()).toBe('2026-10-17');
+    expect(dates[1]?.getAttribute('datetime')).toBe('2026-10-17');
+
+    const content: string = fixture.nativeElement.textContent;
+
+    expect(content).not.toContain('Se unió:');
+    expect(content).not.toContain('10:15:00');
+  });
 });

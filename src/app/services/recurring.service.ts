@@ -1,6 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
+import type CreateRecurringRequest from '@interfaces/recurring/create-recurring-request.interface';
+import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type { Observable } from 'rxjs';
 
@@ -19,5 +21,12 @@ export default class RecurringService {
         spaceId: String(spaceId),
       },
     });
+  }
+
+  /**
+   * Crea una plantilla mensual recurrente activa.
+   */
+  createRecurring(data: CreateRecurringRequest): Observable<CreateRecurringResponse> {
+    return this.http.post<CreateRecurringResponse>(`${this.apiUrl}/recurring`, data);
   }
 }

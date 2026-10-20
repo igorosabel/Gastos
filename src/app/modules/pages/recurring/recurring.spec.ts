@@ -385,4 +385,213 @@ describe('Recurring', (): void => {
     expect(component.recurring()).toEqual([]);
     expect(component.error()).toBe('No se han podido obtener los movimientos recurrentes.');
   });
+
+  it('abre el formulario de creación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(true);
+
+    expect(fixture.nativeElement.querySelector('app-create-recurring')).not.toBeNull();
+
+    expect(fixture.nativeElement.textContent).toContain('Nuevo movimiento recurrente');
+  });
+
+  it('cancela la creación sin modificar las plantillas', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    component.cancelCreateRecurring();
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.recurring()).toHaveLength(2);
+
+    expect(fixture.nativeElement.querySelector('app-create-recurring')).toBeNull();
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring`);
+  });
+
+  it('no abre el formulario durante una carga', async (): Promise<void> => {
+    await loadSpaces();
+
+    component.openCreateRecurring();
+
+    expect(component.creatingRecurring()).toBe(false);
+
+    completeLoad(2);
+  });
+
+  it('no permite crear sin categorías disponibles', async (): Promise<void> => {
+    await loadSpaces();
+
+    const recurring = recurringRequest(2);
+    const categories = categoryRequest(2);
+
+    recurring.flush(recurringResponse(2, []));
+    categories.flush({
+      success: true,
+      categories: [],
+      error: null,
+      message: null,
+    } satisfies CategoriesResponse);
+
+    fixture.detectChanges();
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(fixture.nativeElement.textContent).toContain(
+      'Para crear un recurrente necesitas una categoría.',
+    );
+  });
+
+  it('recarga el listado después de crear una plantilla', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    const created: RecurringModel = {
+      id: 90,
+      space_id: 2,
+      category_id: 200,
+      type: 'expense',
+      amount: '33.00',
+      concept: 'Electricidad',
+      day_of_month: 20,
+      start_date: '2026-10-01',
+      end_date: null,
+      active: true,
+    };
+
+    component.onRecurringCreated(created);
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.loading()).toBe(true);
+
+    const updated: RecurringModel[] = [...recurringResponse(2).recurring, created];
+
+    completeLoad(2, updated);
+
+    expect(component.recurring()).toHaveLength(3);
+    expect(component.activeCount()).toBe(2);
+
+    expect(component.creationMessage()).toBe('Se ha creado el recurrente «Electricidad».');
+  });
+
+  it('ignora una plantilla creada en otro espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+
+    const external: RecurringModel = {
+      id: 90,
+      space_id: 8,
+      category_id: 800,
+      type: 'expense',
+      amount: '33.00',
+      concept: 'Otro espacio',
+      day_of_month: 20,
+      start_date: '2026-10-01',
+      end_date: null,
+      active: true,
+    };
+
+    component.onRecurringCreated(external);
+    fixture.detectChanges();
+
+    expect(component.creationMessage()).toBeNull();
+    expect(component.recurring()).toHaveLength(2);
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring`);
+  });
+
+  it('cierra el formulario al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.creationMessage()).toBeNull();
+
+    completeLoad(8);
+  });
+
+  it('cierra el formulario al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.recurring()).toEqual([]);
+    expect(component.creationMessage()).toBeNull();
+  });
+
+  it('oculta la confirmación de creación después de cuatro segundos', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.openCreateRecurring();
+    fixture.detectChanges();
+
+    const created: RecurringModel = {
+      id: 90,
+      space_id: 2,
+      category_id: 200,
+      type: 'expense',
+      amount: '33.00',
+      concept: 'Electricidad',
+      day_of_month: 20,
+      start_date: '2026-10-01',
+      end_date: null,
+      active: true,
+    };
+
+    vi.useFakeTimers();
+
+    try {
+      component.onRecurringCreated(created);
+      fixture.detectChanges();
+
+      // Completamos la recarga iniciada tras crear.
+      completeLoad(2, [...recurringResponse(2).recurring, created]);
+
+      expect(component.creationMessage()).toBe('Se ha creado el recurrente «Electricidad».');
+
+      vi.advanceTimersByTime(3999);
+
+      expect(component.creationMessage()).not.toBeNull();
+
+      vi.advanceTimersByTime(1);
+      fixture.detectChanges();
+
+      expect(component.creationMessage()).toBeNull();
+
+      expect(fixture.nativeElement.querySelector('.recurring__success')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
