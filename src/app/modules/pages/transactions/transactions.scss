@@ -263,10 +263,10 @@
     min-height: 2.75rem;
     padding: 0 0.75rem;
 
-    border: 1px solid var(--p-inputtext-border-color);
-    border-radius: var(--p-inputtext-border-radius);
-    background: var(--p-inputtext-background);
-    color: var(--p-inputtext-color);
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.375rem;
+    background: var(--p-content-background);
+    color: var(--p-text-color);
 
     &:focus-within {
         border-color: var(--p-primary-color);
