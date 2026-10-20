@@ -230,20 +230,58 @@
         font-weight: 600;
     }
 
-    input {
-        box-sizing: border-box;
+    input[type='date'] {
         display: block;
+        box-sizing: border-box;
+        flex: 1 1 auto;
         width: 100%;
         min-width: 0;
         max-width: 100%;
+        height: 2.5rem;
         min-height: 2.5rem;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid var(--p-inputtext-border-color);
-        border-radius: var(--p-inputtext-border-radius);
-        background: var(--p-inputtext-background);
-        color: var(--p-inputtext-color);
+        margin: 0;
+        padding: 0;
+        border: 0;
+        border-radius: 0;
+        outline: none;
+        background: transparent;
+        color: inherit;
         color-scheme: light dark;
+        font: inherit;
+        font-size: 1rem;
+        text-align: left;
     }
+}
+
+.transactions__date-control {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 2.75rem;
+    padding: 0 0.75rem;
+
+    border: 1px solid var(--p-inputtext-border-color);
+    border-radius: var(--p-inputtext-border-radius);
+    background: var(--p-inputtext-background);
+    color: var(--p-inputtext-color);
+
+    &:focus-within {
+        border-color: var(--p-primary-color);
+        outline: 2px solid var(--p-primary-color);
+        outline-offset: 1px;
+    }
+}
+
+.transactions__date-control input[type='date']::-webkit-date-and-time-value {
+    min-height: 1.5em;
+    text-align: left;
+}
+
+.transactions__date-control input[type='date']::-webkit-datetime-edit {
+    padding: 0;
 }
 
 .transactions__filter-error {
@@ -430,26 +468,5 @@
 
     .transactions__action-label {
         display: none;
-    }
-}
-
-/*
- * WebKit en iOS puede calcular incorrectamente el ancho
- * de input[type="date"] cuando tiene width: 100%
- * y padding aplicado directamente.
- *
- * Quitamos el padding del input y lo trasladamos
- * al contenido interno del control.
- */
-@supports (-webkit-touch-callout: none) {
-    .transactions__filter-field input[type='date'] {
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        padding: 0;
-    }
-
-    .transactions__filter-field input[type='date']::-webkit-date-and-time-value {
-        padding-inline: 0.75rem;
     }
 }

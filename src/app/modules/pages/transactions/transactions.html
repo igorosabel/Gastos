@@ -95,9 +95,11 @@
             <div class="transactions__filter-field">
                 <label for="transactions-date-from">Desde</label>
 
-                <input id="transactions-date-from"
-                       type="date"
-                       [formField]="filtersForm.dateFrom" />
+                <div class="transactions__date-control">
+                    <input id="transactions-date-from"
+                           type="date"
+                           [formField]="filtersForm.dateFrom" />
+                </div>
 
                 @if (filtersForm.dateFrom().touched() &&
                 filtersForm.dateFrom().invalid()) {
@@ -111,9 +113,11 @@
             <div class="transactions__filter-field">
                 <label for="transactions-date-to">Hasta</label>
 
-                <input id="transactions-date-to"
-                       type="date"
-                       [formField]="filtersForm.dateTo" />
+                <div class="transactions__date-control">
+                    <input id="transactions-date-to"
+                           type="date"
+                           [formField]="filtersForm.dateTo" />
+                </div>
 
                 @if (filtersForm.dateTo().touched() &&
                 filtersForm.dateTo().invalid()) {

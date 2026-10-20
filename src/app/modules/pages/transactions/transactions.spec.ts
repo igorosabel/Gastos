@@ -1754,17 +1754,28 @@ describe('Transactions', (): void => {
     expect(deleteButton?.querySelector('svg[data-p-icon="trash"]')).not.toBeNull();
   });
 
-  it('conserva los filtros de fecha nativos', async (): Promise<void> => {
+  it('conserva los filtros de fecha nativos dentro de sus contenedores', async (): Promise<void> => {
     await loadSpaces();
     completeLoad(2);
 
-    const from: HTMLInputElement | null =
-      fixture.nativeElement.querySelector('#transactions-date-from');
+    const from: HTMLInputElement | null = fixture.nativeElement.querySelector(
+      '.transactions__date-control #transactions-date-from',
+    );
 
-    const to: HTMLInputElement | null =
-      fixture.nativeElement.querySelector('#transactions-date-to');
+    const to: HTMLInputElement | null = fixture.nativeElement.querySelector(
+      '.transactions__date-control #transactions-date-to',
+    );
+
+    expect(from).not.toBeNull();
+    expect(to).not.toBeNull();
 
     expect(from?.type).toBe('date');
     expect(to?.type).toBe('date');
+
+    const containers: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll(
+      '.transactions__date-control',
+    );
+
+    expect(containers).toHaveLength(2);
   });
 });
