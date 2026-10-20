@@ -354,6 +354,9 @@ describe('RecurringOccurrences', (): void => {
     pendingRequest().flush(response(2, period, []));
     fixture.detectChanges();
 
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+    const previousVersion: number = transactionRefresh.version();
+
     component.requestGeneration();
     component.confirmGeneration();
     fixture.detectChanges();
@@ -379,6 +382,7 @@ describe('RecurringOccurrences', (): void => {
       error: null,
       message: null,
     } satisfies GenerateRecurringSpaceResponse);
+    expect(transactionRefresh.version()).toBe(previousVersion + 1);
 
     fixture.detectChanges();
 
@@ -443,6 +447,9 @@ describe('RecurringOccurrences', (): void => {
   });
 
   it('permite reintentar manualmente después de un fallo parcial', (): void => {
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+    const previousVersion: number = transactionRefresh.version();
+
     pendingRequest().flush(response(2, period, []));
     fixture.detectChanges();
 
@@ -464,6 +471,7 @@ describe('RecurringOccurrences', (): void => {
         statusText: 'Internal Server Error',
       },
     );
+    expect(transactionRefresh.version()).toBe(previousVersion + 1);
 
     fixture.detectChanges();
 
@@ -503,6 +511,7 @@ describe('RecurringOccurrences', (): void => {
       error: null,
       message: null,
     } satisfies GenerateRecurringSpaceResponse);
+    expect(transactionRefresh.version()).toBe(previousVersion + 1);
 
     fixture.detectChanges();
 
@@ -666,7 +675,7 @@ describe('RecurringOccurrences', (): void => {
     expect(component.resolutionMessage()).toBe('Se ha confirmado «Electricidad» correctamente.');
   });
 
-  it('omite una ocurrencia sin generar cambios contables', (): void => {
+  it('omite una ocurrencia y notifica el cambio de previsión', (): void => {
     const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
 
     const previousVersion: number = transactionRefresh.version();
@@ -699,7 +708,7 @@ describe('RecurringOccurrences', (): void => {
     expect(component.occurrences()[0]?.status).toBe('skipped');
     expect(component.occurrences()[0]?.transaction_id).toBeNull();
 
-    expect(transactionRefresh.version()).toBe(previousVersion);
+    expect(transactionRefresh.version()).toBe(previousVersion + 1);
 
     expect(component.resolutionMessage()).toBe('Se ha omitido «Electricidad» correctamente.');
   });
@@ -889,5 +898,36 @@ describe('RecurringOccurrences', (): void => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it('no notifica cambios económicos si no se generan ocurrencias nuevas', (): void => {
+    const transactionRefresh: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    const previousVersion: number = transactionRefresh.version();
+
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/generate-space`).flush({
+      success: true,
+      created: 0,
+      existing: 1,
+      skipped: 0,
+      total: 1,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    expect(transactionRefresh.version()).toBe(previousVersion);
+
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    expect(component.generationResult()?.existing).toBe(1);
   });
 });

@@ -520,4 +520,52 @@ describe('Dashboard', (): void => {
     expect(component.loading()).toBe(false);
     expect(component.forecast()?.space_id).toBe(2);
   });
+
+  it('actualiza la previsión al recibir una notificación económica', async (): Promise<void> => {
+    await loadSpaces();
+    completeDashboard(2);
+
+    expect(component.forecast()?.projected.expense).toBe('2000.00');
+
+    const refreshService: TransactionRefreshService = TestBed.inject(TransactionRefreshService);
+
+    refreshService.notifyChanged();
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(true);
+
+    const month: string = component.month;
+
+    const forecast = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/forecast?spaceId=2&month=${month}`,
+    );
+
+    const categories = httpTesting.expectOne(
+      `${environment.apiUrl}/reports/monthly/categories?spaceId=2&month=${month}`,
+    );
+
+    const transactions = httpTesting.expectOne(
+      `${environment.apiUrl}/transactions?spaceId=2&page=1`,
+    );
+
+    const updated: MonthlyForecastResponse = forecastResponse(2, month);
+
+    updated.report.projected = {
+      ...updated.report.projected,
+      expense: '1900.00',
+      balance: '600.00',
+    };
+
+    forecast.flush(updated);
+    categories.flush(categoriesResponse(2, month));
+    transactions.flush(transactionsResponse(2));
+
+    fixture.detectChanges();
+
+    expect(component.loading()).toBe(false);
+    expect(component.forecast()?.projected.expense).toBe('1900.00');
+    expect(component.forecast()?.projected.balance).toBe('600.00');
+
+    expect(fixture.nativeElement.textContent).toContain('600,00 €');
+  });
 });

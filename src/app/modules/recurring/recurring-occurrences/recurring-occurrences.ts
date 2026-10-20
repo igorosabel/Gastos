@@ -362,8 +362,18 @@ export default class RecurringOccurrences {
                 'Algunas ocurrencias pueden haberse guardado. ' +
                 'Comprueba el listado antes de reintentar.',
             );
+
+            // Resultado incierto: refrescamos las vistas económicas
+            // por si se han creado ocurrencias.
+            this.transactionRefresh.notifyChanged();
           } else {
             this.generationResult.set(response);
+
+            // Solo las ocurrencias nuevas modifican la previsión.
+            // Las existentes y no aplicables no añaden importes.
+            if (response.created > 0) {
+              this.transactionRefresh.notifyChanged();
+            }
           }
 
           this.reloadAfterGeneration();
@@ -377,6 +387,12 @@ export default class RecurringOccurrences {
           this.generationSubscription = null;
 
           this.generationError.set(this.getGenerationError(error));
+
+          // Una generación fallida puede haber dejado resultados
+          // parciales si hubo un error operativo en el backend.
+          if (!(error instanceof HttpErrorResponse) || error.status === 0 || error.status >= 500) {
+            this.transactionRefresh.notifyChanged();
+          }
 
           this.reloadAfterGeneration();
         },
@@ -490,9 +506,10 @@ export default class RecurringOccurrences {
             return;
           }
 
-          if (action === 'confirm') {
-            this.transactionRefresh.notifyChanged();
-          }
+          // Tanto confirmar como omitir modifican el conjunto
+          // de ocurrencias pendientes que utiliza la previsión.
+          // Confirmar también crea un movimiento contable real.
+          this.transactionRefresh.notifyChanged();
 
           this.showResolutionMessage(
             action === 'confirm'

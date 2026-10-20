@@ -7,7 +7,11 @@ export default class TransactionRefreshService {
   readonly version: Signal<number> = this.versionState.asReadonly();
 
   /**
-   * Notifica que han cambiado los movimientos.
+   * Notifica cambios que afectan a los datos económicos:
+   * movimientos reales u ocurrencias recurrentes pendientes.
+   *
+   * Las pantallas que consumen esta señal vuelven a consultar
+   * sus datos al backend.
    */
   notifyChanged(): void {
     this.versionState.update((version: number): number => version + 1);
