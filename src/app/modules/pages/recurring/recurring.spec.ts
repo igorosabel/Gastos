@@ -11,6 +11,7 @@ import AuthStore from '@auth/auth.store';
 import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
+import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
@@ -1056,5 +1057,98 @@ describe('Recurring', (): void => {
     completeLoad(8);
 
     httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences`);
+  });
+
+  it('impide ocultar las ocurrencias durante la generación', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    const initial: TestRequest = httpTesting.expectOne(
+      (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+    );
+
+    initial.flush({
+      success: true,
+      occurrences: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies RecurringOccurrencesResponse);
+
+    fixture.detectChanges();
+
+    const generateButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '.occurrences__generation-heading button',
+    );
+
+    if (generateButton === null) {
+      throw new Error('No se ha encontrado el botón de generación.');
+    }
+
+    generateButton.click();
+    fixture.detectChanges();
+
+    const confirmButton: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '.occurrences__confirmation-actions button:last-child',
+    );
+
+    if (confirmButton === null) {
+      throw new Error('No se ha encontrado el botón de confirmación.');
+    }
+
+    confirmButton.click();
+    fixture.detectChanges();
+
+    expect(component.occurrencesBusy()).toBe(true);
+
+    component.toggleOccurrences();
+
+    expect(component.showingOccurrences()).toBe(true);
+
+    const generation: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    generation.flush({
+      success: true,
+      created: 0,
+      existing: 0,
+      skipped: 0,
+      total: 0,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    httpTesting
+      .expectOne(
+        (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+      )
+      .flush({
+        success: true,
+        occurrences: [],
+        total: 0,
+        page: 1,
+        page_size: 20,
+        total_pages: 0,
+        error: null,
+        message: null,
+      } satisfies RecurringOccurrencesResponse);
+
+    fixture.detectChanges();
+
+    expect(component.occurrencesBusy()).toBe(false);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    expect(component.showingOccurrences()).toBe(false);
   });
 });

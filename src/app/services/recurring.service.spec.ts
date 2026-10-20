@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
+import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
@@ -304,5 +305,42 @@ describe('RecurringService', (): void => {
       error: null,
       message: null,
     } satisfies RecurringOccurrencesResponse);
+  });
+
+  it('genera mensualidades de un espacio mediante POST', (): void => {
+    const response: GenerateRecurringSpaceResponse = {
+      success: true,
+      created: 2,
+      existing: 1,
+      skipped: 1,
+      total: 4,
+      error: null,
+      message: null,
+    };
+
+    let result: GenerateRecurringSpaceResponse | null = null;
+
+    service
+      .generateSpace({
+        spaceId: 12,
+        period: '2026-10-01',
+      })
+      .subscribe({
+        next: (value: GenerateRecurringSpaceResponse): void => {
+          result = value;
+        },
+      });
+
+    const request = httpTesting.expectOne(`${environment.apiUrl}/recurring/generate-space`);
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 12,
+      period: '2026-10-01',
+    });
+
+    request.flush(response);
+
+    expect(result).toEqual(response);
   });
 });

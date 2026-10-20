@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   signal,
+  viewChild,
   type Signal,
   type WritableSignal,
 } from '@angular/core';
@@ -76,6 +77,13 @@ export default class Recurring {
   private previousSpaceId: number | null = null;
   private previousToken: string | null = null;
   private previousUserId: number | null = null;
+
+  private readonly occurrencesView: Signal<RecurringOccurrences | undefined> =
+    viewChild(RecurringOccurrences);
+
+  readonly occurrencesBusy: Signal<boolean> = computed(
+    (): boolean => this.occurrencesView()?.generating() ?? false,
+  );
 
   constructor() {
     this.destroyRef.onDestroy((): void => {
@@ -183,7 +191,8 @@ export default class Recurring {
       this.error() !== null ||
       this.creatingRecurring() ||
       this.editingRecurring() !== null ||
-      this.statusPendingId() !== null
+      this.statusPendingId() !== null ||
+      this.occurrencesBusy()
     ) {
       return;
     }
@@ -214,7 +223,8 @@ export default class Recurring {
       this.loading() ||
       this.creatingRecurring() ||
       this.statusPendingId() !== null ||
-      this.editingRecurring() !== null
+      this.editingRecurring() !== null ||
+      this.occurrencesBusy()
     ) {
       return;
     }
@@ -230,7 +240,8 @@ export default class Recurring {
       this.creatingRecurring() ||
       this.categories().length === 0 ||
       this.statusPendingId() !== null ||
-      this.editingRecurring() !== null
+      this.editingRecurring() !== null ||
+      this.occurrencesBusy()
     ) {
       return;
     }
@@ -272,6 +283,7 @@ export default class Recurring {
       this.error() !== null ||
       this.creatingRecurring() ||
       this.editingRecurring() !== null ||
+      this.occurrencesBusy() ||
       this.statusPendingId() !== null ||
       current === undefined ||
       current.space_id !== spaceId ||
@@ -350,6 +362,7 @@ export default class Recurring {
       this.error() !== null ||
       this.creatingRecurring() ||
       this.editingRecurring() !== null ||
+      this.occurrencesBusy() ||
       this.statusPendingId() !== null ||
       current === undefined ||
       current.space_id !== spaceId ||

@@ -17,7 +17,8 @@
                     [disabled]="loading() ||
                                 creatingRecurring() ||
                                 statusPendingId() !== null ||
-                                editingRecurring() !== null
+                                editingRecurring() !== null ||
+                                occurrencesBusy()
                     "
                     (click)="reload()">
                 <svg data-p-icon="refresh"
@@ -37,7 +38,8 @@
                                 error() !== null ||
                                 categories().length === 0 ||
                                 statusPendingId() !== null ||
-                                editingRecurring() !== null
+                                editingRecurring() !== null ||
+                                occurrencesBusy()
                     "
                     (click)="openCreateRecurring()">
                 Nuevo recurrente
@@ -201,7 +203,8 @@
                             [disabled]="loading() ||
                                         creatingRecurring() ||
                                         editingRecurring() !== null ||
-                                        statusPendingId() !== null
+                                        statusPendingId() !== null ||
+                                        occurrencesBusy()
                             "
                             (click)="openEditRecurring(item)">
                         Editar
@@ -218,7 +221,8 @@
                             [disabled]="loading() ||
                                         creatingRecurring() ||
                                         statusPendingId() !== null ||
-                                        editingRecurring() !== null
+                                        editingRecurring() !== null ||
+                                        occurrencesBusy()
                             "
                             (click)="setRecurringStatus(item)">
                         @if (statusPendingId() === item.id) {
@@ -242,7 +246,9 @@
                     aria-controls="recurring-occurrences-section"
                     [disabled]="creatingRecurring() ||
                                 editingRecurring() !== null ||
-                                statusPendingId() !== null"
+                                statusPendingId() !== null ||
+                                occurrencesBusy()
+                    "
                     (click)="toggleOccurrences()">
                 {{ showingOccurrences()
                     ? 'Ocultar ocurrencias'

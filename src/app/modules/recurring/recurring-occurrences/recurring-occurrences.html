@@ -13,7 +13,7 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                [disabled]="loading()"
+                [disabled]="loading() || generating() || confirmingGeneration()"
                 (click)="reload()">
             Actualizar
         </button>
@@ -27,6 +27,7 @@
                 severity="secondary"
                 variant="outlined"
                 aria-label="Mes anterior"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="previousMonth()">
             Anterior
         </button>
@@ -38,6 +39,7 @@
                 severity="secondary"
                 variant="outlined"
                 aria-label="Mes siguiente"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="nextMonth()">
             Siguiente
         </button>
@@ -49,27 +51,116 @@
 
         <button type="button"
                 [attr.aria-pressed]="statusFilter() === 'all'"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="setStatus('all')">
             Todas
         </button>
 
         <button type="button"
                 [attr.aria-pressed]="statusFilter() === 'pending'"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="setStatus('pending')">
             Pendientes
         </button>
 
         <button type="button"
                 [attr.aria-pressed]="statusFilter() === 'confirmed'"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="setStatus('confirmed')">
             Confirmadas
         </button>
 
         <button type="button"
                 [attr.aria-pressed]="statusFilter() === 'skipped'"
+                [disabled]="generating() || confirmingGeneration()"
                 (click)="setStatus('skipped')">
             Omitidas
         </button>
+    </div>
+
+    <div class="occurrences__generation">
+
+        <div class="occurrences__generation-heading">
+            <div>
+                <h3>Generar mensualidades</h3>
+                <p class="occurrences__muted">
+                    Genera las ocurrencias del mes seleccionado
+                    para las plantillas activas del espacio.
+                </p>
+            </div>
+
+            <button pButton
+                    type="button"
+                    [disabled]="loading() ||
+                                error() !== null ||
+                                generating() ||
+                                confirmingGeneration()"
+                    (click)="requestGeneration()">
+                Generar mensualidades
+            </button>
+        </div>
+
+        @if (confirmingGeneration()) {
+        <div class="occurrences__confirmation">
+            <p>
+                ¿Quieres generar las mensualidades de
+                <strong>{{ monthLabel(month()) }}</strong>?
+            </p>
+
+            <p class="occurrences__muted">
+                Las ocurrencias existentes se reutilizarán.
+                Esta operación no crea movimientos
+                contables definitivos.
+            </p>
+
+            <div class="occurrences__confirmation-actions">
+                <button pButton
+                        type="button"
+                        severity="secondary"
+                        variant="outlined"
+                        (click)="cancelGeneration()">
+                    Cancelar
+                </button>
+
+                <button pButton
+                        type="button"
+                        (click)="confirmGeneration()">
+                    Confirmar generación
+                </button>
+            </div>
+        </div>
+        }
+
+        @if (generating()) {
+        <p class="occurrences__muted"
+           role="status">
+            Generando mensualidades...
+        </p>
+        }
+
+        @if (generationResult(); as result) {
+        <div class="occurrences__generation-result"
+             role="status">
+            <strong>Generación completada</strong>
+
+            <p>
+                {{ result.created }} nuevas ·
+                {{ result.existing }} existentes ·
+                {{ result.skipped }} no aplicables
+            </p>
+
+            <p class="occurrences__muted">
+                {{ result.total }} plantillas activas evaluadas.
+            </p>
+        </div>
+        }
+
+        @if (generationError()) {
+        <div class="occurrences__generation-error"
+             role="alert">
+            {{ generationError() }}
+        </div>
+        }
     </div>
 
     @if (loading()) {
@@ -152,7 +243,7 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                [disabled]="page() <= 1"
+                [disabled]="page() <= 1 || generating() || confirmingGeneration()"
                 (click)="previousPage()">
             Anterior
         </button>
@@ -165,7 +256,7 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                [disabled]="page() >= totalPages()"
+                [disabled]="page() >= totalPages() || generating() || confirmingGeneration()"
                 (click)="nextPage()">
             Siguiente
         </button>
@@ -173,8 +264,8 @@
     }
 
     <p class="occurrences__muted occurrences__note">
-        Consultar ocurrencias no genera movimientos.
-        Las pendientes se gestionarán en el siguiente
-        desarrollo.
+        Generar mensualidades crea ocurrencias, no movimientos
+        contables reales. Las ocurrencias pendientes podrán
+        confirmarse u omitirse en el siguiente desarrollo.
     </p>
 </section>

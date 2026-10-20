@@ -3,6 +3,8 @@ import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
 import type CreateRecurringRequest from '@interfaces/recurring/create-recurring-request.interface';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
+import type GenerateRecurringSpaceRequest from '@interfaces/recurring/generate-recurring-space-request.interface';
+import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesRequest from '@interfaces/recurring/recurring-occurrences-request.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
@@ -73,5 +75,19 @@ export default class RecurringService {
     return this.http.get<RecurringOccurrencesResponse>(`${this.apiUrl}/recurring/occurrences`, {
       params,
     });
+  }
+
+  /**
+   * Genera las ocurrencias de las plantillas activas
+   * del espacio para el periodo solicitado.
+   *
+   * La operación es idempotente por plantilla y periodo,
+   * pero no es atómica para todo el lote.
+   */
+  generateSpace(data: GenerateRecurringSpaceRequest): Observable<GenerateRecurringSpaceResponse> {
+    return this.http.post<GenerateRecurringSpaceResponse>(
+      `${this.apiUrl}/recurring/generate-space`,
+      data,
+    );
   }
 }

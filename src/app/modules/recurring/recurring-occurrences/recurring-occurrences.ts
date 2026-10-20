@@ -12,6 +12,7 @@ import {
 } from '@angular/core';
 import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
+import type GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringOccurrence from '@model/recurring/recurring-occurrence.model';
@@ -28,15 +29,14 @@ import type { Subscription } from 'rxjs';
   styleUrl: './recurring-occurrences.scss',
 })
 export default class RecurringOccurrences {
-  readonly spaceId: InputSignal<number> = input.required<number>();
-  readonly categories: InputSignal<Category[]> = input.required<Category[]>();
-
   private readonly spaceStore: SpaceStore = inject(SpaceStore);
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly recurringService: RecurringService = inject(RecurringService);
 
-  readonly month: WritableSignal<string> = signal<string>(getCurrentMonth());
+  readonly spaceId: InputSignal<number> = input.required<number>();
+  readonly categories: InputSignal<Category[]> = input.required<Category[]>();
 
+  readonly month: WritableSignal<string> = signal<string>(getCurrentMonth());
   readonly period: Signal<string> = computed((): string => `${this.month()}-01`);
 
   readonly statusFilter: WritableSignal<'all' | 'pending' | 'confirmed' | 'skipped'> = signal<
@@ -59,7 +59,42 @@ export default class RecurringOccurrences {
   readonly monthLabel: (month: string) => string = monthLabel;
   readonly formatMoney: (amount: string) => string = formatMoney;
 
+  readonly confirmingGeneration: WritableSignal<boolean> = signal<boolean>(false);
+  readonly generating: WritableSignal<boolean> = signal<boolean>(false);
+  readonly generationResult: WritableSignal<GenerateRecurringSpaceResponse | null> =
+    signal<GenerateRecurringSpaceResponse | null>(null);
+  readonly generationError: WritableSignal<string | null> = signal<string | null>(null);
+
+  private generationSubscription: Subscription | null = null;
+
   constructor() {
+    effect((onCleanup): void => {
+      const spaceId: number = this.spaceId();
+      const selectedId: number | null = this.spaceStore.selectedId();
+      const token: string | null = this.authStore.token();
+      const userId: number | undefined = this.authStore.user()?.id;
+      const period: string = this.period();
+
+      if (
+        selectedId !== spaceId ||
+        token === null ||
+        userId === undefined ||
+        !/^\d{4}-(0[1-9]|1[0-2])-01$/.test(period)
+      ) {
+        this.confirmingGeneration.set(false);
+      }
+
+      onCleanup((): void => {
+        this.generationSubscription?.unsubscribe();
+        this.generationSubscription = null;
+
+        this.generating.set(false);
+        this.confirmingGeneration.set(false);
+        this.generationResult.set(null);
+        this.generationError.set(null);
+      });
+    });
+
     effect((onCleanup): void => {
       const spaceId: number = this.spaceId();
       const token: string | null = this.authStore.token();
@@ -144,17 +179,25 @@ export default class RecurringOccurrences {
   }
 
   previousMonth(): void {
+    if (this.generating() || this.confirmingGeneration()) {
+      return;
+    }
+
     this.page.set(1);
     this.month.update((month: string): string => shiftMonth(month, -1));
   }
 
   nextMonth(): void {
+    if (this.generating() || this.confirmingGeneration()) {
+      return;
+    }
+
     this.page.set(1);
     this.month.update((month: string): string => shiftMonth(month, 1));
   }
 
   setStatus(status: 'all' | 'pending' | 'confirmed' | 'skipped'): void {
-    if (this.statusFilter() === status) {
+    if (this.statusFilter() === status || this.generating() || this.confirmingGeneration()) {
       return;
     }
 
@@ -163,7 +206,7 @@ export default class RecurringOccurrences {
   }
 
   previousPage(): void {
-    if (this.loading() || this.page() <= 1) {
+    if (this.loading() || this.page() <= 1 || this.generating() || this.confirmingGeneration()) {
       return;
     }
 
@@ -171,7 +214,12 @@ export default class RecurringOccurrences {
   }
 
   nextPage(): void {
-    if (this.loading() || this.page() >= this.totalPages()) {
+    if (
+      this.loading() ||
+      this.page() >= this.totalPages() ||
+      this.generating() ||
+      this.confirmingGeneration()
+    ) {
       return;
     }
 
@@ -182,12 +230,171 @@ export default class RecurringOccurrences {
     if (
       this.loading() ||
       this.spaceStore.selectedId() !== this.spaceId() ||
-      this.authStore.token() === null
+      this.authStore.token() === null ||
+      this.generating() ||
+      this.confirmingGeneration()
     ) {
       return;
     }
 
     this.refreshVersion.update((version: number): number => version + 1);
+  }
+
+  requestGeneration(): void {
+    if (
+      this.loading() ||
+      this.error() !== null ||
+      this.generating() ||
+      this.confirmingGeneration() ||
+      !this.hasCurrentContext()
+    ) {
+      return;
+    }
+
+    this.generationError.set(null);
+    this.generationResult.set(null);
+    this.confirmingGeneration.set(true);
+  }
+
+  cancelGeneration(): void {
+    if (this.generating()) {
+      return;
+    }
+
+    this.confirmingGeneration.set(false);
+  }
+
+  confirmGeneration(): void {
+    const token: string | null = this.authStore.token();
+    const userId: number | undefined = this.authStore.user()?.id;
+
+    if (
+      !this.confirmingGeneration() ||
+      this.generating() ||
+      this.loading() ||
+      this.error() !== null ||
+      !this.hasCurrentContext() ||
+      token === null ||
+      userId === undefined
+    ) {
+      return;
+    }
+
+    const spaceId: number = this.spaceId();
+    const period: string = this.period();
+
+    this.confirmingGeneration.set(false);
+    this.generating.set(true);
+    this.generationError.set(null);
+    this.generationResult.set(null);
+
+    this.generationSubscription = this.recurringService
+      .generateSpace({
+        spaceId,
+        period,
+      })
+      .subscribe({
+        next: (response: GenerateRecurringSpaceResponse): void => {
+          if (!this.isGenerationContext(spaceId, token, userId, period)) {
+            return;
+          }
+
+          this.generating.set(false);
+          this.generationSubscription = null;
+
+          if (!this.isValidGenerationResponse(response)) {
+            this.generationError.set(
+              'No se ha podido verificar el resultado de la generación. ' +
+                'Algunas ocurrencias pueden haberse guardado. ' +
+                'Comprueba el listado antes de reintentar.',
+            );
+          } else {
+            this.generationResult.set(response);
+          }
+
+          this.reloadAfterGeneration();
+        },
+        error: (error: unknown): void => {
+          if (!this.isGenerationContext(spaceId, token, userId, period)) {
+            return;
+          }
+
+          this.generating.set(false);
+          this.generationSubscription = null;
+
+          this.generationError.set(this.getGenerationError(error));
+
+          this.reloadAfterGeneration();
+        },
+      });
+  }
+
+  private hasCurrentContext(): boolean {
+    return (
+      this.spaceStore.selectedId() === this.spaceId() &&
+      this.authStore.token() !== null &&
+      this.authStore.user()?.id !== undefined &&
+      /^\d{4}-(0[1-9]|1[0-2])-01$/.test(this.period())
+    );
+  }
+
+  private isGenerationContext(
+    spaceId: number,
+    token: string,
+    userId: number,
+    period: string,
+  ): boolean {
+    return (
+      this.spaceId() === spaceId &&
+      this.spaceStore.selectedId() === spaceId &&
+      this.authStore.token() === token &&
+      this.authStore.user()?.id === userId &&
+      this.period() === period &&
+      this.generating()
+    );
+  }
+
+  private isValidGenerationResponse(response: GenerateRecurringSpaceResponse): boolean {
+    const values: number[] = [
+      response.created,
+      response.existing,
+      response.skipped,
+      response.total,
+    ];
+
+    return (
+      response.success === true &&
+      values.every((value: number): boolean => Number.isSafeInteger(value) && value >= 0) &&
+      response.created + response.existing + response.skipped === response.total
+    );
+  }
+
+  private reloadAfterGeneration(): void {
+    this.page.set(1);
+    this.statusFilter.set('all');
+
+    this.refreshVersion.update((version: number): number => version + 1);
+  }
+
+  private getGenerationError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 400:
+          return 'El periodo de generación no es válido.';
+
+        case 401:
+          return 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+        case 403:
+          return 'No tienes permiso para generar mensualidades en este espacio.';
+      }
+    }
+
+    return (
+      'No se ha podido completar la generación. ' +
+      'Algunas mensualidades pueden haberse generado antes del error. ' +
+      'Revisa el listado y, si es necesario, reintenta manualmente el mismo mes.'
+    );
   }
 
   private isCurrentContext(

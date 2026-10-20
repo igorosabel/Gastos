@@ -9,6 +9,7 @@ import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
+import GenerateRecurringSpaceResponse from '@interfaces/recurring/generate-recurring-space-response.interface';
 import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type Category from '@model/categories/category.model';
@@ -314,5 +315,244 @@ describe('RecurringOccurrences', (): void => {
 
     expect(component.occurrences()).toEqual([]);
     expect(component.loading()).toBe(false);
+  });
+
+  it('requiere confirmación antes de generar mensualidades', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    fixture.detectChanges();
+
+    expect(component.confirmingGeneration()).toBe(true);
+    expect(component.generating()).toBe(false);
+
+    expect(fixture.nativeElement.textContent).toContain('Confirmar generación');
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/generate-space`);
+
+    component.cancelGeneration();
+    fixture.detectChanges();
+
+    expect(component.confirmingGeneration()).toBe(false);
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/generate-space`);
+  });
+
+  it('genera el periodo seleccionado y actualiza las ocurrencias', (): void => {
+    pendingRequest().flush(response(2, period, []));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+    fixture.detectChanges();
+
+    expect(component.generating()).toBe(true);
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({
+      spaceId: 2,
+      period,
+    });
+
+    request.flush({
+      success: true,
+      created: 1,
+      existing: 0,
+      skipped: 1,
+      total: 2,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    expect(component.generating()).toBe(false);
+    expect(component.generationError()).toBeNull();
+
+    expect(component.generationResult()?.created).toBe(1);
+    expect(component.generationResult()?.skipped).toBe(1);
+
+    const reload: TestRequest = pendingRequest();
+
+    expect(reload.request.params.get('spaceId')).toBe('2');
+    expect(reload.request.params.get('periodFrom')).toBe(period);
+    expect(reload.request.params.get('page')).toBe('1');
+    expect(reload.request.params.has('status')).toBe(false);
+
+    reload.flush(response(2, period));
+    fixture.detectChanges();
+
+    expect(component.occurrences()).toHaveLength(1);
+
+    const content: string = fixture.nativeElement.textContent;
+
+    expect(content).toContain('Generación completada');
+    expect(content).toContain('1 nuevas');
+    expect(content).toContain('0 existentes');
+    expect(content).toContain('1 no aplicables');
+  });
+
+  it('impide una segunda generación mientras hay otra pendiente', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    const requests: TestRequest[] = httpTesting.match(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    expect(requests).toHaveLength(1);
+    expect(component.generating()).toBe(true);
+
+    requests[0]!.flush({
+      success: true,
+      created: 0,
+      existing: 1,
+      skipped: 0,
+      total: 1,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    pendingRequest().flush(response(2, period));
+
+    expect(component.generating()).toBe(false);
+  });
+
+  it('permite reintentar manualmente después de un fallo parcial', (): void => {
+    pendingRequest().flush(response(2, period, []));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    const first: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    first.flush(
+      {
+        success: false,
+        error: 'generation_error',
+        message: 'Error de procesamiento',
+      },
+      {
+        status: 500,
+        statusText: 'Internal Server Error',
+      },
+    );
+
+    fixture.detectChanges();
+
+    expect(component.generating()).toBe(false);
+    expect(component.generationResult()).toBeNull();
+
+    expect(component.generationError()).toContain('Algunas mensualidades pueden haberse generado');
+
+    // El frontend consulta de nuevo por si el backend
+    // conservó ocurrencias generadas antes del error.
+    pendingRequest().flush(response(2, period, [occurrence(2, period)]));
+
+    fixture.detectChanges();
+
+    expect(component.occurrences()).toHaveLength(1);
+
+    // El reintento solamente se produce por una
+    // nueva acción explícita del usuario.
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    const retry: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    expect(retry.request.body).toEqual({
+      spaceId: 2,
+      period,
+    });
+
+    retry.flush({
+      success: true,
+      created: 0,
+      existing: 1,
+      skipped: 0,
+      total: 1,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    pendingRequest().flush(response(2, period));
+
+    expect(component.generationResult()?.existing).toBe(1);
+    expect(component.generationError()).toBeNull();
+  });
+
+  it('rechaza una respuesta con contadores incoherentes', (): void => {
+    pendingRequest().flush(response(2, period, []));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/generate-space`).flush({
+      success: true,
+      created: 2,
+      existing: 1,
+      skipped: 0,
+      total: 2,
+      error: null,
+      message: null,
+    } satisfies GenerateRecurringSpaceResponse);
+
+    fixture.detectChanges();
+
+    expect(component.generationResult()).toBeNull();
+    expect(component.generationError()).toContain('No se ha podido verificar el resultado');
+
+    pendingRequest().flush(response(2, period));
+  });
+
+  it('descarta la generación pendiente al cambiar de espacio', (): void => {
+    pendingRequest().flush(response(2, period));
+    fixture.detectChanges();
+
+    component.requestGeneration();
+    component.confirmGeneration();
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/generate-space`,
+    );
+
+    spaceStore.select(8);
+    fixture.componentRef.setInput('spaceId', 8);
+    fixture.detectChanges();
+
+    expect(request.cancelled).toBe(true);
+    expect(component.generating()).toBe(false);
+    expect(component.generationResult()).toBeNull();
+    expect(component.generationError()).toBeNull();
+
+    const newRequest: TestRequest = pendingRequest();
+
+    expect(newRequest.request.params.get('spaceId')).toBe('8');
+
+    newRequest.flush(response(8, period, []));
+    fixture.detectChanges();
+
+    expect(component.occurrences()).toEqual([]);
   });
 });
