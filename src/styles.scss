@@ -11,3 +11,15 @@ body {
     color: var(--p-text-color);
     background-color: var(--p-content-background);
 }
+
+/*
+ * Bloquea el zoom por gestos en dispositivos táctiles,
+ * manteniendo el desplazamiento normal de la página.
+ */
+@media (hover: none) and (pointer: coarse) {
+
+    html,
+    body {
+        touch-action: pan-x pan-y;
+    }
+}
