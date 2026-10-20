@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
+import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type UpdateRecurringResponse from '@interfaces/recurring/update-recurring-response.interface';
@@ -241,5 +242,67 @@ describe('RecurringService', (): void => {
     request.flush(response);
 
     expect(result).toEqual(response);
+  });
+
+  it('consulta ocurrencias de un mes con paginación', (): void => {
+    const response: RecurringOccurrencesResponse = {
+      success: true,
+      occurrences: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    };
+
+    service
+      .getOccurrences({
+        spaceId: 12,
+        periodFrom: '2026-10-01',
+        periodTo: '2026-10-01',
+        page: 1,
+        pageSize: 20,
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences?spaceId=12&periodFrom=2026-10-01&periodTo=2026-10-01&page=1&pageSize=20`,
+    );
+
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.has('status')).toBe(false);
+
+    request.flush(response);
+  });
+
+  it('envía el filtro de estado cuando se solicita', (): void => {
+    service
+      .getOccurrences({
+        spaceId: 8,
+        periodFrom: '2026-09-01',
+        periodTo: '2026-09-01',
+        page: 2,
+        pageSize: 20,
+        status: 'pending',
+      })
+      .subscribe();
+
+    const request = httpTesting.expectOne(
+      `${environment.apiUrl}/recurring/occurrences?spaceId=8&periodFrom=2026-09-01&periodTo=2026-09-01&page=2&pageSize=20&status=pending`,
+    );
+
+    expect(request.request.method).toBe('GET');
+
+    request.flush({
+      success: true,
+      occurrences: [],
+      total: 25,
+      page: 2,
+      page_size: 20,
+      total_pages: 2,
+      error: null,
+      message: null,
+    } satisfies RecurringOccurrencesResponse);
   });
 });

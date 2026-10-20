@@ -11,11 +11,13 @@ import AuthStore from '@auth/auth.store';
 import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
+import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringModel from '@model/recurring/recurring.model';
+import { getCurrentMonth } from '@model/reports/month-period';
 import Recurring from '@pages/recurring/recurring';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -968,5 +970,91 @@ describe('Recurring', (): void => {
 
     expect(editElectricity?.textContent?.trim()).toBe('Editar');
     expect(editSalary?.textContent?.trim()).toBe('Editar');
+  });
+
+  it('no consulta ocurrencias hasta que se abre su sección', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    expect(component.showingOccurrences()).toBe(false);
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences`);
+
+    const button: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      '.recurring__occurrences-entry button',
+    );
+
+    expect(button?.textContent?.trim()).toBe('Ver ocurrencias');
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    expect(component.showingOccurrences()).toBe(true);
+
+    const request: TestRequest = httpTesting.expectOne(
+      (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+    );
+
+    const period: string = `${getCurrentMonth()}-01`;
+
+    expect(request.request.params.get('spaceId')).toBe('2');
+    expect(request.request.params.get('periodFrom')).toBe(period);
+
+    request.flush({
+      success: true,
+      occurrences: [],
+      total: 0,
+      page: 1,
+      page_size: 20,
+      total_pages: 0,
+      error: null,
+      message: null,
+    } satisfies RecurringOccurrencesResponse);
+
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Ocurrencias mensuales');
+  });
+
+  it('cancela la consulta al ocultar las ocurrencias', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    const request: TestRequest = httpTesting.expectOne(
+      (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+    );
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    expect(component.showingOccurrences()).toBe(false);
+    expect(request.cancelled).toBe(true);
+
+    expect(fixture.nativeElement.querySelector('app-recurring-occurrences')).toBeNull();
+  });
+
+  it('cierra las ocurrencias cuando cambia el espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.toggleOccurrences();
+    fixture.detectChanges();
+
+    const request: TestRequest = httpTesting.expectOne(
+      (request): boolean => request.url === `${environment.apiUrl}/recurring/occurrences`,
+    );
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(component.showingOccurrences()).toBe(false);
+    expect(request.cancelled).toBe(true);
+
+    completeLoad(8);
+
+    httpTesting.expectNone(`${environment.apiUrl}/recurring/occurrences`);
   });
 });

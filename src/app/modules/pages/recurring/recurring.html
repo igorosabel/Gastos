@@ -233,10 +233,34 @@
         </ul>
         }
 
+        <div class="recurring__occurrences-entry">
+            <button pButton
+                    type="button"
+                    severity="secondary"
+                    variant="outlined"
+                    [attr.aria-expanded]="showingOccurrences()"
+                    aria-controls="recurring-occurrences-section"
+                    [disabled]="creatingRecurring() ||
+                                editingRecurring() !== null ||
+                                statusPendingId() !== null"
+                    (click)="toggleOccurrences()">
+                {{ showingOccurrences()
+                    ? 'Ocultar ocurrencias'
+                    : 'Ver ocurrencias' }}
+            </button>
+        </div>
+
+        @if (showingOccurrences()) {
+        <div id="recurring-occurrences-section">
+            <app-recurring-occurrences [spaceId]="selectedSpace.id"
+                                       [categories]="categories()" />
+        </div>
+        }
+
         <p class="recurring__muted recurring__note">
-            Estas son las plantillas configuradas.
-            Sus ocurrencias se consultarán y gestionarán
-            por separado.
+            Las plantillas definen los movimientos periódicos.
+            Las ocurrencias son las mensualidades generadas
+            y se consultan por separado.
         </p>
     </section>
     }

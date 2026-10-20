@@ -1,0 +1,180 @@
+<section class="occurrences"
+         aria-labelledby="occurrences-title">
+
+    <header class="occurrences__heading">
+        <div>
+            <h2 id="occurrences-title">Ocurrencias mensuales</h2>
+            <p>
+                Mensualidades generadas de tus plantillas.
+            </p>
+        </div>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="loading()"
+                (click)="reload()">
+            Actualizar
+        </button>
+    </header>
+
+    <nav class="occurrences__period"
+         aria-label="Seleccionar mes de ocurrencias">
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                aria-label="Mes anterior"
+                (click)="previousMonth()">
+            Anterior
+        </button>
+
+        <strong>{{ monthLabel(month()) }}</strong>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                aria-label="Mes siguiente"
+                (click)="nextMonth()">
+            Siguiente
+        </button>
+    </nav>
+
+    <div class="occurrences__filters"
+         role="group"
+         aria-label="Filtrar ocurrencias por estado">
+
+        <button type="button"
+                [attr.aria-pressed]="statusFilter() === 'all'"
+                (click)="setStatus('all')">
+            Todas
+        </button>
+
+        <button type="button"
+                [attr.aria-pressed]="statusFilter() === 'pending'"
+                (click)="setStatus('pending')">
+            Pendientes
+        </button>
+
+        <button type="button"
+                [attr.aria-pressed]="statusFilter() === 'confirmed'"
+                (click)="setStatus('confirmed')">
+            Confirmadas
+        </button>
+
+        <button type="button"
+                [attr.aria-pressed]="statusFilter() === 'skipped'"
+                (click)="setStatus('skipped')">
+            Omitidas
+        </button>
+    </div>
+
+    @if (loading()) {
+    <p class="occurrences__muted"
+       role="status">
+        Cargando ocurrencias...
+    </p>
+    } @else if (error()) {
+    <div class="occurrences__error"
+         role="alert">
+        <p>{{ error() }}</p>
+        <button pButton
+                type="button"
+                severity="secondary"
+                (click)="reload()">
+            Reintentar
+        </button>
+    </div>
+    } @else if (occurrences().length === 0) {
+    <p class="occurrences__muted">
+        No hay ocurrencias para este mes y estado.
+    </p>
+    } @else {
+    <p class="occurrences__muted"
+       role="status">
+        {{ total() }}
+        {{ total() === 1 ? 'ocurrencia' : 'ocurrencias' }}
+        encontradas.
+    </p>
+
+    <ul class="occurrences__list">
+        @for (item of occurrences(); track item.id) {
+        <li class="occurrences__item">
+            <div class="occurrences__item-heading">
+                <div class="occurrences__details">
+                    <h3>{{ item.concept }}</h3>
+                    <span>{{ item.scheduled_date }}</span>
+                    <span>{{ categoryName(item.category_id) }}</span>
+                </div>
+
+                <span class="occurrences__status"
+                      [class.occurrences__status--confirmed]="item.status === 'confirmed'"
+                      [class.occurrences__status--skipped]="item.status === 'skipped'">
+                    @switch (item.status) {
+                    @case ('pending') { Pendiente }
+                    @case ('confirmed') { Confirmada }
+                    @case ('skipped') { Omitida }
+                    }
+                </span>
+            </div>
+
+            <div class="occurrences__amount"
+                 [class.occurrences__amount--income]="item.type === 'income'"
+                 [class.occurrences__amount--expense]="item.type === 'expense'">
+                <span>
+                    {{ item.type === 'income' ? 'Ingreso' : 'Gasto' }}
+                </span>
+
+                <strong>
+                    {{ item.type === 'income' ? '+' : '−' }}
+                    {{ formatMoney(item.amount) }}
+                </strong>
+            </div>
+
+            @if (item.transaction_id !== null) {
+            <p class="occurrences__muted">
+                Movimiento contable #{{ item.transaction_id }}
+            </p>
+            }
+        </li>
+        }
+    </ul>
+    }
+
+    @if (!loading() && !error() && totalPages() > 1) {
+    <nav class="occurrences__pagination"
+         aria-label="Páginas de ocurrencias">
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="page() <= 1"
+                (click)="previousPage()">
+            Anterior
+        </button>
+
+        <span>
+            Página {{ page() }} de {{ totalPages() }}
+        </span>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                [disabled]="page() >= totalPages()"
+                (click)="nextPage()">
+            Siguiente
+        </button>
+    </nav>
+    }
+
+    <p class="occurrences__muted occurrences__note">
+        Consultar ocurrencias no genera movimientos.
+        Las pendientes se gestionarán en el siguiente
+        desarrollo.
+    </p>
+</section>

@@ -3,6 +3,8 @@ import { inject, Service } from '@angular/core';
 import { environment } from '@env/environment';
 import type CreateRecurringRequest from '@interfaces/recurring/create-recurring-request.interface';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
+import type RecurringOccurrencesRequest from '@interfaces/recurring/recurring-occurrences-request.interface';
+import type RecurringOccurrencesResponse from '@interfaces/recurring/recurring-occurrences-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
 import type SetRecurringStatusRequest from '@interfaces/recurring/set-recurring-status-request.interface';
 import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
@@ -49,5 +51,27 @@ export default class RecurringService {
    */
   updateRecurring(data: UpdateRecurringRequest): Observable<UpdateRecurringResponse> {
     return this.http.post<UpdateRecurringResponse>(`${this.apiUrl}/recurring/update`, data);
+  }
+
+  /**
+   * Consulta ocurrencias recurrentes de un espacio
+   * con filtros de periodo y estado.
+   */
+  getOccurrences(data: RecurringOccurrencesRequest): Observable<RecurringOccurrencesResponse> {
+    const params: Record<string, string> = {
+      spaceId: String(data.spaceId),
+      periodFrom: data.periodFrom,
+      periodTo: data.periodTo,
+      page: String(data.page),
+      pageSize: String(data.pageSize),
+    };
+
+    if (data.status !== undefined) {
+      params['status'] = data.status;
+    }
+
+    return this.http.get<RecurringOccurrencesResponse>(`${this.apiUrl}/recurring/occurrences`, {
+      params,
+    });
   }
 }

@@ -20,6 +20,7 @@ import type RecurringModel from '@model/recurring/recurring.model';
 import { formatMoney } from '@model/reports/money';
 import CreateRecurring from '@modules/recurring/create-recurring/create-recurring';
 import EditRecurring from '@modules/recurring/edit-recurring/edit-recurring';
+import RecurringOccurrences from '@modules/recurring/recurring-occurrences/recurring-occurrences';
 import { Refresh } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import RecurringService from '@services/recurring.service';
@@ -28,7 +29,14 @@ import { forkJoin, type Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-recurring',
-  imports: [RouterLink, ButtonDirective, Refresh, CreateRecurring, EditRecurring],
+  imports: [
+    RouterLink,
+    ButtonDirective,
+    Refresh,
+    CreateRecurring,
+    EditRecurring,
+    RecurringOccurrences,
+  ],
   templateUrl: './recurring.html',
   styleUrl: './recurring.scss',
 })
@@ -51,6 +59,7 @@ export default class Recurring {
   readonly editingRecurring: WritableSignal<RecurringModel | null> = signal<RecurringModel | null>(
     null,
   );
+  readonly showingOccurrences: WritableSignal<boolean> = signal<boolean>(false);
 
   private statusSubscription: Subscription | null = null;
   private actionMessageTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -95,6 +104,7 @@ export default class Recurring {
       this.statusPendingId.set(null);
       this.statusError.set(null);
 
+      this.showingOccurrences.set(false);
       this.creatingRecurring.set(false);
       this.editingRecurring.set(null);
       this.clearActionMessage();
@@ -163,6 +173,22 @@ export default class Recurring {
         subscription.unsubscribe();
       });
     });
+  }
+
+  toggleOccurrences(): void {
+    if (
+      this.spaceStore.selectedId() === null ||
+      this.authStore.token() === null ||
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingRecurring() ||
+      this.editingRecurring() !== null ||
+      this.statusPendingId() !== null
+    ) {
+      return;
+    }
+
+    this.showingOccurrences.update((showing: boolean): boolean => !showing);
   }
 
   /**

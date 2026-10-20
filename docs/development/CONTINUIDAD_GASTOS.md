@@ -1,8 +1,8 @@
 # Gastos — Documento de continuidad del desarrollo frontend
 
-**Actualizado:** 18 de octubre de 2026
-**Estado:** bloques 1 a 11 completados y validados; pendiente comenzar el bloque 12.
-**Frontend (rama `main`, commit verificado):** [`ef06f07675a8487af15ef4d2ccb70b83c04e7af0`](https://github.com/igorosabel/Gastos/commit/ef06f07675a8487af15ef4d2ccb70b83c04e7af0) — `feat(spaces): expulsar miembros de espacios compartidos`.
+**Actualizado:** 20 de octubre de 2026
+**Estado:** bloques 1 a 31 completados y validados; pendiente comenzar el bloque 32.
+**Frontend (rama `main`, commit verificado):** [`145d8a109ec728e7d5410a0495cad67005fd966f`](https://github.com/igorosabel/Gastos/commit/145d8a109ec728e7d5410a0495cad67005fd966f) — `fix(recurring): Correcciones estéticas para móvil`.
 **Backend de referencia:** **ApiGastos v1.0.0**, publicado el 16 de octubre de 2026.
 
 > **Propósito:** documento de traspaso para retomar el desarrollo en otra conversación de ChatGPT. Es una fotografía del estado del proyecto en la fecha indicada, **no** sustituye al código, `AGENTS.md` ni a los contratos del backend. Al reanudar, volver a consultar el último commit y los archivos reales: el repositorio puede haber cambiado.
@@ -182,6 +182,7 @@ Todos los bloques siguientes fueron **probados por el usuario** (`npm run lint`,
 | 28. Consulta de movimientos recurrentes             | Completo | Modelo y servicio `GET /recurring`; consulta de plantillas activas e inactivas con sus categorías, importes, periodicidad y vigencia; navegación responsive desde Movimientos y menú lateral; actualización, gestión de errores y aislamiento por espacio y sesión. Mejoras de distribución de las cabeceras y pruebas.                                    | `08ba053`                       |
 | 29. Creación de plantillas recurrentes              | Completo | Creación mediante Signal Forms; categorías jerárquicas, importes decimales normalizados, validación de concepto, día del mes y fechas; actualización del listado y confirmación temporal. Ajustes responsive de Movimientos y Miembros, con correcciones específicas para fechas nativas en Safari/iOS y pruebas funcionales.                              | `6ffb21d` a `c7d2c8b`           |
 | 30. Activación y desactivación de recurrentes       | Completo | Cambio de estado mediante `POST /recurring/status`; botones de activar y desactivar, protección frente a operaciones simultáneas, cancelación ante cambios de espacio o sesión, errores HTTP, recarga del listado y confirmaciones de cuatro segundos. Pruebas unitarias, funcionales y responsive.                                                        | `122987a`                       |
+| 31. Edición de plantillas recurrentes               | Completo | Edición mediante `POST /recurring/update`, reutilización de validaciones y mappers, carga de valores actuales, categorías jerárquicas, importes y fechas, control de operaciones simultáneas, actualización y confirmación temporal; corrección responsive de fechas en los formularios de creación y edición, verificada en Safari/iOS.                   | `880c21b`, `145d8a1`            |
 
 **Pruebas funcionales relevantes ya realizadas:** el usuario confirmó que dos cuentas independientes A (propietario) y B (invitado) pudieron crear una invitación, comprobar el rechazo de un destinatario incorrecto, aceptarla desde B, verificar la membresía persistida y el rol, y validar el listado de miembros desde A. La lista administrativa solo aparece a propietarios de espacios compartidos. El usuario confirmó asimismo la creación y revocación de invitaciones.
 
@@ -232,13 +233,13 @@ Verificar los DTO y las respuestas reales antes de implementar:
 
 **Fechas e importes:** las fechas contables (`DATE`) no tienen zona horaria; no aplicar conversiones UTC automáticas. Los informes devuelven importes como cadenas decimales. La generación de ocurrencias recurrentes es **explícita**, no programada automáticamente; las previsiones incluyen solo ocurrencias pendientes **ya generadas**. Distinguir datos reales y previsiones y prevenir doble contabilización.
 
-## 7. Punto exacto para reanudar: **bloque 12**
+## 7. Punto exacto para reanudar: **bloque 32**
 
 ### Layout privado y navegación
 
 **Estado:** siguiente bloque de desarrollo, pendiente de validación.
 
-Los bloques 1 a 11 están completados. La gestión básica de espacios personales y compartidos incluye creación, selección, invitaciones, aceptación, revocación, consulta de miembros, abandono voluntario y expulsión.
+Los bloques 1 a 31 están completados. La gestión básica de espacios personales y compartidos incluye creación, selección, invitaciones, aceptación, revocación, consulta de miembros, abandono voluntario y expulsión.
 
 **Objetivo del bloque 12:** extraer del dashboard la cabecera, el selector de espacios, el cierre de sesión y la carga inicial del listado para crear un layout privado compartido por las futuras páginas funcionales.
 
@@ -297,8 +298,10 @@ Una vez completada la gestión básica de miembros, continuar por unidades verif
 
 ## 11. Mejoras pendientes
 
-| Bloque | Estado | Alcance |
-| Persistencia del espacio seleccionado | Pendiente | Recordar por usuario el último espacio contable utilizado y restaurarlo tras cerrar y volver a abrir Gastos, incluso después de un nuevo inicio de sesión. Evaluar persistencia en backend, posibles cambios de contrato y comportamiento cuando el espacio ya no esté disponible. |
+| Mejora                                        | Estado    | Alcance                                                                                                                                                                                                                                                                                                             |
+| --------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Persistencia del espacio seleccionado         | Pendiente | Recordar por usuario el último espacio contable utilizado y restaurarlo tras cerrar y volver a abrir Gastos, incluso después de un nuevo inicio de sesión. Evaluar persistencia en backend, posibles cambios de contrato y comportamiento cuando el espacio ya no esté disponible.                                  |
+| Centralización de estilos comunes para fechas | Pendiente | Extraer a un recurso SCSS compartido los estilos de los campos nativos `input[type="date"]`, actualmente repetidos en filtros de Movimientos y formularios de creación y edición de recurrentes. Conservar el diseño PrimeNG y las correcciones de anchura y alineación verificadas en Safari/iOS y Chrome/Windows. |
 
 ---
 

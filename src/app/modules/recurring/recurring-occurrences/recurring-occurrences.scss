@@ -1,0 +1,228 @@
+:host {
+    display: block;
+    min-width: 0;
+}
+
+.occurrences {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.875rem;
+    background: var(--p-content-background);
+}
+
+.occurrences__heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+
+    h2 {
+        margin: 0 0 0.375rem;
+        font-size: 1.25rem;
+    }
+
+    p {
+        margin: 0;
+        color: var(--p-text-muted-color);
+    }
+}
+
+.occurrences__period {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    strong {
+        text-transform: capitalize;
+        text-align: center;
+    }
+}
+
+.occurrences__filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    button {
+        min-height: 2.5rem;
+        padding: 0.5rem 0.875rem;
+        border: 1px solid var(--p-content-border-color);
+        border-radius: 0.625rem;
+        background: var(--p-content-background);
+        color: var(--p-text-color);
+        font: inherit;
+        font-size: 0.875rem;
+        cursor: pointer;
+
+        &[aria-pressed='true'] {
+            border-color: var(--p-primary-color);
+            background: var(--p-content-hover-background);
+            color: var(--p-primary-color);
+            font-weight: 700;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--p-primary-color);
+            outline-offset: 2px;
+        }
+    }
+}
+
+.occurrences__list {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.occurrences__item {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.75rem;
+}
+
+.occurrences__item-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.occurrences__details {
+    display: grid;
+    gap: 0.25rem;
+    min-width: 0;
+
+    h3 {
+        margin: 0;
+        font-size: 1rem;
+        overflow-wrap: anywhere;
+    }
+
+    span {
+        color: var(--p-text-muted-color);
+        font-size: 0.875rem;
+    }
+}
+
+.occurrences__status {
+    padding: 0.375rem 0.625rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--p-primary-color);
+}
+
+.occurrences__status--confirmed {
+    color: var(--p-green-600);
+}
+
+.occurrences__status--skipped {
+    color: var(--p-text-muted-color);
+}
+
+.occurrences__amount {
+    display: grid;
+    gap: 0.375rem;
+
+    span {
+        color: var(--p-text-muted-color);
+        font-size: 0.8125rem;
+    }
+
+    strong {
+        font-size: 1.25rem;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+}
+
+.occurrences__amount--income strong {
+    color: var(--p-green-600);
+}
+
+.occurrences__amount--expense strong {
+    color: var(--p-red-600);
+}
+
+.occurrences__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+
+    span {
+        color: var(--p-text-muted-color);
+    }
+}
+
+.occurrences__muted {
+    margin: 0;
+    color: var(--p-text-muted-color);
+    line-height: 1.5;
+}
+
+.occurrences__note {
+    font-size: 0.8125rem;
+}
+
+.occurrences__error {
+    display: grid;
+    justify-items: start;
+    gap: 1rem;
+    color: var(--p-red-500);
+
+    p {
+        margin: 0;
+    }
+}
+
+@media (min-width: 960px) {
+    .occurrences {
+        padding: 1.5rem;
+    }
+
+    .occurrences__list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .occurrences__heading>button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .occurrences__period strong {
+        flex-basis: 100%;
+        order: -1;
+    }
+
+    .occurrences__period button {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .occurrences__pagination button {
+        flex: 1;
+    }
+
+    .occurrences__pagination span {
+        order: -1;
+        flex-basis: 100%;
+        text-align: center;
+    }
+}
