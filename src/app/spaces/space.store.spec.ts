@@ -13,6 +13,8 @@ describe('SpaceStore', () => {
   let authStore: AuthStore;
   let spaceStore: SpaceStore;
   let httpTesting: HttpTestingController;
+  const selectionKeyUser1: string = 'gastos.selected-space.v1.1';
+  const selectionKeyUser2: string = 'gastos.selected-space.v1.2';
 
   const response: SpacesResponse = {
     success: true,
@@ -36,6 +38,8 @@ describe('SpaceStore', () => {
 
   beforeEach((): void => {
     sessionStorage.clear();
+    localStorage.removeItem(selectionKeyUser1);
+    localStorage.removeItem(selectionKeyUser2);
 
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
@@ -66,6 +70,8 @@ describe('SpaceStore', () => {
     spaceStore.clear();
     authStore.clear();
     sessionStorage.clear();
+    localStorage.removeItem(selectionKeyUser1);
+    localStorage.removeItem(selectionKeyUser2);
   });
 
   /**
@@ -428,5 +434,162 @@ describe('SpaceStore', () => {
 
     expect(spaceStore.removeAfterLeave(9)).toBe(false);
     expect(spaceStore.spaces()).toEqual([]);
+  });
+
+  it('recupera el último espacio seleccionado tras reiniciar el store', async (): Promise<void> => {
+    const firstLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await firstLoad;
+
+    expect(spaceStore.select(7)).toBe(true);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('7');
+
+    spaceStore.clear();
+
+    const secondLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await secondLoad;
+
+    expect(spaceStore.selectedId()).toBe(7);
+    expect(spaceStore.selected()?.name).toBe('Familia');
+  });
+
+  it('recuerda el espacio después de un nuevo inicio de sesión', async (): Promise<void> => {
+    const firstLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await firstLoad;
+
+    spaceStore.select(7);
+
+    spaceStore.clear();
+    authStore.clear();
+
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('7');
+
+    authStore.start({
+      success: true,
+      token: 'nuevo-jwt',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: 1,
+        name: 'Usuario',
+        email: 'usuario@example.com',
+      },
+      error: null,
+      message: null,
+    } satisfies LoginResponse);
+
+    const secondLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await secondLoad;
+
+    expect(spaceStore.selectedId()).toBe(7);
+  });
+
+  it('mantiene aisladas las preferencias de usuarios distintos', async (): Promise<void> => {
+    const firstLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await firstLoad;
+
+    spaceStore.select(7);
+
+    spaceStore.clear();
+    authStore.clear();
+
+    authStore.start({
+      success: true,
+      token: 'jwt-segundo-usuario',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: {
+        id: 2,
+        name: 'Segundo usuario',
+        email: 'segundo@example.com',
+      },
+      error: null,
+      message: null,
+    } satisfies LoginResponse);
+
+    const secondLoad: Promise<void> = spaceStore.load();
+
+    flushSpaces({
+      success: true,
+      spaces: [
+        {
+          id: 7,
+          name: 'Familia',
+          type: 'shared',
+          owner_id: 1,
+          is_owner: false,
+        },
+        {
+          id: 3,
+          name: 'Personal segundo usuario',
+          type: 'personal',
+          owner_id: 2,
+          is_owner: true,
+        },
+      ],
+    });
+
+    await secondLoad;
+
+    expect(spaceStore.selectedId()).toBe(3);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('7');
+    expect(localStorage.getItem(selectionKeyUser2)).toBe('3');
+  });
+
+  it('descarta una preferencia de espacio no autorizado', async (): Promise<void> => {
+    localStorage.setItem(selectionKeyUser1, '999');
+
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    expect(spaceStore.selectedId()).toBe(2);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('2');
+  });
+
+  it('guarda el espacio alternativo al abandonar el seleccionado', async (): Promise<void> => {
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    const accepted: Space = {
+      id: 9,
+      name: 'Compartido',
+      type: 'shared',
+      owner_id: 2,
+      is_owner: false,
+    };
+
+    expect(spaceStore.addAccepted(accepted)).toBe(true);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('9');
+
+    expect(spaceStore.removeAfterLeave(9)).toBe(true);
+
+    expect(spaceStore.selectedId()).toBe(2);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('2');
+  });
+
+  it('ignora preferencias almacenadas con formatos inválidos', async (): Promise<void> => {
+    localStorage.setItem(selectionKeyUser1, '1e3');
+
+    const loading: Promise<void> = spaceStore.load();
+
+    flushSpaces();
+    await loading;
+
+    expect(spaceStore.selectedId()).toBe(2);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('2');
+
+    expect(spaceStore.select(999)).toBe(false);
+    expect(localStorage.getItem(selectionKeyUser1)).toBe('2');
   });
 });

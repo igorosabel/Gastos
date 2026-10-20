@@ -1,4 +1,13 @@
-import { computed, inject, Service, signal, type Signal, type WritableSignal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
+import {
+  computed,
+  inject,
+  PLATFORM_ID,
+  Service,
+  signal,
+  type Signal,
+  type WritableSignal,
+} from '@angular/core';
 import AuthStore from '@auth/auth.store';
 import type { AuthUser } from '@interfaces/auth.interfaces';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
@@ -10,6 +19,8 @@ import { firstValueFrom } from 'rxjs';
 export default class SpaceStore {
   private readonly authStore: AuthStore = inject(AuthStore);
   private readonly spacesService: SpacesService = inject(SpacesService);
+  private readonly platformId: object = inject(PLATFORM_ID);
+  private readonly storage: Storage | null = this.getStorage();
 
   private readonly userId: WritableSignal<number | null> = signal<number | null>(null);
   private readonly availableSpaces: WritableSignal<Space[]> = signal<Space[]>([]);
@@ -85,14 +96,20 @@ export default class SpaceStore {
 
       const spaces: Space[] = response.spaces;
       const previousId: number | null = this.selectedSpaceId();
+      const rememberedId: number | null = this.readSelection(user.id);
 
       const selected: Space | undefined =
         spaces.find((space: Space): boolean => space.id === previousId) ??
+        spaces.find((space: Space): boolean => space.id === rememberedId) ??
         spaces.find((space: Space): boolean => space.type === 'personal') ??
         spaces[0];
 
       this.availableSpaces.set(spaces);
       this.selectedSpaceId.set(selected?.id ?? null);
+
+      if (selected !== undefined) {
+        this.saveSelection(selected.id);
+      }
     } catch {
       if (version === this.loadVersion && this.authStore.token() === token) {
         this.availableSpaces.set([]);
@@ -117,6 +134,8 @@ export default class SpaceStore {
     }
 
     this.selectedSpaceId.set(spaceId);
+    this.saveSelection(spaceId);
+
     return true;
   }
 
@@ -152,6 +171,7 @@ export default class SpaceStore {
     ]);
 
     this.selectedSpaceId.set(space.id);
+    this.saveSelection(space.id);
 
     return true;
   }
@@ -190,6 +210,7 @@ export default class SpaceStore {
     ]);
 
     this.selectedSpaceId.set(space.id);
+    this.saveSelection(space.id);
 
     return true;
   }
@@ -245,6 +266,10 @@ export default class SpaceStore {
         remaining.find((item: Space): boolean => item.type === 'personal') ?? remaining[0];
 
       this.selectedSpaceId.set(next?.id ?? null);
+
+      if (next !== undefined) {
+        this.saveSelection(next.id);
+      }
     }
 
     return true;
@@ -260,5 +285,74 @@ export default class SpaceStore {
     this.selectedSpaceId.set(null);
     this.loadingState.set(false);
     this.errorState.set(null);
+  }
+
+  /**
+   * Obtiene almacenamiento persistente cuando está
+   * disponible en el navegador.
+   */
+  private getStorage(): Storage | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Cada usuario mantiene una preferencia independiente.
+   */
+  private preferenceKey(userId: number): string {
+    return `gastos.selected-space.v1.${userId}`;
+  }
+
+  /**
+   * Recupera un identificador válido como preferencia,
+   * no como autorización de acceso al espacio.
+   */
+  private readSelection(userId: number): number | null {
+    try {
+      const raw: string | null = this.storage?.getItem(this.preferenceKey(userId)) ?? null;
+
+      if (raw === null || !/^[1-9]\d*$/.test(raw)) {
+        return null;
+      }
+
+      const spaceId: number = Number(raw);
+
+      return Number.isSafeInteger(spaceId) ? spaceId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Guarda el último espacio válido del usuario actual.
+   *
+   * Si localStorage no está disponible, la selección
+   * sigue funcionando normalmente en memoria.
+   */
+  private saveSelection(spaceId: number): void {
+    const user: AuthUser | null = this.authStore.user();
+
+    if (
+      user === null ||
+      this.authStore.token() === null ||
+      this.userId() !== user.id ||
+      !Number.isSafeInteger(spaceId) ||
+      spaceId <= 0
+    ) {
+      return;
+    }
+
+    try {
+      this.storage?.setItem(this.preferenceKey(user.id), String(spaceId));
+    } catch {
+      // El almacenamiento es opcional.
+    }
   }
 }
