@@ -1,3 +1,5 @@
+@use '../../../../styles/native-date-control' as nativeDate;
+
 :host {
     display: block;
 }
@@ -33,67 +35,10 @@
         width: 100%;
         min-height: 2.5rem;
     }
-
-    input[type='date'] {
-        display: block;
-        box-sizing: border-box;
-        flex: 1 1 auto;
-        width: 100%;
-        min-width: 0;
-        max-width: 100%;
-        height: 100%;
-        min-height: 0;
-        margin: 0;
-        padding: 0;
-        border: 0;
-        border-radius: 0;
-        outline: none;
-        background: transparent;
-        color: inherit;
-        color-scheme: light dark;
-        font: inherit;
-        font-size: 1rem;
-        text-align: left;
-    }
 }
 
 .recurring-form__date-control {
-    display: flex;
-    align-items: center;
-    box-sizing: border-box;
-    width: 100%;
-    min-width: 0;
-    max-width: 100%;
-    height: 2.75rem;
-    min-height: 2.75rem;
-    padding: 0 0.75rem;
-
-    border: 1px solid var(--p-select-border-color);
-    border-radius: var(--p-select-border-radius);
-    background: var(--p-select-background);
-    color: var(--p-select-color);
-
-    &:focus-within {
-        border-color: var(--p-primary-color);
-        outline: 2px solid var(--p-primary-color);
-        outline-offset: 1px;
-    }
-}
-
-/*
- * Alineación interna del control de fecha en WebKit.
- */
-.recurring-form__date-control input[type='date']::-webkit-date-and-time-value {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    text-align: left;
-}
-
-.recurring-form__date-control input[type='date']::-webkit-datetime-edit {
-    display: inline-flex;
-    align-items: center;
-    padding: 0;
+    @include nativeDate.control;
 }
 
 .recurring-form__dates {
