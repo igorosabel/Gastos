@@ -1,0 +1,110 @@
+<main class="auth-page">
+    <section class="auth-card"
+             aria-labelledby="invitation-title">
+        <header class="auth-header">
+            <h1 id="invitation-title">Invitación a Gastos</h1>
+            <p>Únete a un espacio compartido.</p>
+        </header>
+
+        @if (acceptedSpace(); as space) {
+        <div class="feedback feedback-success"
+             role="status">
+            Te has unido correctamente al espacio
+            «{{ space.name }}».
+        </div>
+
+        @if (warning()) {
+        <p class="feedback feedback-error"
+           role="alert">
+            {{ warning() }}
+        </p>
+        }
+
+        <a routerLink="/dashboard"
+           class="invitation-action">
+            Ir a Gastos
+        </a>
+        } @else if (invalidLink || !pendingInvitation.token()) {
+        <div class="feedback feedback-error"
+             role="alert">
+            No se ha encontrado una invitación válida.
+            Abre el enlace recibido por correo.
+        </div>
+
+        <a routerLink="/dashboard"
+           class="invitation-action">
+            Volver a Gastos
+        </a>
+        } @else {
+        <p class="invitation-description">
+            Has recibido una invitación para participar
+            en un espacio compartido.
+        </p>
+
+        @if (error()) {
+        <div class="feedback feedback-error"
+             role="alert">
+            {{ error() }}
+        </div>
+        }
+
+        @if (authStore.isAuthenticated()) {
+        <p class="invitation-description">
+            Sesión iniciada como
+            <strong>{{ authStore.user()?.email }}</strong>.
+        </p>
+
+        <p class="invitation-description">
+            Confirma que deseas incorporarte al espacio.
+        </p>
+
+        <button pButton
+                type="button"
+                class="invitation-action"
+                [disabled]="submitting()"
+                (click)="accept()">
+            {{ submitting()
+            ? 'Aceptando...'
+            : 'Aceptar invitación' }}
+        </button>
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="outlined"
+                class="invitation-action"
+                [disabled]="submitting()"
+                (click)="changeAccount()">
+            Cambiar de cuenta
+        </button>
+        } @else {
+        <p class="invitation-description">
+            Para aceptar la invitación debes iniciar sesión
+            con el correo electrónico al que está dirigida.
+        </p>
+
+        <a routerLink="/login"
+           [queryParams]="{ returnUrl: '/invitacion' }"
+           class="invitation-action">
+            Iniciar sesión
+        </a>
+
+        <a routerLink="/register"
+           [queryParams]="{ returnUrl: '/invitacion' }"
+           class="invitation-action invitation-action--secondary">
+            Crear una cuenta
+        </a>
+        }
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="text"
+                class="invitation-action"
+                [disabled]="submitting()"
+                (click)="discard()">
+            Descartar enlace
+        </button>
+        }
+    </section>
+</main>

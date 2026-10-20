@@ -18,6 +18,11 @@ const routes: Routes = [
     loadComponent: () => import('@modules/auth/register/register').then((m) => m.default),
   },
   {
+    path: 'invitacion',
+    loadComponent: () =>
+      import('@modules/spaces/invitation-link/invitation-link').then((m) => m.default),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('@layout/private-layout/private-layout').then((m) => m.default),

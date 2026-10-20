@@ -67,7 +67,12 @@
 
         <footer class="auth-footer">
             <span>¿Todavía no tienes cuenta?</span>
-            <a routerLink="/register">Crear una cuenta</a>
+            <a routerLink="/register"
+               [queryParams]="invitationReturnUrl
+                 ? { returnUrl: invitationReturnUrl }
+                 : null">
+                Crear una cuenta
+            </a>
         </footer>
     </section>
 </main>

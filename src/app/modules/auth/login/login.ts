@@ -41,6 +41,8 @@ export default class Login {
   private readonly route: ActivatedRoute = inject(ActivatedRoute);
 
   readonly registered: boolean = this.route.snapshot.queryParamMap.get('registered') === '1';
+  readonly invitationReturnUrl: string | null =
+    this.route.snapshot.queryParamMap.get('returnUrl') === '/invitacion' ? '/invitacion' : null;
 
   readonly loginModel: WritableSignal<LoginFormModel> = signal<LoginFormModel>(
     createLoginFormInitialValue(),

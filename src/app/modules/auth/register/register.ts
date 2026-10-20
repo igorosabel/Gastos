@@ -16,7 +16,7 @@ import {
   FormRoot,
   type TreeValidationResult,
 } from '@angular/forms/signals';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { RegisterResponse } from '@interfaces/auth.interfaces';
 import createRegisterFormInitialValue from '@model/auth/register-form.initial-value';
 import createRegisterRequest from '@model/auth/register-form.mapper';
@@ -36,6 +36,10 @@ import { firstValueFrom } from 'rxjs';
 export default class Register {
   private readonly authService: AuthService = inject(AuthService);
   private readonly router: Router = inject(Router);
+  private readonly route: ActivatedRoute = inject(ActivatedRoute);
+
+  readonly invitationReturnUrl: string | null =
+    this.route.snapshot.queryParamMap.get('returnUrl') === '/invitacion' ? '/invitacion' : null;
 
   readonly registerModel: WritableSignal<RegisterFormModel> = signal<RegisterFormModel>(
     createRegisterFormInitialValue(),
@@ -60,7 +64,13 @@ export default class Register {
             }
 
             await this.router.navigate(['/login'], {
-              queryParams: { registered: '1' },
+              queryParams:
+                this.invitationReturnUrl === null
+                  ? { registered: '1' }
+                  : {
+                      registered: '1',
+                      returnUrl: this.invitationReturnUrl,
+                    },
             });
 
             return undefined;
