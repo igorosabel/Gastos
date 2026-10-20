@@ -349,4 +349,23 @@ describe('EditRecurring', (): void => {
 
     expect(savedSpy).not.toHaveBeenCalled();
   });
+
+  it('mantiene los campos de fecha nativos dentro de sus contenedores', (): void => {
+    const start: HTMLInputElement | null = fixture.nativeElement.querySelector(
+      '.recurring-form__date-control #edit-recurring-start',
+    );
+
+    const end: HTMLInputElement | null = fixture.nativeElement.querySelector(
+      '.recurring-form__date-control #edit-recurring-end',
+    );
+
+    expect(start?.type).toBe('date');
+    expect(end?.type).toBe('date');
+
+    const containers: NodeListOf<HTMLElement> = fixture.nativeElement.querySelectorAll(
+      '.recurring-form__date-control',
+    );
+
+    expect(containers).toHaveLength(2);
+  });
 });

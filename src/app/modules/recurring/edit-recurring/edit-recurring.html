@@ -116,9 +116,11 @@
                 Fecha de inicio <span aria-hidden="true">*</span>
             </label>
 
-            <input id="edit-recurring-start"
-                   type="date"
-                   [formField]="recurringForm.startDate" />
+            <div class="recurring-form__date-control">
+                <input id="edit-recurring-start"
+                       type="date"
+                       [formField]="recurringForm.startDate" />
+            </div>
 
             @if (showErrors() && recurringForm.startDate().invalid()) {
             <small class="recurring-form__error"
@@ -133,9 +135,11 @@
                 Fecha de fin
             </label>
 
-            <input id="edit-recurring-end"
-                   type="date"
-                   [formField]="recurringForm.endDate" />
+            <div class="recurring-form__date-control">
+                <input id="edit-recurring-end"
+                       type="date"
+                       [formField]="recurringForm.endDate" />
+            </div>
 
             <small class="recurring-form__help">
                 Déjala vacía para no establecer una fecha final.
