@@ -14,6 +14,7 @@ import SpaceStore from '@app/spaces/space.store';
 import AuthStore from '@auth/auth.store';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
+import SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringModel from '@model/recurring/recurring.model';
 import { formatMoney } from '@model/reports/money';
@@ -43,8 +44,12 @@ export default class Recurring {
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
   readonly creatingRecurring: WritableSignal<boolean> = signal<boolean>(false);
-  readonly creationMessage: WritableSignal<string | null> = signal<string | null>(null);
-  private creationMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+  readonly actionMessage: WritableSignal<string | null> = signal<string | null>(null);
+  readonly statusPendingId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly statusError: WritableSignal<string | null> = signal<string | null>(null);
+
+  private statusSubscription: Subscription | null = null;
+  private actionMessageTimeout: ReturnType<typeof setTimeout> | null = null;
 
   readonly activeCount: Signal<number> = computed(
     (): number => this.recurring().filter((item: RecurringModel): boolean => item.active).length,
@@ -61,7 +66,8 @@ export default class Recurring {
 
   constructor() {
     this.destroyRef.onDestroy((): void => {
-      this.cancelCreationMessageTimeout();
+      this.cancelActionMessageTimeout();
+      this.statusSubscription?.unsubscribe();
     });
 
     effect((): void => {
@@ -80,9 +86,13 @@ export default class Recurring {
       this.previousSpaceId = spaceId;
       this.previousToken = token;
       this.previousUserId = userId;
+      this.statusSubscription?.unsubscribe();
+      this.statusSubscription = null;
+      this.statusPendingId.set(null);
+      this.statusError.set(null);
 
       this.creatingRecurring.set(false);
-      this.clearCreationMessage();
+      this.clearActionMessage();
     });
 
     effect((onCleanup): void => {
@@ -171,7 +181,8 @@ export default class Recurring {
       this.spaceStore.selectedId() === null ||
       this.authStore.token() === null ||
       this.loading() ||
-      this.creatingRecurring()
+      this.creatingRecurring() ||
+      this.statusPendingId() !== null
     ) {
       return;
     }
@@ -185,12 +196,13 @@ export default class Recurring {
       this.loading() ||
       this.error() !== null ||
       this.creatingRecurring() ||
-      this.categories().length === 0
+      this.categories().length === 0 ||
+      this.statusPendingId() !== null
     ) {
       return;
     }
 
-    this.clearCreationMessage();
+    this.clearActionMessage();
     this.creatingRecurring.set(true);
   }
 
@@ -205,31 +217,136 @@ export default class Recurring {
 
     this.creatingRecurring.set(false);
 
-    this.showCreationMessage(`Se ha creado el recurrente «${item.concept}».`);
+    this.showActionMessage(`Se ha creado el recurrente «${item.concept}».`);
 
     this.refreshVersion.update((version: number): number => version + 1);
   }
 
-  private cancelCreationMessageTimeout(): void {
-    if (this.creationMessageTimeout !== null) {
-      clearTimeout(this.creationMessageTimeout);
-      this.creationMessageTimeout = null;
+  setRecurringStatus(item: RecurringModel): void {
+    const spaceId: number | null = this.spaceStore.selectedId();
+    const token: string | null = this.authStore.token();
+    const userId: number | undefined = this.authStore.user()?.id;
+
+    const current: RecurringModel | undefined = this.recurring().find(
+      (recurring: RecurringModel): boolean => recurring.id === item.id,
+    );
+
+    if (
+      spaceId === null ||
+      token === null ||
+      userId === undefined ||
+      this.loading() ||
+      this.error() !== null ||
+      this.creatingRecurring() ||
+      this.statusPendingId() !== null ||
+      current === undefined ||
+      current.space_id !== spaceId ||
+      current.active !== item.active
+    ) {
+      return;
+    }
+
+    const requestedActive: boolean = !current.active;
+
+    this.statusError.set(null);
+    this.clearActionMessage();
+    this.statusPendingId.set(item.id);
+
+    this.statusSubscription = this.recurringService
+      .setRecurringStatus({
+        spaceId,
+        recurringId: item.id,
+        active: requestedActive,
+      })
+      .subscribe({
+        next: (response: SetRecurringStatusResponse): void => {
+          if (
+            !this.isCurrentContext(spaceId, token, userId) ||
+            this.statusPendingId() !== item.id
+          ) {
+            return;
+          }
+
+          this.statusPendingId.set(null);
+
+          if (
+            !response.success ||
+            response.recurring === null ||
+            response.recurring.id !== item.id ||
+            response.recurring.space_id !== spaceId ||
+            response.recurring.active !== requestedActive
+          ) {
+            this.statusError.set('No se ha podido actualizar el estado del recurrente.');
+            return;
+          }
+
+          this.showActionMessage(
+            `Se ha ${requestedActive ? 'activado' : 'desactivado'} ` +
+              `el recurrente «${response.recurring.concept}».`,
+          );
+
+          this.refreshVersion.update((version: number): number => version + 1);
+        },
+        error: (error: unknown): void => {
+          if (
+            !this.isCurrentContext(spaceId, token, userId) ||
+            this.statusPendingId() !== item.id
+          ) {
+            return;
+          }
+
+          this.statusPendingId.set(null);
+          this.statusError.set(this.getStatusError(error));
+        },
+      });
+  }
+
+  private getStatusError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 400:
+          return 'La solicitud de cambio de estado no es válida.';
+
+        case 401:
+          return 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+        case 403:
+          return 'No tienes permiso para modificar este recurrente.';
+
+        case 404:
+          return 'El recurrente ya no está disponible.';
+
+        case 409:
+          return 'El estado del recurrente ha cambiado. Actualiza el listado.';
+
+        case 0:
+          return 'No se ha podido conectar con el servidor.';
+      }
+    }
+
+    return 'No se ha podido actualizar el estado del recurrente.';
+  }
+
+  private cancelActionMessageTimeout(): void {
+    if (this.actionMessageTimeout !== null) {
+      clearTimeout(this.actionMessageTimeout);
+      this.actionMessageTimeout = null;
     }
   }
 
-  private clearCreationMessage(): void {
-    this.cancelCreationMessageTimeout();
-    this.creationMessage.set(null);
+  private clearActionMessage(): void {
+    this.cancelActionMessageTimeout();
+    this.actionMessage.set(null);
   }
 
-  private showCreationMessage(message: string): void {
-    this.clearCreationMessage();
+  private showActionMessage(message: string): void {
+    this.clearActionMessage();
 
-    this.creationMessage.set(message);
+    this.actionMessage.set(message);
 
-    this.creationMessageTimeout = setTimeout((): void => {
-      this.creationMessageTimeout = null;
-      this.creationMessage.set(null);
+    this.actionMessageTimeout = setTimeout((): void => {
+      this.actionMessageTimeout = null;
+      this.actionMessage.set(null);
     }, 4000);
   }
 

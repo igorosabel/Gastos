@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '@env/environment';
 import type CreateRecurringResponse from '@interfaces/recurring/create-recurring-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
+import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import RecurringService from '@services/recurring.service';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -139,4 +140,54 @@ describe('RecurringService', (): void => {
 
     expect(result).toEqual(response);
   });
+
+  it.each([[false], [true]])(
+    'actualiza el estado active=%s mediante POST',
+    (active: boolean): void => {
+      const response: SetRecurringStatusResponse = {
+        success: true,
+        recurring: {
+          id: 50,
+          space_id: 12,
+          category_id: 7,
+          type: 'expense',
+          amount: '95.40',
+          concept: 'Electricidad',
+          day_of_month: 20,
+          start_date: '2026-10-01',
+          end_date: null,
+          active,
+        },
+        error: null,
+        message: null,
+      };
+
+      let result: SetRecurringStatusResponse | null = null;
+
+      service
+        .setRecurringStatus({
+          spaceId: 12,
+          recurringId: 50,
+          active,
+        })
+        .subscribe({
+          next: (value: SetRecurringStatusResponse): void => {
+            result = value;
+          },
+        });
+
+      const request = httpTesting.expectOne(`${environment.apiUrl}/recurring/status`);
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({
+        spaceId: 12,
+        recurringId: 50,
+        active,
+      });
+
+      request.flush(response);
+
+      expect(result).toEqual(response);
+    },
+  );
 });

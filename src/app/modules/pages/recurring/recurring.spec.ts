@@ -12,6 +12,7 @@ import { environment } from '@env/environment';
 import type { LoginResponse } from '@interfaces/auth.interfaces';
 import type CategoriesResponse from '@interfaces/categories/categories-response.interface';
 import type RecurringResponse from '@interfaces/recurring/recurring-response.interface';
+import type SetRecurringStatusResponse from '@interfaces/recurring/set-recurring-status-response.interface';
 import type SpacesResponse from '@interfaces/spaces/spaces-response.interface';
 import type Category from '@model/categories/category.model';
 import type RecurringModel from '@model/recurring/recurring.model';
@@ -176,6 +177,18 @@ describe('Recurring', (): void => {
     categories.flush(categoriesResponse(spaceId));
 
     fixture.detectChanges();
+  }
+
+  function getRecurringItem(id: number): RecurringModel {
+    const item: RecurringModel | undefined = component
+      .recurring()
+      .find((recurring: RecurringModel): boolean => recurring.id === id);
+
+    if (item === undefined) {
+      throw new Error(`No existe el recurrente ${id}.`);
+    }
+
+    return item;
   }
 
   it('no consulta sin espacio activo', (): void => {
@@ -486,7 +499,7 @@ describe('Recurring', (): void => {
     expect(component.recurring()).toHaveLength(3);
     expect(component.activeCount()).toBe(2);
 
-    expect(component.creationMessage()).toBe('Se ha creado el recurrente «Electricidad».');
+    expect(component.actionMessage()).toBe('Se ha creado el recurrente «Electricidad».');
   });
 
   it('ignora una plantilla creada en otro espacio', async (): Promise<void> => {
@@ -511,7 +524,7 @@ describe('Recurring', (): void => {
     component.onRecurringCreated(external);
     fixture.detectChanges();
 
-    expect(component.creationMessage()).toBeNull();
+    expect(component.actionMessage()).toBeNull();
     expect(component.recurring()).toHaveLength(2);
 
     httpTesting.expectNone(`${environment.apiUrl}/recurring`);
@@ -528,7 +541,7 @@ describe('Recurring', (): void => {
     fixture.detectChanges();
 
     expect(component.creatingRecurring()).toBe(false);
-    expect(component.creationMessage()).toBeNull();
+    expect(component.actionMessage()).toBeNull();
 
     completeLoad(8);
   });
@@ -546,7 +559,7 @@ describe('Recurring', (): void => {
 
     expect(component.creatingRecurring()).toBe(false);
     expect(component.recurring()).toEqual([]);
-    expect(component.creationMessage()).toBeNull();
+    expect(component.actionMessage()).toBeNull();
   });
 
   it('oculta la confirmación de creación después de cuatro segundos', async (): Promise<void> => {
@@ -578,20 +591,236 @@ describe('Recurring', (): void => {
       // Completamos la recarga iniciada tras crear.
       completeLoad(2, [...recurringResponse(2).recurring, created]);
 
-      expect(component.creationMessage()).toBe('Se ha creado el recurrente «Electricidad».');
+      expect(component.actionMessage()).toBe('Se ha creado el recurrente «Electricidad».');
 
       vi.advanceTimersByTime(3999);
 
-      expect(component.creationMessage()).not.toBeNull();
+      expect(component.actionMessage()).not.toBeNull();
 
       vi.advanceTimersByTime(1);
       fixture.detectChanges();
 
-      expect(component.creationMessage()).toBeNull();
+      expect(component.actionMessage()).toBeNull();
 
       expect(fixture.nativeElement.querySelector('.recurring__success')).toBeNull();
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it.each([
+    { id: 50, action: 'desactivado' },
+    { id: 51, action: 'activado' },
+  ])(
+    'cambia el estado del recurrente $id',
+    async ({ id, action }: { id: number; action: string }): Promise<void> => {
+      await loadSpaces();
+      completeLoad(2);
+
+      const item: RecurringModel = getRecurringItem(id);
+      const requestedActive: boolean = !item.active;
+
+      component.setRecurringStatus(item);
+      fixture.detectChanges();
+
+      expect(component.statusPendingId()).toBe(id);
+
+      const request: TestRequest = httpTesting.expectOne(`${environment.apiUrl}/recurring/status`);
+
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({
+        spaceId: 2,
+        recurringId: id,
+        active: requestedActive,
+      });
+
+      const updated: RecurringModel = {
+        ...item,
+        active: requestedActive,
+      };
+
+      request.flush({
+        success: true,
+        recurring: updated,
+        error: null,
+        message: null,
+      } satisfies SetRecurringStatusResponse);
+
+      fixture.detectChanges();
+
+      expect(component.statusPendingId()).toBeNull();
+      expect(component.loading()).toBe(true);
+
+      const updatedItems: RecurringModel[] = recurringResponse(2).recurring.map(
+        (recurring: RecurringModel): RecurringModel => (recurring.id === id ? updated : recurring),
+      );
+
+      completeLoad(2, updatedItems);
+
+      expect(getRecurringItem(id).active).toBe(requestedActive);
+      expect(component.statusError()).toBeNull();
+
+      expect(component.actionMessage()).toBe(`Se ha ${action} el recurrente «${item.concept}».`);
+
+      expect(component.activeCount()).toBe(requestedActive ? 2 : 0);
+    },
+  );
+
+  it('impide otras operaciones durante un cambio de estado', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.setRecurringStatus(getRecurringItem(50));
+    fixture.detectChanges();
+
+    expect(component.statusPendingId()).toBe(50);
+
+    component.setRecurringStatus(getRecurringItem(51));
+    component.openCreateRecurring();
+    component.reload();
+
+    fixture.detectChanges();
+
+    expect(component.creatingRecurring()).toBe(false);
+    expect(component.loading()).toBe(false);
+
+    const requests: TestRequest[] = httpTesting.match(`${environment.apiUrl}/recurring/status`);
+
+    expect(requests).toHaveLength(1);
+
+    requests[0]!.flush(
+      {
+        success: false,
+        error: 'forbidden',
+        message: 'Sin permiso',
+      },
+      {
+        status: 403,
+        statusText: 'Forbidden',
+      },
+    );
+
+    fixture.detectChanges();
+
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.activeCount()).toBe(1);
+  });
+
+  it('conserva el listado ante un error HTTP de estado', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.setRecurringStatus(getRecurringItem(50));
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/status`).flush(
+      {
+        success: false,
+        error: 'forbidden',
+        message: 'Sin permisos',
+      },
+      {
+        status: 403,
+        statusText: 'Forbidden',
+      },
+    );
+
+    fixture.detectChanges();
+
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.statusError()).toBe('No tienes permiso para modificar este recurrente.');
+
+    expect(component.recurring()).toHaveLength(2);
+    expect(getRecurringItem(50).active).toBe(true);
+    expect(component.activeCount()).toBe(1);
+
+    expect(fixture.nativeElement.textContent).toContain(
+      'No tienes permiso para modificar este recurrente.',
+    );
+  });
+
+  it('rechaza una confirmación de estado incoherente', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: RecurringModel = getRecurringItem(50);
+
+    component.setRecurringStatus(item);
+
+    httpTesting.expectOne(`${environment.apiUrl}/recurring/status`).flush({
+      success: true,
+      recurring: {
+        ...item,
+        active: true,
+      },
+      error: null,
+      message: null,
+    } satisfies SetRecurringStatusResponse);
+
+    fixture.detectChanges();
+
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.statusError()).toBe('No se ha podido actualizar el estado del recurrente.');
+
+    expect(getRecurringItem(50).active).toBe(true);
+    expect(component.actionMessage()).toBeNull();
+  });
+
+  it('cancela el cambio de estado al cambiar de espacio', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.setRecurringStatus(getRecurringItem(50));
+
+    const request: TestRequest = httpTesting.expectOne(`${environment.apiUrl}/recurring/status`);
+
+    spaceStore.select(8);
+    fixture.detectChanges();
+
+    expect(request.cancelled).toBe(true);
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.statusError()).toBeNull();
+    expect(component.actionMessage()).toBeNull();
+
+    completeLoad(8);
+
+    expect(component.recurring()).toHaveLength(2);
+    expect(component.recurring()[0]?.space_id).toBe(8);
+  });
+
+  it('cancela el cambio de estado al cerrar sesión', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    component.setRecurringStatus(getRecurringItem(50));
+
+    const request: TestRequest = httpTesting.expectOne(`${environment.apiUrl}/recurring/status`);
+
+    spaceStore.clear();
+    authStore.clear();
+    fixture.detectChanges();
+
+    expect(request.cancelled).toBe(true);
+    expect(component.statusPendingId()).toBeNull();
+    expect(component.recurring()).toEqual([]);
+    expect(component.actionMessage()).toBeNull();
+  });
+
+  it('muestra las acciones de activar y desactivar', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const deactivate: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label="Desactivar recurrente: Electricidad"]',
+    );
+
+    const activate: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label="Activar recurrente: Nómina"]',
+    );
+
+    expect(deactivate).not.toBeNull();
+    expect(activate).not.toBeNull();
+
+    expect(deactivate?.textContent?.trim()).toBe('Desactivar');
+    expect(activate?.textContent?.trim()).toBe('Activar');
   });
 });

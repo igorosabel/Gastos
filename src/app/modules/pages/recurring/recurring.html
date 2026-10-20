@@ -14,7 +14,10 @@
                     type="button"
                     severity="secondary"
                     variant="outlined"
-                    [disabled]="loading() || creatingRecurring()"
+                    [disabled]="loading() ||
+                                creatingRecurring() ||
+                                statusPendingId() !== null
+                    "
                     (click)="reload()">
                 <svg data-p-icon="refresh"
                      [size]="16"
@@ -31,7 +34,9 @@
                     [disabled]="loading() ||
                                 creatingRecurring() ||
                                 error() !== null ||
-                                categories().length === 0"
+                                categories().length === 0 ||
+                                statusPendingId() !== null
+                    "
                     (click)="openCreateRecurring()">
                 Nuevo recurrente
             </button>
@@ -44,10 +49,17 @@
         Volver a movimientos
     </a>
 
-    @if (creationMessage()) {
+    @if (actionMessage()) {
     <p class="recurring__success"
        role="status">
-        {{ creationMessage() }}
+        {{ actionMessage() }}
+    </p>
+    }
+
+    @if (statusError()) {
+    <p class="recurring__status-error"
+       role="alert">
+        {{ statusError() }}
     </p>
     }
 
@@ -170,6 +182,27 @@
                         </dd>
                     </div>
                 </dl>
+
+                <div class="recurring__item-actions">
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
+                            [attr.aria-label]="
+                                (item.active ? 'Desactivar' : 'Activar') +
+                                ' recurrente: ' + item.concept
+                            "
+                            [disabled]="loading() ||
+                                        creatingRecurring() ||
+                                        statusPendingId() !== null"
+                            (click)="setRecurringStatus(item)">
+                        @if (statusPendingId() === item.id) {
+                        Actualizando...
+                        } @else {
+                        {{ item.active ? 'Desactivar' : 'Activar' }}
+                        }
+                    </button>
+                </div>
             </li>
             }
         </ul>
