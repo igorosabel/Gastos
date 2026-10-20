@@ -234,13 +234,22 @@
             <li class="transactions__item">
                 <div class="transactions__details">
                     <strong>
-                        {{ transaction.concept || categoryName(transaction.category_id) }}
+                        {{ transaction.concept ||
+                           categoryName(transaction.category_id) }}
                     </strong>
 
-                    <span>
-                        {{ transaction.date }}
-                        · {{ categoryName(transaction.category_id) }}
-                    </span>
+                    <div class="transactions__metadata">
+                        <span class="transactions__date">
+                            {{ transaction.date }}
+                        </span>
+
+                        <span class="transactions__metadata-separator"
+                              aria-hidden="true">·</span>
+
+                        <span class="transactions__category">
+                            {{ categoryName(transaction.category_id) }}
+                        </span>
+                    </div>
                 </div>
 
                 <div class="transactions__amount"
@@ -259,33 +268,58 @@
                     </strong>
                 </div>
 
-                <button pButton
-                        type="button"
-                        severity="secondary"
-                        variant="outlined"
-                        [disabled]="loading() ||
-                                    creatingTransaction() ||
-                                    editingTransaction() !== null ||
-                                    deletingId() !== null ||
-                                    confirmationId() !== null
-                        "
-                        (click)="openEditTransaction(transaction)">
-                    Editar
-                </button>
+                <div class="transactions__item-actions">
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
+                            title="Editar"
+                            [attr.aria-label]="'Editar movimiento: ' +
+                                (transaction.concept ||
+                                 categoryName(transaction.category_id))"
+                            [disabled]="loading() ||
+                                        creatingTransaction() ||
+                                        editingTransaction() !== null ||
+                                        deletingId() !== null ||
+                                        confirmationId() !== null"
+                            (click)="openEditTransaction(transaction)">
 
-                @if (confirmationId() !== transaction.id) {
-                <button pButton
-                        type="button"
-                        severity="danger"
-                        variant="outlined"
-                        [disabled]="loading() ||
-                                    creatingTransaction() ||
-                                    editingTransaction() !== null ||
-                                    deletingId() !== null"
-                        (click)="requestDelete(transaction)">
-                    Eliminar
-                </button>
-                }
+                        <svg data-p-icon="pencil"
+                             [size]="18"
+                             class="transactions__action-icon"
+                             aria-hidden="true"></svg>
+
+                        <span class="transactions__action-label">
+                            Editar
+                        </span>
+                    </button>
+
+                    @if (confirmationId() !== transaction.id) {
+                    <button pButton
+                            type="button"
+                            severity="danger"
+                            variant="outlined"
+                            title="Eliminar"
+                            [attr.aria-label]="'Eliminar movimiento: ' +
+                                (transaction.concept ||
+                                 categoryName(transaction.category_id))"
+                            [disabled]="loading() ||
+                                        creatingTransaction() ||
+                                        editingTransaction() !== null ||
+                                        deletingId() !== null"
+                            (click)="requestDelete(transaction)">
+
+                        <svg data-p-icon="trash"
+                             [size]="18"
+                             class="transactions__action-icon"
+                             aria-hidden="true"></svg>
+
+                        <span class="transactions__action-label">
+                            Eliminar
+                        </span>
+                    </button>
+                    }
+                </div>
 
                 @if (confirmationId() === transaction.id) {
                 <div class="transactions__confirmation"

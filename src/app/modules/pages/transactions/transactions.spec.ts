@@ -1686,7 +1686,10 @@ describe('Transactions', (): void => {
     expect(actions.querySelector('.transactions__recurring-link')).not.toBeNull();
   });
 
-  it('incluye etiquetas compactas y accesibles en las acciones', (): void => {
+  it('incluye etiquetas compactas y accesibles en las acciones', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
     const recurring: HTMLAnchorElement | null = fixture.nativeElement.querySelector(
       '.transactions__recurring-link',
     );
@@ -1706,5 +1709,62 @@ describe('Transactions', (): void => {
     expect(newButton?.querySelector('.transactions__label-mobile')?.textContent?.trim()).toBe(
       'Nuevo',
     );
+  });
+
+  it('separa concepto, fecha y categoría en el listado', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: HTMLElement | null = fixture.nativeElement.querySelector('.transactions__item');
+
+    expect(item).not.toBeNull();
+
+    expect(item?.querySelector('.transactions__details strong')?.textContent?.trim()).toBe(
+      'Electricidad',
+    );
+
+    expect(item?.querySelector('.transactions__date')?.textContent?.trim()).toBe('2026-10-20');
+
+    expect(item?.querySelector('.transactions__category')?.textContent?.trim()).toBe('Suministros');
+  });
+
+  it('ofrece edición y eliminación con iconos accesibles', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const item: HTMLElement = fixture.nativeElement.querySelector('.transactions__item');
+
+    const editButton: HTMLButtonElement | null = item.querySelector(
+      '.transactions__item-actions button[title="Editar"]',
+    );
+
+    const deleteButton: HTMLButtonElement | null = item.querySelector(
+      '.transactions__item-actions button[title="Eliminar"]',
+    );
+
+    expect(editButton).not.toBeNull();
+    expect(deleteButton).not.toBeNull();
+
+    expect(editButton?.getAttribute('aria-label')).toBe('Editar movimiento: Electricidad');
+
+    expect(deleteButton?.getAttribute('aria-label')).toBe('Eliminar movimiento: Electricidad');
+
+    expect(editButton?.querySelector('svg[data-p-icon="pencil"]')).not.toBeNull();
+
+    expect(deleteButton?.querySelector('svg[data-p-icon="trash"]')).not.toBeNull();
+  });
+
+  it('conserva los filtros de fecha nativos', async (): Promise<void> => {
+    await loadSpaces();
+    completeLoad(2);
+
+    const from: HTMLInputElement | null =
+      fixture.nativeElement.querySelector('#transactions-date-from');
+
+    const to: HTMLInputElement | null =
+      fixture.nativeElement.querySelector('#transactions-date-to');
+
+    expect(from?.type).toBe('date');
+    expect(to?.type).toBe('date');
   });
 });

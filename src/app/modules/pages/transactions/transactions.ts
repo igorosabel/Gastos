@@ -24,7 +24,7 @@ import type TransactionFilters from '@model/transactions/transaction-filters.mod
 import type Transaction from '@model/transactions/transaction.model';
 import CreateTransaction from '@modules/transactions/create-transaction/create-transaction';
 import EditTransaction from '@modules/transactions/edit-transaction/edit-transaction';
-import { Refresh } from '@primeicons/angular';
+import { Pencil, Refresh, Trash } from '@primeicons/angular';
 import CategoriesService from '@services/categories.service';
 import TransactionRefreshService from '@services/transaction-refresh.service';
 import TransactionsService from '@services/transactions.service';
@@ -41,6 +41,8 @@ import { firstValueFrom, forkJoin, type Subscription } from 'rxjs';
     CreateTransaction,
     EditTransaction,
     Refresh,
+    Pencil,
+    Trash,
     RouterLink,
   ],
   templateUrl: './transactions.html',
