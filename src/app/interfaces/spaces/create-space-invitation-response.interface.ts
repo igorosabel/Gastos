@@ -1,4 +1,3 @@
-
 import type { ApiResponse } from '@interfaces/auth.interfaces';
 
 export default interface CreateSpaceInvitationResponse extends ApiResponse {
@@ -9,4 +8,5 @@ export default interface CreateSpaceInvitationResponse extends ApiResponse {
     token: string;
     expires_at: string;
   };
+  email_sent: boolean;
 }

@@ -11,30 +11,85 @@
                 type="button"
                 severity="secondary"
                 variant="outlined"
+                [disabled]="resendingId() !== null || revokingId() !== null"
                 (click)="openCreate()">
             Nueva invitación
         </button>
         }
     </div>
 
-    @if (createdToken(); as token) {
-    <div class="invitations__token"
-         role="status">
-        <strong>Invitación creada correctamente</strong>
+    @if (lastDelivery(); as delivery) {
+    <div class="invitations__delivery"
+         [class.invitations__delivery--warning]="!delivery.email_sent"
+         [attr.role]="delivery.email_sent ? 'status' : 'alert'">
+
+        @if (delivery.email_sent) {
+        <strong>Invitación enviada</strong>
 
         <p>
-            Copia este token y compártelo de forma privada con la persona invitada.
-            No volverá a mostrarse cuando cierres este aviso.
+            El servidor de correo ha aceptado la invitación dirigida a
+            <strong>{{ delivery.invitation.email }}</strong>.
         </p>
 
-        <code>{{ token }}</code>
+        <p>
+            El destinatario recibirá un enlace para incorporarse
+            al espacio. La entrega final depende del servidor de correo.
+        </p>
+        } @else {
+        <strong>Invitación creada, pero correo no confirmado</strong>
+
+        <p>
+            La invitación para
+            <strong>{{ delivery.invitation.email }}</strong>
+            se ha guardado correctamente, pero no hemos podido
+            confirmar el envío por correo electrónico.
+        </p>
+
+        <p>
+            Puedes compartir este enlace de forma privada
+            con la persona invitada:
+        </p>
+
+        <input class="invitations__link"
+               type="text"
+               readonly
+               aria-label="Enlace de invitación para copiar"
+               [value]="invitationLink(delivery.invitation.token)" />
 
         <button pButton
                 type="button"
                 severity="secondary"
                 variant="outlined"
-                (click)="hideToken()">
-            Ocultar token
+                (click)="copyLink()">
+            Copiar enlace
+        </button>
+
+        @if (linkCopied()) {
+        <p class="invitations__copy-success"
+           role="status">
+            Enlace copiado.
+        </p>
+        }
+
+        @if (copyError()) {
+        <p class="invitations__revoke-error"
+           role="alert">
+            {{ copyError() }}
+        </p>
+        }
+
+        <p class="invitations__muted">
+            También puedes intentar reenviar el correo cuando
+            haya transcurrido al menos un minuto.
+        </p>
+        }
+
+        <button pButton
+                type="button"
+                severity="secondary"
+                variant="text"
+                (click)="hideDelivery()">
+            Cerrar aviso
         </button>
     </div>
     }
@@ -89,18 +144,77 @@
                     </span>
 
                     @if (invitation.status === 'pending' &&
-                    confirmationId() !== invitation.id) {
+                    confirmationId() !== invitation.id &&
+                    resendConfirmationId() !== invitation.id) {
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
+                            [disabled]="resendingId() !== null || revokingId() !== null"
+                            (click)="requestResend(invitation)">
+                        Reenviar
+                    </button>
+
                     <button pButton
                             type="button"
                             severity="danger"
                             variant="outlined"
-                            [disabled]="revokingId() !== null"
+                            [disabled]="resendingId() !== null || revokingId() !== null"
                             (click)="requestRevoke(invitation)">
                         Revocar
                     </button>
                     }
                 </div>
             </div>
+
+            @if (resendConfirmationId() === invitation.id) {
+            <div class="invitations__confirmation"
+                 role="group"
+                 [attr.aria-label]="'Confirmar reenvío para ' + invitation.email">
+
+                <p>
+                    ¿Quieres reenviar la invitación a
+                    <strong>{{ invitation.email }}</strong>?
+                </p>
+
+                <p>
+                    Se generará un enlace nuevo y el anterior
+                    dejará de funcionar. La caducidad no cambiará.
+                </p>
+
+                <p class="invitations__muted">
+                    Debe transcurrir al menos un minuto desde
+                    la última emisión.
+                </p>
+
+                @if (resendError()) {
+                <p class="invitations__revoke-error"
+                   role="alert">
+                    {{ resendError() }}
+                </p>
+                }
+
+                <div class="invitations__confirmation-actions">
+                    <button pButton
+                            type="button"
+                            severity="secondary"
+                            variant="outlined"
+                            [disabled]="resendingId() !== null"
+                            (click)="cancelResend()">
+                        Cancelar
+                    </button>
+
+                    <button pButton
+                            type="button"
+                            [disabled]="resendingId() !== null"
+                            (click)="confirmResend()">
+                        {{ resendingId() === invitation.id
+                           ? 'Reenviando...'
+                           : 'Confirmar reenvío' }}
+                    </button>
+                </div>
+            </div>
+            }
 
             @if (confirmationId() === invitation.id) {
             <div class="invitations__confirmation"

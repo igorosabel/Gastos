@@ -69,9 +69,10 @@ describe('CreateInvitation', () => {
         id: 15,
         space_id: 8,
         email: 'invitado@example.com',
-        token: 'token-de-prueba',
-        expires_at: '2026-10-24 10:00:00',
+        token: 'a'.repeat(64),
+        expires_at: '2026-10-27 10:00:00',
       },
+      email_sent: true,
       error: null,
       message: null,
     };
@@ -92,6 +93,35 @@ describe('CreateInvitation', () => {
       email: 'invitado@example.com',
     });
 
-    expect(emitSpy).toHaveBeenCalledWith('token-de-prueba');
+    expect(emitSpy).toHaveBeenCalledWith(response);
+  });
+
+  it('emite la invitación aunque SMTP no confirme el envío', async (): Promise<void> => {
+    const response: CreateSpaceInvitationResponse = {
+      success: true,
+      invitation: {
+        id: 16,
+        space_id: 8,
+        email: 'invitado@example.com',
+        token: 'b'.repeat(64),
+        expires_at: '2026-10-27 10:00:00',
+      },
+      email_sent: false,
+      error: null,
+      message: null,
+    };
+
+    vi.spyOn(service, 'createInvitation').mockReturnValue(of(response));
+
+    const emitSpy = vi.spyOn(component.created, 'emit');
+
+    component.invitationModel.set({
+      email: 'invitado@example.com',
+    });
+
+    submitForm();
+    await fixture.whenStable();
+
+    expect(emitSpy).toHaveBeenCalledWith(response);
   });
 });

@@ -1,4 +1,3 @@
-
 <form [formRoot]="invitationForm"
       class="invitation-form"
       aria-label="Crear invitación">
@@ -32,8 +31,9 @@
     }
 
     <p class="invitation-form__help">
-        Se generará un token que tendrás que compartir con el destinatario.
-        La aplicación no enviará ningún correo automáticamente.
+        Enviaremos un correo electrónico con un enlace para
+        incorporarse al espacio. Si la persona invitada
+        todavía no tiene cuenta, podrá registrarse.
     </p>
 
     <div class="invitation-form__actions">
@@ -49,7 +49,9 @@
         <button pButton
                 type="submit"
                 [disabled]="invitationForm().submitting()">
-            {{ invitationForm().submitting() ? 'Creando...' : 'Crear invitación' }}
+            {{ invitationForm().submitting()
+               ? 'Enviando invitación...'
+               : 'Enviar invitación' }}
         </button>
     </div>
 </form>

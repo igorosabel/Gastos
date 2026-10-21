@@ -30,34 +30,47 @@
 }
 
 .invitations__creation,
-.invitations__token {
+.invitations__delivery {
     padding: 1.25rem;
     border: 1px solid var(--p-content-border-color);
     border-radius: 0.75rem;
 }
 
-.invitations__token {
+.invitations__delivery {
     display: grid;
-    gap: 0.75rem;
+    justify-items: start;
+    gap: 0.875rem;
 
     p {
         margin: 0;
         line-height: 1.5;
     }
 
-    code {
-        display: block;
+    strong {
         overflow-wrap: anywhere;
-        padding: 0.875rem;
-        border-radius: 0.5rem;
-        background-color: var(--p-content-hover-background);
-        font-size: 0.875rem;
-        user-select: all;
     }
+}
 
-    button {
-        justify-self: start;
-    }
+.invitations__delivery--warning {
+    border-color: var(--p-orange-500);
+}
+
+.invitations__link {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 0.875rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.5rem;
+    background: var(--p-content-hover-background);
+    color: var(--p-text-color);
+    font: inherit;
+    font-size: 0.875rem;
+}
+
+.invitations__copy-success {
+    color: var(--p-green-600);
+    font-size: 0.875rem;
 }
 
 .invitations__list {

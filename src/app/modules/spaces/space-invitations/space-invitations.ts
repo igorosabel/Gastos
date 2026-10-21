@@ -1,3 +1,4 @@
+import { DOCUMENT } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   Component,
@@ -9,6 +10,7 @@ import {
   type InputSignal,
   type WritableSignal,
 } from '@angular/core';
+import type CreateSpaceInvitationResponse from '@interfaces/spaces/create-space-invitation-response.interface';
 import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
 import type SpaceInvitation from '@model/spaces/space-invitation.model';
@@ -26,21 +28,26 @@ import { firstValueFrom, type Subscription } from 'rxjs';
 export default class SpaceInvitations {
   private readonly spacesService: SpacesService = inject(SpacesService);
   private readonly destroyRef: DestroyRef = inject(DestroyRef);
+  private readonly document: Document = inject(DOCUMENT);
 
   readonly spaceId: InputSignal<number> = input.required<number>();
 
   readonly invitations: WritableSignal<SpaceInvitation[]> = signal<SpaceInvitation[]>([]);
-
   readonly loading: WritableSignal<boolean> = signal<boolean>(false);
   readonly error: WritableSignal<string | null> = signal<string | null>(null);
   readonly creating: WritableSignal<boolean> = signal<boolean>(false);
-  readonly createdToken: WritableSignal<string | null> = signal<string | null>(null);
-
+  readonly lastDelivery: WritableSignal<CreateSpaceInvitationResponse | null> =
+    signal<CreateSpaceInvitationResponse | null>(null);
+  readonly linkCopied: WritableSignal<boolean> = signal<boolean>(false);
+  readonly copyError: WritableSignal<string | null> = signal<string | null>(null);
+  readonly resendConfirmationId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly resendingId: WritableSignal<number | null> = signal<number | null>(null);
+  readonly resendError: WritableSignal<string | null> = signal<string | null>(null);
   readonly confirmationId: WritableSignal<number | null> = signal<number | null>(null);
   readonly revokingId: WritableSignal<number | null> = signal<number | null>(null);
   readonly revokeError: WritableSignal<string | null> = signal<string | null>(null);
-
   private readonly refreshVersion: WritableSignal<number> = signal<number>(0);
+
   private loadedSpaceId: number | null = null;
   private contextVersion: number = 0;
 
@@ -56,7 +63,12 @@ export default class SpaceInvitations {
 
         this.invitations.set([]);
         this.creating.set(false);
-        this.createdToken.set(null);
+        this.lastDelivery.set(null);
+        this.linkCopied.set(false);
+        this.copyError.set(null);
+        this.resendConfirmationId.set(null);
+        this.resendingId.set(null);
+        this.resendError.set(null);
         this.confirmationId.set(null);
         this.revokingId.set(null);
         this.revokeError.set(null);
@@ -111,19 +123,81 @@ export default class SpaceInvitations {
   }
 
   /**
-   * Recibe el token de una invitación recién creada.
+   * Recibe el resultado completo de una invitación nueva.
    */
-  onCreated(token: string): void {
-    this.createdToken.set(token);
+  onCreated(response: CreateSpaceInvitationResponse): void {
+    if (!response.success || response.invitation.space_id !== this.spaceId()) {
+      return;
+    }
+
+    this.showDelivery(response);
     this.creating.set(false);
     this.reload();
   }
 
   /**
-   * Oculta el token, que no volverá a estar disponible.
+   * Guarda el resultado de la última emisión del espacio.
    */
-  hideToken(): void {
-    this.createdToken.set(null);
+  private showDelivery(response: CreateSpaceInvitationResponse): void {
+    this.lastDelivery.set(response);
+    this.linkCopied.set(false);
+    this.copyError.set(null);
+  }
+
+  /**
+   * Oculta el resultado y descarta su token en memoria.
+   */
+  hideDelivery(): void {
+    this.lastDelivery.set(null);
+    this.linkCopied.set(false);
+    this.copyError.set(null);
+  }
+
+  /**
+   * Construye el enlace de aceptación con el origen
+   * real desde el que se está ejecutando Gastos.
+   */
+  invitationLink(token: string): string {
+    const origin: string = this.document.location?.origin ?? '';
+
+    return `${origin}/invitacion#token=${token}`;
+  }
+
+  /**
+   * Copia el enlace alternativo cuando SMTP no
+   * ha confirmado el envío.
+   */
+  async copyLink(): Promise<void> {
+    const delivery: CreateSpaceInvitationResponse | null = this.lastDelivery();
+
+    if (delivery === null || delivery.email_sent) {
+      return;
+    }
+
+    this.linkCopied.set(false);
+    this.copyError.set(null);
+
+    const clipboard: Clipboard | undefined = this.document.defaultView?.navigator.clipboard;
+
+    if (clipboard === undefined) {
+      this.copyError.set('Selecciona y copia el enlace del campo de texto.');
+      return;
+    }
+
+    try {
+      await clipboard.writeText(this.invitationLink(delivery.invitation.token));
+
+      if (this.lastDelivery() === delivery) {
+        this.linkCopied.set(true);
+      }
+    } catch {
+      if (this.lastDelivery() === delivery) {
+        this.copyError.set(
+          'No se ha podido copiar automáticamente. ' +
+            'Selecciona el enlace y cópialo manualmente.',
+        );
+      }
+    }
   }
 
   /**
@@ -133,11 +207,14 @@ export default class SpaceInvitations {
     if (
       invitation.status !== 'pending' ||
       invitation.space_id !== this.spaceId() ||
-      this.revokingId() !== null
+      this.revokingId() !== null ||
+      this.resendingId() !== null
     ) {
       return;
     }
 
+    this.resendConfirmationId.set(null);
+    this.resendError.set(null);
     this.confirmationId.set(invitation.id);
     this.revokeError.set(null);
   }
@@ -171,7 +248,8 @@ export default class SpaceInvitations {
       invitation === undefined ||
       invitation.status !== 'pending' ||
       invitation.space_id !== spaceId ||
-      this.revokingId() !== null
+      this.revokingId() !== null ||
+      this.resendingId() !== null
     ) {
       return;
     }
@@ -200,7 +278,12 @@ export default class SpaceInvitations {
       }
 
       // El token de una invitación reciente no debe seguir visible.
-      this.createdToken.set(null);
+      // Si acabamos de revocar la invitación del aviso,
+      // su enlace ya no debe seguir mostrándose.
+      if (this.lastDelivery()?.invitation.id === invitationId) {
+        this.hideDelivery();
+      }
+
       this.confirmationId.set(null);
 
       // Recuperamos el estado definitivo de todas las invitaciones.
@@ -216,6 +299,134 @@ export default class SpaceInvitations {
         this.revokingId.set(null);
       }
     }
+  }
+
+  /**
+   * Solicita confirmación antes de invalidar
+   * el enlace anterior de una invitación.
+   */
+  requestResend(invitation: SpaceInvitation): void {
+    if (
+      invitation.status !== 'pending' ||
+      invitation.space_id !== this.spaceId() ||
+      this.resendingId() !== null ||
+      this.revokingId() !== null
+    ) {
+      return;
+    }
+
+    this.confirmationId.set(null);
+    this.revokeError.set(null);
+    this.resendConfirmationId.set(invitation.id);
+    this.resendError.set(null);
+  }
+
+  /**
+   * Cancela el reenvío pendiente de confirmación.
+   */
+  cancelResend(): void {
+    if (this.resendingId() !== null) {
+      return;
+    }
+
+    this.resendConfirmationId.set(null);
+    this.resendError.set(null);
+  }
+
+  /**
+   * Regenera el token y solicita el envío SMTP.
+   */
+  async confirmResend(): Promise<void> {
+    const invitationId: number | null = this.resendConfirmationId();
+    const spaceId: number = this.spaceId();
+    const version: number = this.contextVersion;
+
+    const invitation: SpaceInvitation | undefined = this.invitations().find(
+      (item: SpaceInvitation): boolean => item.id === invitationId,
+    );
+
+    if (
+      invitationId === null ||
+      invitation === undefined ||
+      invitation.status !== 'pending' ||
+      invitation.space_id !== spaceId ||
+      this.resendingId() !== null ||
+      this.revokingId() !== null
+    ) {
+      return;
+    }
+
+    this.resendingId.set(invitationId);
+    this.resendError.set(null);
+
+    try {
+      const response: CreateSpaceInvitationResponse = await firstValueFrom(
+        this.spacesService.resendInvitation({ invitationId }),
+      );
+
+      if (!this.isCurrentContext(spaceId, version)) {
+        return;
+      }
+
+      if (
+        !response.success ||
+        !response.invitation ||
+        response.invitation.id !== invitationId ||
+        response.invitation.space_id !== spaceId ||
+        response.invitation.email !== invitation.email ||
+        typeof response.email_sent !== 'boolean' ||
+        !/^[a-f0-9]{64}$/.test(response.invitation.token)
+      ) {
+        this.resendError.set('No se ha podido confirmar el reenvío.');
+        return;
+      }
+
+      // El resultado nuevo sustituye cualquier enlace
+      // que todavía estuviera visible.
+      this.showDelivery(response);
+      this.resendConfirmationId.set(null);
+      this.reload();
+    } catch (error: unknown) {
+      if (!this.isCurrentContext(spaceId, version)) {
+        return;
+      }
+
+      this.resendError.set(this.getResendError(error));
+    } finally {
+      if (this.isCurrentContext(spaceId, version)) {
+        this.resendingId.set(null);
+      }
+    }
+  }
+
+  /**
+   * Traduce los errores del reenvío.
+   */
+  private getResendError(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      switch (error.status) {
+        case 400:
+          return 'La invitación indicada no es válida.';
+
+        case 401:
+          return 'Tu sesión ha caducado. Vuelve a iniciar sesión.';
+
+        case 403:
+          return 'No tienes permiso para reenviar esta invitación.';
+
+        case 409:
+          return (
+            'No se puede reenviar todavía. Debe transcurrir ' +
+            'al menos un minuto desde el último envío y ' +
+            'la invitación debe continuar pendiente.'
+          );
+
+        case 0:
+          return 'No se ha podido conectar con el servidor.';
+      }
+    }
+
+    return 'No se ha podido reenviar la invitación. Inténtalo de nuevo.';
   }
 
   /**

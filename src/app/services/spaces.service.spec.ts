@@ -155,9 +155,10 @@ describe('SpacesService', () => {
         id: 15,
         space_id: 8,
         email: 'invitado@example.com',
-        token: 'token-de-prueba',
+        token: 'a'.repeat(64),
         expires_at: '2026-10-24 10:00:00',
       },
+      email_sent: true,
       error: null,
       message: null,
     };

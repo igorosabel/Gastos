@@ -41,7 +41,8 @@ export default class CreateInvitation {
 
   readonly spaceId: InputSignal<number> = input.required<number>();
 
-  readonly created: OutputEmitterRef<string> = output<string>();
+  readonly created: OutputEmitterRef<CreateSpaceInvitationResponse> =
+    output<CreateSpaceInvitationResponse>();
   readonly cancelled: OutputEmitterRef<void> = output<void>();
 
   readonly invitationModel: WritableSignal<CreateInvitationFormModel> =
@@ -67,7 +68,12 @@ export default class CreateInvitation {
               ),
             );
 
-            if (!response.success || !response.invitation?.token) {
+            if (
+              !response.success ||
+              !response.invitation ||
+              typeof response.email_sent !== 'boolean' ||
+              !/^[a-f0-9]{64}$/.test(response.invitation.token)
+            ) {
               return {
                 kind: 'serverError',
                 message: 'No se ha podido crear la invitación.',
@@ -82,7 +88,7 @@ export default class CreateInvitation {
               return undefined;
             }
 
-            this.created.emit(response.invitation.token);
+            this.created.emit(response);
             return undefined;
           } catch (error: unknown) {
             if (error instanceof HttpErrorResponse) {

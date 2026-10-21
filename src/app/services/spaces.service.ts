@@ -10,6 +10,7 @@ import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interfac
 import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import LeaveSpaceRequest from '@interfaces/spaces/leave-space-request.interface';
 import RemoveSpaceMemberRequest from '@interfaces/spaces/remove-space-member-request.interface';
+import ResendSpaceInvitationRequest from '@interfaces/spaces/resend-space-invitation-request.interface';
 import RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
@@ -52,6 +53,19 @@ export default class SpacesService {
    */
   createInvitation(data: CreateSpaceInvitationRequest): Observable<CreateSpaceInvitationResponse> {
     return this.http.post<CreateSpaceInvitationResponse>(`${this.apiUrl}/spaces/invitations`, data);
+  }
+
+  /**
+   * Regenera el enlace de una invitación pendiente
+   * y solicita un nuevo envío SMTP.
+   *
+   * ApiGastos devuelve la misma estructura que al crearla.
+   */
+  resendInvitation(data: ResendSpaceInvitationRequest): Observable<CreateSpaceInvitationResponse> {
+    return this.http.post<CreateSpaceInvitationResponse>(
+      `${this.apiUrl}/spaces/invitations/resend`,
+      data,
+    );
   }
 
   /**
