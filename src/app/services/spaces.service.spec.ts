@@ -14,6 +14,7 @@ import CreateSpaceRequest from '@interfaces/spaces/create-space-request.interfac
 import CreateSpaceResponse from '@interfaces/spaces/create-space-response.interface';
 import LeaveSpaceRequest from '@interfaces/spaces/leave-space-request.interface';
 import type RemoveSpaceMemberRequest from '@interfaces/spaces/remove-space-member-request.interface';
+import type ResendSpaceInvitationRequest from '@interfaces/spaces/resend-space-invitation-request.interface';
 import type RevokeSpaceInvitationRequest from '@interfaces/spaces/revoke-space-invitation-request.interface';
 import type RevokeSpaceInvitationResponse from '@interfaces/spaces/revoke-space-invitation-response.interface';
 import type SpaceInvitationsResponse from '@interfaces/spaces/space-invitations-response.interface';
@@ -350,6 +351,47 @@ describe('SpacesService', () => {
     expect(Object.keys(request.request.body)).toEqual(['spaceId', 'userId']);
 
     request.flush(response);
+
+    expect(result).toEqual(response);
+  });
+
+  it('reenvía una invitación mediante POST /spaces/invitations/resend', (): void => {
+    const data: ResendSpaceInvitationRequest = {
+      invitationId: 15,
+    };
+
+    const response: CreateSpaceInvitationResponse = {
+      success: true,
+      invitation: {
+        id: 15,
+        space_id: 8,
+        email: 'invitado@example.com',
+        token: 'b'.repeat(64),
+        expires_at: '2026-10-27 10:00:00',
+      },
+      email_sent: true,
+      error: null,
+      message: null,
+    };
+
+    let result: CreateSpaceInvitationResponse | undefined;
+
+    service.resendInvitation(data).subscribe((value: CreateSpaceInvitationResponse): void => {
+      result = value;
+    });
+
+    const request: TestRequest = httpTesting.expectOne(
+      `${environment.apiUrl}/spaces/invitations/resend`,
+    );
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(data);
+    expect(request.request.body).not.toHaveProperty('userId');
+
+    request.flush(response, {
+      status: 200,
+      statusText: 'OK',
+    });
 
     expect(result).toEqual(response);
   });

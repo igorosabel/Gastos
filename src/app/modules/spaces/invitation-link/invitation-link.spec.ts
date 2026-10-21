@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter, Router } from '@angular/router';
@@ -173,5 +174,26 @@ describe('InvitationLink', (): void => {
         returnUrl: '/invitacion',
       },
     });
+  });
+
+  it('retira el fragmento de la URL sin perder el token', (): void => {
+    const location: Location = TestBed.inject(Location);
+    const replaceSpy = vi.spyOn(location, 'replaceState');
+
+    render(`token=${TOKEN}`);
+
+    expect(replaceSpy).toHaveBeenCalledWith('/invitacion');
+    expect(pendingStore.token()).toBe(TOKEN);
+  });
+
+  it('no acepta automáticamente una invitación al abrir el enlace', (): void => {
+    authenticate();
+
+    const acceptSpy = vi.spyOn(spacesService, 'acceptInvitation');
+
+    render(`token=${TOKEN}`);
+
+    expect(pendingStore.token()).toBe(TOKEN);
+    expect(acceptSpy).not.toHaveBeenCalled();
   });
 });
